@@ -9,7 +9,9 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # For peaceiris/actions-gh-pages to push to gh-pages branch
+      contents: read
+      id-token: write # Required for OIDC token to deploy to GitHub Pages
+      pages: write # Required to deploy to GitHub Pages
 
     steps:
       - name: Checkout
@@ -28,10 +30,16 @@ jobs:
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Create CNAME file
+        run: echo "promptdj.com" > dist/CNAME
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/zen'
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          cname: promptdj.com
+          path: './dist' # Path to the directory containing your build output
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        if: github.ref == 'refs/heads/zen'
