@@ -189,8 +189,6 @@ class PromptDjMidi extends LitElement {
   override async firstUpdated() {
     // Ensure toastMessage is ready before connecting to session
     await customElements.whenDefined('toast-message');
-    await this.connectToSession();
-    await this.setSessionPrompts();
   }
 
   private async connectToSession() {
@@ -426,9 +424,11 @@ class PromptDjMidi extends LitElement {
     this.nextStartTime = 0;
   }
 
-  private handleMainAudioButton() { // Renamed from handleTurnOnAudio / handlePlayPause
+  private async handleMainAudioButton() { // Renamed from handleTurnOnAudio / handlePlayPause
     if (!this.audioReady) {
       // First click: initialize audio context and start playback
+      await this.connectToSession();
+      await this.setSessionPrompts();
       this.play();
     } else {
       // Subsequent clicks: toggle play/pause
