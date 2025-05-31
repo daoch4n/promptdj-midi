@@ -28,3 +28,5 @@ dist-ssr
 .roo/
 .roomodes.json
 .roomodes
+
+.env.local
