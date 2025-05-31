@@ -43,6 +43,7 @@ export class WeightKnob extends LitElement {
       mix-blend-mode: lighten;
       transform: scale(2); /* Default large scale */
       will-change: transform;
+      opacity: 0.5; /* Added for semi-transparency */
     }
   `;
 
