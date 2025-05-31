@@ -167,11 +167,17 @@ class PromptDjMidi extends LitElement {
           }
           if (e.filteredPrompt) {
             this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
-            this.toastMessage.show(e.filteredPrompt.filteredReason as string);
+            if (this.toastMessage) {
+              this.toastMessage.show(e.filteredPrompt.filteredReason as string);
+            }
           }
           if (e.serverContent?.audioChunks !== undefined) {
             if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
             if (!this.audioContext || !this.outputNode) {
+              // Also show a toast message here if audio context is not initialized.
+              if (this.toastMessage) {
+                this.toastMessage.show('Audio context not initialized. Please refresh.');
+              }
               console.error('AudioContext or outputNode not initialized.');
               return;
             }
@@ -203,12 +209,16 @@ class PromptDjMidi extends LitElement {
         onerror: (e: ErrorEvent) => {
           this.connectionError = true;
           this.stop();
-          this.toastMessage.show('Connection error, please restart audio.');
+          if (this.toastMessage) {
+            this.toastMessage.show('Connection error, please restart audio.');
+          }
         },
         onclose: (e: CloseEvent) => {
           this.connectionError = true;
           this.stop();
-          this.toastMessage.show('Connection error, please restart audio.');
+          if (this.toastMessage) {
+            this.toastMessage.show('Connection error, please restart audio.');
+          }
         },
       },
     });
@@ -224,19 +234,27 @@ class PromptDjMidi extends LitElement {
   private setSessionPrompts = throttle(async () => {
     const promptsToSend = this.getPromptsToSend();
     if (promptsToSend.length === 0) {
-      this.toastMessage.show('There needs to be one active prompt to play.')
+      if (this.toastMessage) {
+        this.toastMessage.show('There needs to be one active prompt to play.')
+      }
       this.pause();
       return;
     }
     try {
-      await this.session.setWeightedPrompts({
-        weightedPrompts: promptsToSend,
-      });
+      if (this.session) { // Add null check for this.session
+        await this.session.setWeightedPrompts({
+          weightedPrompts: promptsToSend,
+        });
+      }
     } catch (e: unknown) { // Explicitly type e as unknown
       if (e instanceof Error) {
-        this.toastMessage.show(e.message)
+        if (this.toastMessage) {
+          this.toastMessage.show(e.message)
+        }
       } else {
-        this.toastMessage.show('An unknown error occurred.')
+        if (this.toastMessage) {
+          this.toastMessage.show('An unknown error occurred.')
+        }
       }
       this.pause();
     }
@@ -311,7 +329,9 @@ class PromptDjMidi extends LitElement {
   );
 
   private pause() {
-    if (this.session) this.session.pause();
+    if (this.session) { // Add null check for this.session
+      this.session.pause();
+    }
     this.playbackState = 'paused';
     if (this.outputNode && this.audioContext) {
       this.outputNode.gain.setValueAtTime(1, this.audioContext.currentTime);
@@ -330,7 +350,9 @@ class PromptDjMidi extends LitElement {
   private play() {
     const promptsToSend = this.getPromptsToSend();
     if (promptsToSend.length === 0) {
-      this.toastMessage.show('There needs to be one active prompt to play. Turn up a knob to resume playback.')
+      if (this.toastMessage) {
+        this.toastMessage.show('There needs to be one active prompt to play. Turn up a knob to resume playback.')
+      }
       this.pause();
       return;
     }
@@ -345,7 +367,9 @@ class PromptDjMidi extends LitElement {
     }
 
     this.audioContext.resume();
-    if (this.session) this.session.play();
+    if (this.session) { // Add null check for this.session
+      this.session.play();
+    }
     this.playbackState = 'loading';
     if (this.outputNode && this.audioContext) {
       this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
@@ -354,7 +378,9 @@ class PromptDjMidi extends LitElement {
   }
 
   private stop() {
-    if (this.session) this.session.stop();
+    if (this.session) { // Add null check for this.session
+      this.session.stop();
+    }
     this.playbackState = 'stopped';
     if (this.outputNode && this.audioContext) {
       this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
