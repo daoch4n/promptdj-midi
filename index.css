@@ -16,34 +16,28 @@ body.dragging * {
 #main-content-area {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: flex-start; /* Align items to the start (left) */
   gap: 15px;
   width: 100%;
   justify-content: center;
+  height: 100%; /* Ensure it takes full height to center content */
 }
 
 .advanced-settings-panel {
   background-color: #202020;
-  padding: 0;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  width: 280px; /* Keep a defined width for its content */
   height: auto;
-width: 0; /* Initially hidden, takes no space */
-min-width: 0; /* Allow it to fully collapse in flex container */
-opacity: 0;
-overflow: hidden;
-transition: width 0.3s ease, opacity 0.3s ease, padding 0.3s ease; /* Smooth transition for width, opacity, and padding */
+  width: 280px; /* Fixed width for the sidebar */
+  min-width: 280px; /* Ensure it maintains its width */
+  opacity: 1; /* Always visible */
+  overflow: visible; /* Allow content to be visible */
+  transition: none; /* No transition needed as it's always visible */
   color: #fff;
-  flex-shrink: 0; /* Prevent it from shrinking when hidden */
-}
-
-.advanced-settings-panel.visible {
-  width: 280px; /* Expands to its full width */
-  opacity: 1;
-  padding: 15px; /* Ensure padding is applied when visible */
-  display: flex; /* Use flex to align its internal settings */
-  flex-direction: column; /* Stack settings vertically */
+  flex-shrink: 0; /* Prevent it from shrinking */
+  display: flex; /* Always use flex for internal alignment */
+  flex-direction: column; /* Always stack settings vertically */
+  padding: 15px; /* Consistent padding */
 }
 
 .advanced-settings-panel .setting {
