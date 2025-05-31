@@ -6,13 +6,6 @@ import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-/** Maps prompt weight to halo size. */
-const MIN_HALO_SCALE = 1;
-const MAX_HALO_SCALE = 2;
-
-/** The amount of scale to add to the halo based on audio level. */
-const HALO_LEVEL_MODIFIER = 1;
-
 /** A knob for adjusting and visualizing prompt weight. */
 @customElement('weight-knob')
 export class WeightKnob extends LitElement {
@@ -32,6 +25,7 @@ export class WeightKnob extends LitElement {
       width: 100%;
       height: 100%;
     }
+    /* #halo styling removed as the element is no longer used
     #halo {
       position: absolute;
       z-index: -1;
@@ -40,15 +34,14 @@ export class WeightKnob extends LitElement {
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      mix-blend-mode: lighten;
-      transform: scale(2);
       will-change: transform;
     }
+    */
   `;
 
   @property({ type: Number }) value = 0;
-  @property({ type: String }) color = '#000';
-  @property({ type: Number }) audioLevel = 0;
+  // @property({ type: String }) color = '#000'; // Color was for halo
+  @property({ type: Number }) audioLevel = 0; // Was for halo
 
   private dragStartPos = 0;
   private dragStartValue = 0;
@@ -114,21 +107,24 @@ export class WeightKnob extends LitElement {
     const maxRot = rotationRange / 2 - Math.PI / 2;
     const rot = minRot + (this.value / 2) * (maxRot - minRot);
     const dotStyle = styleMap({
+      // The indicator is placed relative to the knob's center (40,40)
       transform: `translate(40px, 40px) rotate(${rot}rad)`,
     });
 
-    let scale = (this.value / 2) * (MAX_HALO_SCALE - MIN_HALO_SCALE);
-    scale += MIN_HALO_SCALE;
-    scale += this.audioLevel * HALO_LEVEL_MODIFIER;
+    // Halo logic removed
+    // let scale = (this.value / 2) * (MAX_HALO_SCALE - MIN_HALO_SCALE);
+    // scale += MIN_HALO_SCALE;
+    // scale += this.audioLevel * HALO_LEVEL_MODIFIER;
 
-    const haloStyle = styleMap({
-      display: this.value > 0 ? 'block' : 'none',
-      background: this.color,
-      transform: `scale(${scale})`,
-    });
+    // const haloStyle = styleMap({
+    //   display: this.value > 0 ? 'block' : 'none',
+    //   background: this.color,
+    //   transform: `scale(${scale})`,
+    // });
 
     return html`
-      <div id="halo" style=${haloStyle}></div>
+      <!-- Halo div removed -->
+      <!-- <div id="halo" style=${haloStyle}></div> -->
       <!-- Static SVG elements -->
       ${this.renderStaticSvg()}
       <!-- SVG elements that move, separated to limit redraws -->
@@ -137,153 +133,55 @@ export class WeightKnob extends LitElement {
         @pointerdown=${this.handlePointerDown}
         @wheel=${this.handleWheel}>
         <g style=${dotStyle}>
-          <circle cx="14" cy="0" r="2" fill="#000" />
+          <!-- Changed from circle to a line for the indicator -->
+          <line x1="8" y1="0" x2="23" y2="0" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" />
         </g>
+        <!-- The following paths were part of the old knob's value indication, replacing with simpler visual feedback or removing if not needed for DJ aesthetic -->
+        <!-- Path for the track -->
         <path
           d=${this.describeArc(40, 40, minRot, maxRot, 34.5)}
           fill="none"
-          stroke="#0003"
-          stroke-width="3"
+          stroke="#4A4A4A" /* Darker, subtle track for the knob range */
+          stroke-opacity="0.7"
+          stroke-width="2.5" /* Slightly thinner */
           stroke-linecap="round" />
+        <!-- Path for the value fill - might be kept or altered if DJ knobs sometimes have this kind of value ring -->
         <path
           d=${this.describeArc(40, 40, minRot, rot, 34.5)}
           fill="none"
-          stroke="#fff"
-          stroke-width="3"
+          stroke="#707070" /* Lighter grey for the value arc, but still subtle */
+          stroke-width="2.5" /* Slightly thinner */
           stroke-linecap="round" />
       </svg>
     `;
   }
   
-  private renderStaticSvg() { 
+  private renderStaticSvg() {
+    // Simplified static SVG for a more DJ-like knob
+    // ViewBox is 0 0 80 80. Knob centered at (40,40).
+    const knobBodyColor = "#282828"; // Dark grey for knob "side"
+    const knobTopColorBase = "#303030"; // Base color for the knob top
+    const knobTopHighlight = "#383838"; // Subtle highlight for the center of the knob top
+
     return html`<svg viewBox="0 0 80 80">
-        <ellipse
-          opacity="0.4"
-          cx="40"
-          cy="40"
-          rx="40"
-          ry="40"
-          fill="url(#f1)" />
-        <g filter="url(#f2)">
-          <ellipse cx="40" cy="40" rx="29" ry="29" fill="url(#f3)" />
-        </g>
-        <g filter="url(#f4)">
-          <circle cx="40" cy="40" r="20.6667" fill="url(#f5)" />
-        </g>
-        <circle cx="40" cy="40" r="18" fill="url(#f6)" />
         <defs>
-          <filter
-            id="f2"
-            x="8.33301"
-            y="10.0488"
-            width="63.333"
-            height="64"
-            filterUnits="userSpaceOnUse"
-            color-interpolation-filters="sRGB">
-            <feFlood flood-opacity="0" result="BackgroundImageFix" />
-            <feColorMatrix
-              in="SourceAlpha"
-              type="matrix"
-              values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-              result="hardAlpha" />
-            <feOffset dy="2" />
-            <feGaussianBlur stdDeviation="1.5" />
-            <feComposite in2="hardAlpha" operator="out" />
-            <feColorMatrix
-              type="matrix"
-              values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
-            <feBlend mode="normal" in2="BackgroundImageFix" result="shadow1" />
-            <feBlend
-              mode="normal"
-              in="SourceGraphic"
-              in2="shadow1"
-              result="shape" />
+          <filter id="knob-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feOffset result="offOut" in="SourceAlpha" dx="0" dy="1" />
+            <feGaussianBlur result="blurOut" in="offOut" stdDeviation="1.5" />
+            <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
           </filter>
-          <filter
-            id="f4"
-            x="11.333"
-            y="19.0488"
-            width="57.333"
-            height="59.334"
-            filterUnits="userSpaceOnUse"
-            color-interpolation-filters="sRGB">
-            <feFlood flood-opacity="0" result="BackgroundImageFix" />
-            <feColorMatrix
-              in="SourceAlpha"
-              type="matrix"
-              values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-              result="hardAlpha" />
-            <feOffset dy="10" />
-            <feGaussianBlur stdDeviation="4" />
-            <feComposite in2="hardAlpha" operator="out" />
-            <feColorMatrix
-              type="matrix"
-              values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
-            <feBlend mode="normal" in2="BackgroundImageFix" result="shadow1" />
-            <feColorMatrix
-              in="SourceAlpha"
-              type="matrix"
-              values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-              result="hardAlpha" />
-            <feMorphology
-              radius="5"
-              operator="erode"
-              in="SourceAlpha"
-              result="shadow2" />
-            <feOffset dy="8" />
-            <feGaussianBlur stdDeviation="3" />
-            <feComposite in2="hardAlpha" operator="out" />
-            <feColorMatrix
-              type="matrix"
-              values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
-            <feBlend mode="normal" in2="shadow1" result="shadow2" />
-            <feBlend
-              mode="normal"
-              in="SourceGraphic"
-              in2="shadow2"
-              result="shape" />
-          </filter>
-          <linearGradient
-            id="f1"
-            x1="40"
-            y1="0"
-            x2="40"
-            y2="80"
-            gradientUnits="userSpaceOnUse">
-            <stop stop-opacity="0.5" />
-            <stop offset="1" stop-color="white" stop-opacity="0.3" />
-          </linearGradient>
-          <radialGradient
-            id="f3"
-            cx="0"
-            cy="0"
-            r="1"
-            gradientUnits="userSpaceOnUse"
-            gradientTransform="translate(40 40) rotate(90) scale(29 29)">
-            <stop offset="0.6" stop-color="white" />
-            <stop offset="1" stop-color="white" stop-opacity="0.7" />
+          <radialGradient id="knobTopGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+            <stop offset="0%" style="stop-color:${knobTopHighlight};stop-opacity:1" />
+            <stop offset="100%" style="stop-color:${knobTopColorBase};stop-opacity:1" />
           </radialGradient>
-          <linearGradient
-            id="f5"
-            x1="40"
-            y1="19.0488"
-            x2="40"
-            y2="60.3822"
-            gradientUnits="userSpaceOnUse">
-            <stop stop-color="white" />
-            <stop offset="1" stop-color="#F2F2F2" />
-          </linearGradient>
-          <linearGradient
-            id="f6"
-            x1="40"
-            y1="21.7148"
-            x2="40"
-            y2="57.7148"
-            gradientUnits="userSpaceOnUse">
-            <stop stop-color="#EBEBEB" />
-            <stop offset="1" stop-color="white" />
-          </linearGradient>
         </defs>
+
+        <!-- Knob body (cylinder side illusion) -->
+        <circle cx="40" cy="41.5" r="25" fill="${knobBodyColor}" filter="url(#knob-shadow)" />
+
+        <!-- Knob top surface -->
+        <circle cx="40" cy="40" r="25" fill="url(#knobTopGradient)" />
+
       </svg>`
   }
 

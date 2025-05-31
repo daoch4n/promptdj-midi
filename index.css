@@ -12,3 +12,21 @@ body.dragging * {
   user-select: none;
   pointer-events: none;
 }
+
+.advanced-settings-panel {
+  background-color: #202020;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  margin-top: 10px;
+  display: none; /* Base state, overridden by .visible */
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.advanced-settings-panel.visible {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
