@@ -127,7 +127,7 @@ class PromptDjMidi extends LitElement {
     }
     #main-audio-button.is-on {
       background: #ff5555; /* Red for ON state */
-      animation: rgb-light 3s linear infinite; /* RGB light animation */
+      animation: rgb-light 10s linear infinite; /* RGB light animation, slowed down to 10s */
     }
     #main-audio-button.is-off {
       background: #555; /* Grey for OFF state */
