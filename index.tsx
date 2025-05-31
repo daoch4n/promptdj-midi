@@ -238,7 +238,8 @@ class PromptDjMidi extends LitElement {
   @state()
   private filteredPrompts = new Set<string>();
 
-  @state() private showAdvanced = false;
+:start_line:241
+-------
   @state() private config = { seed: null as number | null, bpm: null as number | null, density: 0.5, brightness: 0.5, scale: '', muteBass: false, muteDrums: false, onlyBassAndDrums: false, };
   @state() private lastDefinedDensity = 0.5;
   @state() private autoDensity = true;
@@ -640,10 +641,11 @@ class PromptDjMidi extends LitElement {
        backgroundImage: this.makeBackground(),
      });
 
+:start_line:643
+-------
     const advancedClasses = classMap({
       'advanced-settings-panel': true, // Added for the new panel styling
       'advanced-settings': true,       // Kept for existing content layout if any
-      'visible': this.showAdvanced,    // For visibility and animation
     });
 
     const scaleMap = new Map<string, string>([
@@ -699,11 +701,8 @@ class PromptDjMidi extends LitElement {
              <button @click=${this.getApiKey}>Get API Key</button>
            </div>
          ` : ''}
-        <button
-          @click=${() => this.showAdvanced = !this.showAdvanced}
-          class=${this.showAdvanced ? 'active' : ''}
-          >Advanced</button
-        >
+:start_line:703
+-------
       </div>
       <div id="main-content-area">
         <div class=${advancedClasses}>
