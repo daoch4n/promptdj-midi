@@ -114,46 +114,35 @@ class PromptDjMidi extends LitElement {
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3); /* From user feedback */
-      border: 4px solid #222; /* From user feedback */
+      /* New base styles for the button */
+      background: #303030; /* Dark gray base */
+      border: 1px solid #1A1A1A; /* Darker border for depth */
+      box-shadow: 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); /* Realistic 3D shadow */
       position: absolute;
       top: 5vmin; /* Adjusted to 5vmin */
       right: 2.5vmin;
-      transition: background 0.3s ease; /* For smooth color transition */
+      transition: box-shadow 0.3s ease; /* Transition for halo effect */
       font-size: 0; /* Hide default button text */
     }
     #main-audio-button.is-on {
-      background: #ff5555; /* Red for ON state */
-      animation: rgb-light 10s linear infinite; /* RGB light animation, slowed down to 10s */
+      /* background is inherited from base; animation removed, new one added for halo */
+      animation: subtle-rgb-halo-leak 15s linear infinite;
     }
     #main-audio-button.is-off {
-      background: #555; /* Grey for OFF state */
+      background: #303030; /* Consistent dark gray base */
+      /* Ensure base box-shadow is applied when off, matching the default state */
+      box-shadow: 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1);
     }
     #main-audio-button .inner-circle {
       width: 20px; /* From user feedback */
       height: 20px; /* From user feedback */
       border-radius: 50%; /* From user feedback */
       box-shadow: 0 1px 3px rgba(0,0,0,0.5); /* From user feedback */
-      transition: background 0.3s ease; /* For smooth color transition */
+      /* background removed, transition for background removed */
+      background: transparent; /* Ensure no background */
     }
-    #main-audio-button.is-on .inner-circle {
-      background: #fff; /* White for ON state */
-    }
-    #main-audio-button.is-off .inner-circle {
-      background: #bbb; /* Light grey for OFF state */
-    }
-    #main-audio-button .status-text {
-      position: absolute;
-      top: -30px; /* Position above the button */
-      font-weight: bold;
-      font-size: 16px; /* Adjust font size as needed */
-    }
-    #main-audio-button.is-on .status-text {
-      color: #ff5555; /* Red for ON state */
-    }
-    #main-audio-button.is-off .status-text {
-      color: #555; /* Grey for OFF state */
-    }
+    /* .is-on .inner-circle and .is-off .inner-circle rules removed */
+    /* .status-text rules removed */
     #main-audio-button .loader {
       stroke: #ffffff;
       stroke-width: 3;
@@ -166,14 +155,15 @@ class PromptDjMidi extends LitElement {
       from { transform: rotate(0deg); }
       to { transform: rotate(359deg); }
     }
-    @keyframes rgb-light {
-      0% { background-color: #ff0000; } /* Red */
-      16% { background-color: #ffff00; } /* Yellow */
-      33% { background-color: #00ff00; } /* Green */
-      50% { background-color: #00ffff; } /* Cyan */
-      66% { background-color: #0000ff; } /* Blue */
-      83% { background-color: #ff00ff; } /* Magenta */
-      100% { background-color: #ff0000; } /* Red */
+    /* rgb-light animation removed */
+    @keyframes subtle-rgb-halo-leak {
+      0% { box-shadow: 0 0 5px 2px rgba(255, 0, 0, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
+      16% { box-shadow: 0 0 5px 2px rgba(255, 255, 0, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
+      33% { box-shadow: 0 0 5px 2px rgba(0, 255, 0, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
+      50% { box-shadow: 0 0 5px 2px rgba(0, 255, 255, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
+      66% { box-shadow: 0 0 5px 2px rgba(0, 0, 255, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
+      83% { box-shadow: 0 0 5px 2px rgba(255, 0, 255, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
+      100% { box-shadow: 0 0 5px 2px rgba(255, 0, 0, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
     }
   `;
 
