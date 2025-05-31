@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import { css, html, LitElement } from 'lit';
-import { customElement, property, query } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
 import type { WeightKnob } from './WeightKnob';
@@ -106,6 +106,8 @@ export class PromptController extends LitElement {
 
   @property({ type: Number }) audioLevel = 0;
 
+  @state() private isFocused = false; // New state to track focus
+
   private lastValidText!: string;
 
   override connectedCallback() {
@@ -139,7 +141,8 @@ export class PromptController extends LitElement {
     if (changedProperties.has('showCC') && !this.showCC) {
       this.learnMode = false;
     }
-    if (changedProperties.has('text') && this.textInput) {
+    // Only update textInput.textContent if not currently focused
+    if (changedProperties.has('text') && this.textInput && !this.isFocused) {
       this.textInput.textContent = this.text;
     }
     super.update(changedProperties);
@@ -169,9 +172,11 @@ export class PromptController extends LitElement {
       this.lastValidText = newText;
     }
     this.dispatchPromptChange();
+    this.isFocused = false; // Reset focus state on blur
   }
 
   private onFocus() {
+    this.isFocused = true; // Set focus state on focus
     // .select() for contenteditable doesn't work.
     const selection = window.getSelection();
     if (!selection) return;
