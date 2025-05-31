@@ -107,43 +107,96 @@ class PromptDjMidi extends LitElement {
       cursor: pointer;
     }
     #main-audio-button {
-      width: 60px; /* From user feedback */
-      height: 60px; /* From user feedback */
-      border-radius: 50%; /* From user feedback */
+      /* A.1: Main Container Styling */
+      width: 60px;
+      height: 30px;
+      border-radius: 4px; /* Housing with slight rounding */
       display: flex;
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      /* New base styles for the button */
-      background: #303030; /* Dark gray base */
-      border: 1px solid #1A1A1A; /* Darker border for depth */
-      box-shadow: 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); /* Realistic 3D shadow */
+      background: #202020; /* Dark housing color */
+      border: 1px solid #111; /* Darker border */
+      box-shadow: 0 1px 2px rgba(0,0,0,0.7); /* External shadow for housing */
+      padding: 0; /* Remove padding if it interferes */
       position: absolute;
-      top: 5vmin; /* Adjusted to 5vmin */
+      top: 5vmin;
       right: 2.5vmin;
-      transition: box-shadow 0.3s ease; /* Transition for halo effect */
-      font-size: 0; /* Hide default button text */
+      font-size: 0;
+      /* Remove transition for box-shadow if halo is gone, or keep if active state changes shadow */
+      /* transition: box-shadow 0.3s ease; Removed subtle-rgb-halo-leak */
     }
     #main-audio-button.is-on {
-      /* background is inherited from base; animation removed, new one added for halo */
-      animation: subtle-rgb-halo-leak 15s linear infinite;
+      /* Styles for ON state - lever and LED will handle this primarily */
+      /* No specific background or main box-shadow animation here anymore */
     }
     #main-audio-button.is-off {
-      background: #303030; /* Consistent dark gray base */
-      /* Ensure base box-shadow is applied when off, matching the default state */
-      box-shadow: 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1);
+      /* Styles for OFF state - mostly default #main-audio-button styles apply */
+      /* Ensure no lingering halo animation if it was here */
     }
-    #main-audio-button .inner-circle {
-      width: 20px; /* From user feedback */
-      height: 20px; /* From user feedback */
-      border-radius: 50%; /* From user feedback */
-      box-shadow: 0 1px 3px rgba(0,0,0,0.5); /* From user feedback */
-      /* background removed, transition for background removed */
-      background: transparent; /* Ensure no background */
+    /* Inner circle and loader are removed from HTML, so CSS can be removed or ignored */
+    /* #main-audio-button .inner-circle { ... } */
+    /* #main-audio-button .loader { ... } */
+
+    /* A.2: Toggle Switch Base Styling */
+    .toggle-switch-base {
+      width: 100%;
+      height: 100%;
+      background-color: #252525; /* Darker than housing */
+      border-radius: 4px; /* Match housing's rounding, or slightly less */
+      position: relative;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
     }
-    /* .is-on .inner-circle and .is-off .inner-circle rules removed */
-    /* .status-text rules removed */
-    #main-audio-button .loader {
+
+    /* A.3: Toggle Switch Lever Styling */
+    .toggle-switch-lever {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background-color: #505050; /* Lighter grey for lever */
+      border-radius: 3px;
+      top: 3px; /* (30px base height - 24px lever height) / 2 */
+      /* B.1: Lever Position - Off State (default) */
+      left: 3px;
+      transition: left 0.2s ease-in-out;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    /* B.2: Lever Position - On State */
+    #main-audio-button.is-on .toggle-switch-lever {
+      left: calc(100% - 24px - 3px); /* 60px - 24px - 3px = 33px */
+    }
+
+    /* B.3: LED Indicator */
+    .toggle-switch-base::after {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #444; /* LED off color */
+      right: 5px; /* Positioned on the right side of the switch base */
+      top: 50%;
+      transform: translateY(-50%);
+      transition: background 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    #main-audio-button.is-on .toggle-switch-base::after {
+      background: #00ff00; /* Bright green for LED on */
+      box-shadow: 0 0 3px #00ff00, 0 0 5px #00ff00; /* Glow effect */
+    }
+
+    /* C.1: Interaction Styling - Hover */
+    #main-audio-button:hover .toggle-switch-lever {
+      background-color: #606060; /* Slightly lighten lever */
+    }
+
+    /* C.2: Interaction Styling - Active/Pressed */
+    #main-audio-button:active .toggle-switch-lever {
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.5); /* Make lever look pressed */
+    }
+
+    #main-audio-button .loader { /* If loader is absolutely needed elsewhere, style it here. For now, it's removed from button. */
       stroke: #ffffff;
       stroke-width: 3;
       stroke-linecap: round;
@@ -155,16 +208,8 @@ class PromptDjMidi extends LitElement {
       from { transform: rotate(0deg); }
       to { transform: rotate(359deg); }
     }
-    /* rgb-light animation removed */
-    @keyframes subtle-rgb-halo-leak {
-      0% { box-shadow: 0 0 5px 2px rgba(255, 0, 0, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
-      16% { box-shadow: 0 0 5px 2px rgba(255, 255, 0, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
-      33% { box-shadow: 0 0 5px 2px rgba(0, 255, 0, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
-      50% { box-shadow: 0 0 5px 2px rgba(0, 255, 255, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
-      66% { box-shadow: 0 0 5px 2px rgba(0, 0, 255, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
-      83% { box-shadow: 0 0 5px 2px rgba(255, 0, 255, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
-      100% { box-shadow: 0 0 5px 2px rgba(255, 0, 0, 0.3), 0 2px 3px rgba(0,0,0,0.3) inset, 0 1px 1px rgba(255,255,255,0.1); }
-    }
+    /* subtle-rgb-halo-leak animation removed as LED is used now */
+    /* @keyframes subtle-rgb-halo-leak { ... } */
   `;
 
   private prompts: Map<string, Prompt>;
@@ -508,14 +553,7 @@ class PromptDjMidi extends LitElement {
     return this.playbackState === 'playing' || this.playbackState === 'loading';
   }
 
-  private renderAudioButtonContent() {
-    return html`
-      <div class="inner-circle"></div>
-      ${this.isButtonOn
-        ? html`<span class="status-text">ON</span>`
-        : html`<span class="status-text">OFF</span>`}
-    `;
-  }
+  // renderAudioButtonContent() is no longer needed and will be removed.
 
   private async toggleShowMidi() {
     this.showMidi = !this.showMidi;
@@ -774,7 +812,9 @@ class PromptDjMidi extends LitElement {
       </div>
        <div id="grid">${this.renderPrompts()}</div>
        <button id="main-audio-button" @click=${this.handleMainAudioButton} class="${this.isButtonOn ? 'is-on' : 'is-off'}">
-         ${this.renderAudioButtonContent()}
+         <div class="toggle-switch-base">
+           <div class="toggle-switch-lever"></div>
+         </div>
        </button>
        <toast-message></toast-message>
      `;
