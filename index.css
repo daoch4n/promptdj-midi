@@ -13,20 +13,178 @@ body.dragging * {
   pointer-events: none;
 }
 
+#main-content-area {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 15px;
+  width: 100%;
+  justify-content: center;
+}
+
 .advanced-settings-panel {
   background-color: #202020;
   padding: 15px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  margin-top: 10px;
-  display: none; /* Base state, overridden by .visible */
+  width: 280px;
+  height: auto;
+  display: none;
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateX(100%);
   transition: opacity 0.3s ease, transform 0.3s ease;
+  overflow: hidden;
+  color: #fff;
 }
 
 .advanced-settings-panel.visible {
   display: block;
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0);
+}
+
+.advanced-settings-panel .setting {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin-bottom: 15px;
+}
+
+.advanced-settings-panel .setting > label:first-child {
+  margin-bottom: 8px;
+  font-weight: bold;
+  text-align: center;
+  color: #fff; /* Ensure labels are white */
+}
+
+/* Range Input Styles */
+.advanced-settings-panel .setting input[type="range"] {
+  -webkit-appearance: none; appearance: none; width: 90%; height: 10px;
+  background: #333; border-radius: 5px; outline: none; margin: 10px auto;
+}
+.advanced-settings-panel .setting input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%; height: 8px; cursor: pointer; background: #555;
+  border-radius: 4px; border: 1px solid #222;
+}
+.advanced-settings-panel .setting input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; border: 1px solid #000;
+  height: 20px; width: 10px; border-radius: 3px; background: #ddd;
+  cursor: pointer; margin-top: -7px;
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+.advanced-settings-panel .setting input[type="range"]::-moz-range-track {
+  width: 100%; height: 8px; cursor: pointer; background: #555;
+  border-radius: 4px; border: 1px solid #222;
+}
+.advanced-settings-panel .setting input[type="range"]::-moz-range-thumb {
+  border: 1px solid #000; height: 20px; width: 10px; border-radius: 3px;
+  background: #ddd; cursor: pointer;
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+
+/* Checkbox/Switch Styles */
+.advanced-settings-panel .setting .auto-row,
+.advanced-settings-panel .setting .checkbox-setting {
+  display: flex; align-items: center; justify-content: flex-start;
+  margin-top: 8px; padding: 0 5%;
+}
+.advanced-settings-panel .setting .auto-row label,
+.advanced-settings-panel .setting .checkbox-setting label {
+  color: #ccc; font-size: 0.9em; font-weight: normal;
+  position: relative; padding-left: 60px; line-height: 25px; cursor: pointer;
+  margin-left: 0; min-height: 25px; display: inline-flex; align-items: center;
+}
+.advanced-settings-panel .setting .auto-row span { /* Slider value display */
+  color: #fff; font-size: 0.9em; margin-left: auto; order: 3;
+}
+.advanced-settings-panel .setting input[type="checkbox"] { display: none; }
+
+.advanced-settings-panel .setting .auto-row label::before,
+.advanced-settings-panel .setting .checkbox-setting label::before { /* Switch track */
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 50px; height: 25px; background-color: #333; border-radius: 15px;
+  transition: background-color 0.3s ease; z-index: 0;
+}
+.advanced-settings-panel .setting .auto-row label::after,
+.advanced-settings-panel .setting .checkbox-setting label::after { /* Switch thumb */
+  content: ''; position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
+  width: 21px; height: 21px; background-color: #777; border-radius: 50%;
+  transition: transform 0.3s ease, background-color 0.3s ease; z-index: 1;
+}
+.advanced-settings-panel .setting input[type="checkbox"]:checked + label::before {
+  background-color: #00cc00; box-shadow: 0 0 3px #00cc00, 0 0 6px #00cc00;
+}
+.advanced-settings-panel .setting input[type="checkbox"]:checked + label::after {
+  transform: translate(25px, -50%); background-color: #fff;
+}
+
+/* Number Input Styling */
+.advanced-settings-panel .setting input[type="number"] {
+  width: 90%;
+  padding: 8px;
+  margin: 5px auto;
+  border-radius: 4px;
+  background-color: #1a1a1a; /* Darker background */
+  color: #e0e0e0; /* Light text */
+  border: 1px solid #444; /* Darker border */
+  box-sizing: border-box;
+  -webkit-appearance: textfield; /* Remove spinners WebKit */
+  -moz-appearance: textfield; /* Remove spinners Firefox */
+  appearance: textfield; /* Remove spinners standard */
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.advanced-settings-panel .setting input[type="number"]::-webkit-inner-spin-button,
+.advanced-settings-panel .setting input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.advanced-settings-panel .setting input[type="number"]:focus {
+  border-color: #00cc00; /* Green glow border */
+  box-shadow: 0 0 5px #00cc00; /* Green glow shadow */
+}
+.advanced-settings-panel .setting input[type="number"]::placeholder {
+  color: #666; /* Darker placeholder text */
+}
+
+/* Select Dropdown Styling */
+.advanced-settings-panel .setting select {
+  width: 90%;
+  padding: 8px;
+  margin: 5px auto;
+  border-radius: 4px;
+  background-color: #1a1a1a; /* Darker background */
+  color: #e0e0e0; /* Light text */
+  border: 1px solid #444; /* Darker border */
+  box-sizing: border-box;
+  -webkit-appearance: none; /* Remove default appearance WebKit */
+  -moz-appearance: none; /* Remove default appearance Firefox */
+  appearance: none; /* Remove default appearance standard */
+  padding-right: 30px; /* Space for custom arrow */
+  background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 100 100" fill="%23e0e0e0"><polygon points="0,25 100,25 50,75"/></svg>'); /* Custom arrow SVG (downward, light color) */
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.advanced-settings-panel .setting select:focus {
+  border-color: #00cc00; /* Green glow border */
+  box-shadow: 0 0 5px #00cc00; /* Green glow shadow */
+}
+/* Styling for option elements (limited browser support) */
+.advanced-settings-panel .setting select option {
+  background-color: #1a1a1a; /* Dark background for dropdown items */
+  color: #e0e0e0; /* Light text for dropdown items */
+  padding: 8px; /* Add padding to options for better spacing if supported */
+}
+
+/* Ensure checkbox related inputs are fully hidden */
+.advanced-settings-panel .setting .auto-row input[type="checkbox"],
+.advanced-settings-panel .setting .checkbox-setting input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none; background-color: transparent;
+  border: none; padding: 0; margin: 0; display: none;
+}
+.advanced-settings-panel .setting .auto-row input[type="checkbox"]:checked::after,
+.advanced-settings-panel .setting .checkbox-setting input[type="checkbox"]:checked::after {
+  content: none;
 }
