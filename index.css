@@ -24,23 +24,26 @@ body.dragging * {
 
 .advanced-settings-panel {
   background-color: #202020;
-  padding: 15px;
+  padding: 0;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  width: 280px;
+  width: 280px; /* Keep a defined width for its content */
   height: auto;
-  display: none;
-  opacity: 0;
-  transform: translateX(100%);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  overflow: hidden;
+width: 0; /* Initially hidden, takes no space */
+min-width: 0; /* Allow it to fully collapse in flex container */
+opacity: 0;
+overflow: hidden;
+transition: width 0.3s ease, opacity 0.3s ease, padding 0.3s ease; /* Smooth transition for width, opacity, and padding */
   color: #fff;
+  flex-shrink: 0; /* Prevent it from shrinking when hidden */
 }
 
 .advanced-settings-panel.visible {
-  display: block;
+  width: 280px; /* Expands to its full width */
   opacity: 1;
-  transform: translateX(0);
+  padding: 15px; /* Ensure padding is applied when visible */
+  display: flex; /* Use flex to align its internal settings */
+  flex-direction: column; /* Stack settings vertically */
 }
 
 .advanced-settings-panel .setting {
@@ -187,4 +190,14 @@ body.dragging * {
 .advanced-settings-panel .setting .auto-row input[type="checkbox"]:checked::after,
 .advanced-settings-panel .setting .checkbox-setting input[type="checkbox"]:checked::after {
   content: none;
+}
+
+#grid {
+  max-width: 80vmin;
+  height: 80vmin;
+  flex-grow: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2.5vmin;
+  margin-top: 8vmin;
 }
