@@ -123,8 +123,6 @@ export class WeightKnob extends LitElement {
     // });
 
     return html`
-      <!-- Halo div removed -->
-      <!-- <div id="halo" style=${haloStyle}></div> -->
       <!-- Static SVG elements -->
       ${this.renderStaticSvg()}
       <!-- SVG elements that move, separated to limit redraws -->
