@@ -127,6 +127,7 @@ class PromptDjMidi extends LitElement {
     }
     #main-audio-button.is-on {
       background: #ff5555; /* Red for ON state */
+      animation: rgb-light 3s linear infinite; /* RGB light animation */
     }
     #main-audio-button.is-off {
       background: #555; /* Grey for OFF state */
@@ -167,6 +168,15 @@ class PromptDjMidi extends LitElement {
     @keyframes spin {
       from { transform: rotate(0deg); }
       to { transform: rotate(359deg); }
+    }
+    @keyframes rgb-light {
+      0% { background-color: #ff0000; } /* Red */
+      16% { background-color: #ffff00; } /* Yellow */
+      33% { background-color: #00ff00; } /* Green */
+      50% { background-color: #00ffff; } /* Cyan */
+      66% { background-color: #0000ff; } /* Blue */
+      83% { background-color: #ff00ff; } /* Magenta */
+      100% { background-color: #ff0000; } /* Red */
     }
   `;
 
