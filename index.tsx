@@ -114,6 +114,30 @@ class PromptDjMidi extends LitElement {
       outline: none;
       cursor: pointer;
     }
+    #turn-on-audio-button {
+      width: 15vmin; /* Match play-pause-button size */
+      height: 15vmin; /* Make it a circle */
+      border-radius: 50%; /* Make it circular */
+      background: linear-gradient(145deg, #4CAF50, #388E3C); /* Green gradient */
+      color: white;
+      border: none;
+      box-shadow: 5px 5px 10px rgba(0,0,0,0.3), -5px -5px 10px rgba(255,255,255,0.1); /* Inner and outer shadow */
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex; /* To center the icon */
+      justify-content: center;
+      align-items: center;
+      font-size: 0; /* Hide text, use icon */
+    }
+    #turn-on-audio-button:hover {
+      background: linear-gradient(145deg, #4CAF50, #388E3C); /* Keep same gradient on hover for consistency */
+      box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.2); /* Inset shadow on hover for pressed effect */
+    }
+    #turn-on-audio-button svg {
+        width: 60%; /* Size the icon */
+        height: 60%;
+        fill: white;
+    }
   `;
 
   private prompts: Map<string, Prompt>;
@@ -121,6 +145,7 @@ class PromptDjMidi extends LitElement {
   private audioAnalyser: AudioAnalyser | null = null;
 
   @state() private playbackState: PlaybackState = 'stopped';
+  @state() private audioReady = false; // New state for audio context readiness
 
   private session!: LiveMusicSession; // Initialized in connectToSession
   private audioContext: AudioContext | null = null;
@@ -153,6 +178,8 @@ class PromptDjMidi extends LitElement {
   }
 
   override async firstUpdated() {
+    // Ensure toastMessage is ready before connecting to session
+    await customElements.whenDefined('toast-message');
     await this.connectToSession();
     await this.setSessionPrompts();
   }
@@ -167,7 +194,7 @@ class PromptDjMidi extends LitElement {
           }
           if (e.filteredPrompt) {
             this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
-            if (this.toastMessage) {
+            if (this.toastMessage && typeof this.toastMessage.show === 'function') {
               this.toastMessage.show(e.filteredPrompt.filteredReason as string);
             }
           }
@@ -175,7 +202,7 @@ class PromptDjMidi extends LitElement {
             if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
             if (!this.audioContext || !this.outputNode) {
               // Also show a toast message here if audio context is not initialized.
-              if (this.toastMessage) {
+              if (this.toastMessage && typeof this.toastMessage.show === 'function') {
                 this.toastMessage.show('Audio context not initialized. Please refresh.');
               }
               console.error('AudioContext or outputNode not initialized.');
@@ -209,14 +236,14 @@ class PromptDjMidi extends LitElement {
         onerror: (e: ErrorEvent) => {
           this.connectionError = true;
           this.stop();
-          if (this.toastMessage) {
+          if (this.toastMessage && typeof this.toastMessage.show === 'function') {
             this.toastMessage.show('Connection error, please restart audio.');
           }
         },
         onclose: (e: CloseEvent) => {
           this.connectionError = true;
           this.stop();
-          if (this.toastMessage) {
+          if (this.toastMessage && typeof this.toastMessage.show === 'function') {
             this.toastMessage.show('Connection error, please restart audio.');
           }
         },
@@ -234,7 +261,7 @@ class PromptDjMidi extends LitElement {
   private setSessionPrompts = throttle(async () => {
     const promptsToSend = this.getPromptsToSend();
     if (promptsToSend.length === 0) {
-      if (this.toastMessage) {
+      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
         this.toastMessage.show('There needs to be one active prompt to play.')
       }
       this.pause();
@@ -248,11 +275,11 @@ class PromptDjMidi extends LitElement {
       }
     } catch (e: unknown) { // Explicitly type e as unknown
       if (e instanceof Error) {
-        if (this.toastMessage) {
+        if (this.toastMessage && typeof this.toastMessage.show === 'function') {
           this.toastMessage.show(e.message)
         }
       } else {
-        if (this.toastMessage) {
+        if (this.toastMessage && typeof this.toastMessage.show === 'function') {
           this.toastMessage.show('An unknown error occurred.')
         }
       }
@@ -350,7 +377,7 @@ class PromptDjMidi extends LitElement {
   private play() {
     const promptsToSend = this.getPromptsToSend();
     if (promptsToSend.length === 0) {
-      if (this.toastMessage) {
+      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
         this.toastMessage.show('There needs to be one active prompt to play. Turn up a knob to resume playback.')
       }
       this.pause();
@@ -367,6 +394,7 @@ class PromptDjMidi extends LitElement {
     }
 
     this.audioContext.resume();
+    this.audioReady = true; // Set audioReady to true after context resumes
     if (this.session) { // Add null check for this.session
       this.session.play();
     }
@@ -402,6 +430,10 @@ class PromptDjMidi extends LitElement {
       this.stop();
     }
     console.debug('handlePlayPause');
+  }
+
+  private handleTurnOnAudio() {
+    this.play(); // Simply call play to initialize AudioContext
   }
 
   private async toggleShowMidi() {
@@ -449,7 +481,14 @@ class PromptDjMidi extends LitElement {
         </select>
       </div>
       <div id="grid">${this.renderPrompts()}</div>
-      <play-pause-button .playbackState=${this.playbackState} @click=${this.handlePlayPause}></play-pause-button>
+      ${this.audioReady
+        ? html`<play-pause-button .playbackState=${this.playbackState} @click=${this.handlePlayPause}></play-pause-button>`
+        : html`<button id="turn-on-audio-button" @click=${this.handleTurnOnAudio}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 3h-2v10h2V3zm4.5 10.5c-.92 1.4-2.35 2.44-4 2.97V19h-1v-2.53c-1.65-.53-3.08-1.57-4-2.97-.92-1.4-1.5-3.04-1.5-4.5h2c0 1.05.47 2.05 1.28 2.82.81.77 1.86 1.28 3.02 1.28s2.21-.51 3.02-1.28c.81-.77 1.28-1.77 1.28-2.82h2c0 1.46-.58 3.1-1.5 4.5z"/>
+            </svg>
+          </button>`
+      }
       <toast-message></toast-message>`;
   }
 
