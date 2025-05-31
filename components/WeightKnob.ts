@@ -6,6 +6,13 @@ import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+/** Maps prompt weight to halo size. */
+const MIN_HALO_SCALE = 1;
+const MAX_HALO_SCALE = 2;
+
+/** The amount of scale to add to the halo based on audio level. */
+const HALO_LEVEL_MODIFIER = 1;
+
 /** A knob for adjusting and visualizing prompt weight. */
 @customElement('weight-knob')
 export class WeightKnob extends LitElement {
@@ -25,7 +32,6 @@ export class WeightKnob extends LitElement {
       width: 100%;
       height: 100%;
     }
-    /* #halo styling removed as the element is no longer used
     #halo {
       position: absolute;
       z-index: -1;
@@ -34,14 +40,15 @@ export class WeightKnob extends LitElement {
       width: 100%;
       height: 100%;
       border-radius: 50%;
+      mix-blend-mode: lighten;
+      transform: scale(2); /* Default large scale */
       will-change: transform;
     }
-    */
   `;
 
   @property({ type: Number }) value = 0;
-  // @property({ type: String }) color = '#000'; // Color was for halo
-  @property({ type: Number }) audioLevel = 0; // Was for halo
+  @property({ type: String }) color = '#000'; // Color for halo
+  @property({ type: Number }) audioLevel = 0; // Used for halo effect
 
   private dragStartPos = 0;
   private dragStartValue = 0;
@@ -111,18 +118,18 @@ export class WeightKnob extends LitElement {
       transform: `translate(40px, 40px) rotate(${rot}rad)`,
     });
 
-    // Halo logic removed
-    // let scale = (this.value / 2) * (MAX_HALO_SCALE - MIN_HALO_SCALE);
-    // scale += MIN_HALO_SCALE;
-    // scale += this.audioLevel * HALO_LEVEL_MODIFIER;
+    let scale = (this.value / 2) * (MAX_HALO_SCALE - MIN_HALO_SCALE);
+    scale += MIN_HALO_SCALE;
+    scale += this.audioLevel * HALO_LEVEL_MODIFIER;
 
-    // const haloStyle = styleMap({
-    //   display: this.value > 0 ? 'block' : 'none',
-    //   background: this.color,
-    //   transform: `scale(${scale})`,
-    // });
+    const haloStyle = styleMap({
+      display: this.value > 0 ? 'block' : 'none',
+      background: this.color,
+      transform: `scale(${scale})`,
+    });
 
     return html`
+      <div id="halo" style=${haloStyle}></div>
       <!-- Static SVG elements -->
       ${this.renderStaticSvg()}
       <!-- SVG elements that move, separated to limit redraws -->
