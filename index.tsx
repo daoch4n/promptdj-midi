@@ -120,7 +120,7 @@ class PromptDjMidi extends LitElement {
       box-shadow: 0 2px 10px rgba(0,0,0,0.3); /* From user feedback */
       border: 4px solid #222; /* From user feedback */
       position: absolute;
-      top: 2.5vmin;
+      top: 5vmin; /* Adjusted to 5vmin */
       right: 2.5vmin;
       transition: background 0.3s ease; /* For smooth color transition */
       font-size: 0; /* Hide default button text */
