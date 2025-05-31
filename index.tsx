@@ -613,8 +613,9 @@ class PromptDjMidi extends LitElement {
      });
 
     const advancedClasses = classMap({
-      'advanced-settings': true,
-      'visible': this.showAdvanced,
+      'advanced-settings-panel': true, // Added for the new panel styling
+      'advanced-settings': true,       // Kept for existing content layout if any
+      'visible': this.showAdvanced,    // For visibility and animation
     });
 
     const scaleMap = new Map<string, string>([
