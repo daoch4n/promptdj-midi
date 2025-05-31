@@ -334,17 +334,17 @@ class PromptDjMidi extends LitElement {
           },
           onerror: (e: ErrorEvent) => {
             this.connectionError = true;
-            this.stop();
             if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-              this.toastMessage.show('Connection error, please restart audio.');
+              this.toastMessage.show('Connection lost. Attempting to reconnect...');
             }
+            this.connectToSession();
           },
           onclose: (e: CloseEvent) => {
             this.connectionError = true;
-            this.stop();
             if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-              this.toastMessage.show('Connection error, please restart audio.');
+              this.toastMessage.show('Connection lost. Attempting to reconnect...');
             }
+            this.connectToSession();
           },
         },
       });
