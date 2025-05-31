@@ -195,6 +195,7 @@ class PromptDjMidi extends LitElement {
   @state() private geminiApiKey: string | null = null;
   private readonly model = 'lyria-realtime-exp';
 
+
   @property({ type: Boolean }) private showMidi = false;
   @state() private audioLevel = 0;
   @state() private midiInputIds: string[] = [];
@@ -218,8 +219,11 @@ class PromptDjMidi extends LitElement {
     this.updateAudioLevel = this.updateAudioLevel.bind(this);
 
     this.geminiApiKey = localStorage.getItem('geminiApiKey');
+    // If API key is already set, hide the input field by default
+
     if (this.geminiApiKey) {
       this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
+      // Initially hide the API key field if a key is saved, but allow it to reappear on error
     }
   }
 
@@ -238,70 +242,79 @@ class PromptDjMidi extends LitElement {
       this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
     }
 
-    this.session = await this.ai.live.music.connect({
-      model: this.model,
-      callbacks: {
-        onmessage: async (e: LiveMusicServerMessage) => {
-          if (e.setupComplete) {
-            this.connectionError = false;
-          }
-          if (e.filteredPrompt) {
-            this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
-            if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-              this.toastMessage.show(e.filteredPrompt.filteredReason as string);
+    try {
+      this.session = await this.ai.live.music.connect({
+        model: this.model,
+        callbacks: {
+          onmessage: async (e: LiveMusicServerMessage) => {
+            if (e.setupComplete) {
+              this.connectionError = false;
             }
-          }
-          if (e.serverContent?.audioChunks !== undefined) {
-            if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
-            if (!this.audioContext || !this.outputNode) {
-              // Also show a toast message here if audio context is not initialized.
+            if (e.filteredPrompt) {
+              this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
               if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-                this.toastMessage.show('Audio context not initialized. Please refresh.');
+                this.toastMessage.show(e.filteredPrompt.filteredReason as string);
               }
-              console.error('AudioContext or outputNode not initialized.');
-              return;
             }
-            const audioBuffer = await decodeAudioData(
-              decode(e.serverContent?.audioChunks[0].data),
-              this.audioContext,
-              48000,
-              2,
-            );
-            const source = this.audioContext.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(this.outputNode);
-            if (this.nextStartTime === 0) {
-              this.nextStartTime = this.audioContext.currentTime + this.bufferTime;
-              setTimeout(() => {
-                this.playbackState = 'playing';
-              }, this.bufferTime * 1000);
-            }
+            if (e.serverContent?.audioChunks !== undefined) {
+              if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
+              if (!this.audioContext || !this.outputNode) {
+                // Also show a toast message here if audio context is not initialized.
+                if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+                  this.toastMessage.show('Audio context not initialized. Please refresh.');
+                }
+                console.error('AudioContext or outputNode not initialized.');
+                return;
+              }
+              const audioBuffer = await decodeAudioData(
+                decode(e.serverContent?.audioChunks[0].data),
+                this.audioContext,
+                48000,
+                2,
+              );
+              const source = this.audioContext.createBufferSource();
+              source.buffer = audioBuffer;
+              source.connect(this.outputNode);
+              if (this.nextStartTime === 0) {
+                this.nextStartTime = this.audioContext.currentTime + this.bufferTime;
+                setTimeout(() => {
+                  this.playbackState = 'playing';
+                }, this.bufferTime * 1000);
+              }
 
-            if (this.nextStartTime < this.audioContext.currentTime) {
-              this.playbackState = 'loading';
-              this.nextStartTime = 0;
-              return;
+              if (this.nextStartTime < this.audioContext.currentTime) {
+                this.playbackState = 'loading';
+                this.nextStartTime = 0;
+                return;
+              }
+              source.start(this.nextStartTime);
+              this.nextStartTime += audioBuffer.duration;
             }
-            source.start(this.nextStartTime);
-            this.nextStartTime += audioBuffer.duration;
-          }
+          },
+          onerror: (e: ErrorEvent) => {
+            this.connectionError = true;
+            this.stop();
+            if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+              this.toastMessage.show('Connection error, please restart audio.');
+            }
+          },
+          onclose: (e: CloseEvent) => {
+            this.connectionError = true;
+            this.stop();
+            if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+              this.toastMessage.show('Connection error, please restart audio.');
+            }
+          },
         },
-        onerror: (e: ErrorEvent) => {
-          this.connectionError = true;
-          this.stop();
-          if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-            this.toastMessage.show('Connection error, please restart audio.');
-          }
-        },
-        onclose: (e: CloseEvent) => {
-          this.connectionError = true;
-          this.stop();
-          if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-            this.toastMessage.show('Connection error, please restart audio.');
-          }
-        },
-      },
-    });
+      });
+    } catch (error) {
+      this.connectionError = true;
+      this.stop();
+      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+        this.toastMessage.show('Failed to connect to session. Check your API key.');
+      }
+      console.error('Failed to connect to session:', error);
+    }
   }
 
   private getPromptsToSend() {
@@ -482,9 +495,12 @@ class PromptDjMidi extends LitElement {
         this.pause();
       } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
         if (this.connectionError) {
-          this.connectToSession(); // Reconnect if there was an error
-          this.setSessionPrompts();
+          await this.connectToSession(); // Reconnect if there was an error
+          if (this.connectionError) { // If still error after reconnect, don't proceed to set prompts
+            return;
+          }
         }
+        await this.setSessionPrompts();
         this.play();
       } else if (this.playbackState === 'loading') {
         this.stop();
@@ -520,14 +536,19 @@ class PromptDjMidi extends LitElement {
     this.midiDispatcher.activeMidiInputId = newMidiId;
   }
 
+
+
   private saveApiKeyToLocalStorage() {
     if (this.geminiApiKey) {
       localStorage.setItem('geminiApiKey', this.geminiApiKey);
       this.toastMessage.show('Gemini API key saved to local storage.');
+      // Do not hide the field here. Visibility is managed by connection status.
     } else {
       localStorage.removeItem('geminiApiKey');
       this.toastMessage.show('Gemini API key removed from local storage.');
     }
+    // Trigger the power button as requested
+    this.handleMainAudioButton();
   }
 
   private handleApiKeyInputChange(event: Event) {
@@ -535,47 +556,59 @@ class PromptDjMidi extends LitElement {
     this.geminiApiKey = inputElement.value;
   }
 
+  private getApiKey() {
+    window.open('https://aistudio.google.com/apikey', '_blank');
+  }
+
   private resetAll() {
-    this.setPrompts(buildDefaultPrompts());
+    this.setPrompts(PromptDjMidi.buildDefaultPrompts());
   }
 
   override render() {
     const bg = styleMap({
       backgroundImage: this.makeBackground(),
     });
-    return html`<div id="background" style=${bg}></div>
+    return html`
+      <div id="background" style=${bg}></div>
       <div id="buttons">
         <button
           @click=${this.toggleShowMidi}
           class=${this.showMidi ? 'active' : ''}
           >MIDI</button
         >
-        <select
-          @change=${this.handleMidiInputChange}
-          .value=${this.activeMidiInputId || ''}
-          style=${this.showMidi ? '' : 'visibility: hidden'}>
-          ${this.midiInputIds.length > 0
-        ? this.midiInputIds.map(
-          (id) =>
-            html`<option value=${id}>
-                    ${this.midiDispatcher.getDeviceName(id)}
-                  </option>`,
-        )
-        : html`<option value="">No devices found</option>`}
-        </select>
-        <input
-          type="password"
-          placeholder="Gemini API Key"
-          .value=${this.geminiApiKey || ''}
-          @input=${this.handleApiKeyInputChange}
-        />
-        <button @click=${this.saveApiKeyToLocalStorage}>Save API Key</button>
+        ${this.showMidi ? html`
+          <select
+            @change=${this.handleMidiInputChange}
+            .value=${this.activeMidiInputId || ''}>
+            ${this.midiInputIds.length > 0
+          ? this.midiInputIds.map(
+            (id) =>
+              html`<option value=${id}>
+                      ${this.midiDispatcher.getDeviceName(id)}
+                    </option>`,
+          )
+          : html`<option value="">No devices found</option>`}
+          </select>
+        ` : ''}
+        ${this.connectionError || !this.geminiApiKey ? html`
+          <div style="display: flex; gap: 5px;">
+            <input
+              type="password"
+              placeholder="Gemini API Key"
+              .value=${this.geminiApiKey || ''}
+              @input=${this.handleApiKeyInputChange}
+            />
+            <button @click=${this.saveApiKeyToLocalStorage}>Save</button>
+            <button @click=${this.getApiKey}>Get API Key</button>
+          </div>
+        ` : ''}
       </div>
       <div id="grid">${this.renderPrompts()}</div>
       <button id="main-audio-button" @click=${this.handleMainAudioButton} class="${this.isButtonOn ? 'is-on' : 'is-off'}">
         ${this.renderAudioButtonContent()}
       </button>
-      <toast-message></toast-message>`;
+      <toast-message></toast-message>
+    `;
   }
 
   private renderPrompts() {
@@ -594,66 +627,66 @@ class PromptDjMidi extends LitElement {
       </prompt-controller>`;
     });
   }
+
+  static getInitialPrompts(): Map<string, Prompt> {
+    const { localStorage } = window;
+    const storedPrompts = localStorage.getItem('prompts');
+
+    if (storedPrompts) {
+      try {
+        const prompts = JSON.parse(storedPrompts) as Prompt[];
+        console.log('Loading stored prompts', prompts);
+        return new Map(prompts.map((prompt) => [prompt.promptId, prompt]));
+      } catch (e) {
+        console.error('Failed to parse stored prompts', e);
+      }
+    }
+
+    console.log('No stored prompts, using default prompts');
+
+    return PromptDjMidi.buildDefaultPrompts();
+  }
+
+  static buildDefaultPrompts() {
+    // Construct default prompts
+    // Pick 3 random prompts to start with weight 1
+    const startOn = [...DEFAULT_PROMPTS]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3);
+
+    const prompts = new Map<string, Prompt>();
+
+    for (let i = 0; i < DEFAULT_PROMPTS.length; i++) {
+      const promptId = `prompt-${i}`;
+      const prompt = DEFAULT_PROMPTS[i];
+      const { text, color } = prompt;
+      prompts.set(promptId, {
+        promptId,
+        text,
+        weight: startOn.includes(prompt) ? 1 : 0,
+        cc: i,
+        color,
+      });
+    }
+
+    return prompts;
+  }
+
+  static setStoredPrompts(prompts: Map<string, Prompt>) {
+    const storedPrompts = JSON.stringify([...prompts.values()]);
+    const { localStorage } = window;
+    localStorage.setItem('prompts', storedPrompts);
+  }
 }
 
 function main(parent: HTMLElement) {
   const midiDispatcher = new MidiDispatcher();
-  const initialPrompts = getInitialPrompts();
+  const initialPrompts = PromptDjMidi.getInitialPrompts();
   const pdjMidi = new PromptDjMidi(
     initialPrompts,
     midiDispatcher,
   );
   parent.appendChild(pdjMidi);
-}
-
-function getInitialPrompts(): Map<string, Prompt> {
-  const { localStorage } = window;
-  const storedPrompts = localStorage.getItem('prompts');
-
-  if (storedPrompts) {
-    try {
-      const prompts = JSON.parse(storedPrompts) as Prompt[];
-      console.log('Loading stored prompts', prompts);
-      return new Map(prompts.map((prompt) => [prompt.promptId, prompt]));
-    } catch (e) {
-      console.error('Failed to parse stored prompts', e);
-    }
-  }
-
-  console.log('No stored prompts, using default prompts');
-
-  return buildDefaultPrompts();
-}
-
-function buildDefaultPrompts() {
-  // Construct default prompts
-  // Pick 3 random prompts to start with weight 1
-  const startOn = [...DEFAULT_PROMPTS]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 3);
-
-  const prompts = new Map<string, Prompt>();
-
-  for (let i = 0; i < DEFAULT_PROMPTS.length; i++) {
-    const promptId = `prompt-${i}`;
-    const prompt = DEFAULT_PROMPTS[i];
-    const { text, color } = prompt;
-    prompts.set(promptId, {
-      promptId,
-      text,
-      weight: startOn.includes(prompt) ? 1 : 0,
-      cc: i,
-      color,
-    });
-  }
-
-  return prompts;
-}
-
-function setStoredPrompts(prompts: Map<string, Prompt>) {
-  const storedPrompts = JSON.stringify([...prompts.values()]);
-  const { localStorage } = window;
-  localStorage.setItem('prompts', storedPrompts);
 }
 
 main(document.body);
