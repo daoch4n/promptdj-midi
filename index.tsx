@@ -44,6 +44,13 @@ const DEFAULT_PROMPTS = [
 @customElement('prompt-dj-midi')
 class PromptDjMidi extends LitElement {
   static override styles = css`
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      overflow:hidden;
+    }
     :host {
       height: 100%;
       display: flex;
@@ -53,34 +60,77 @@ class PromptDjMidi extends LitElement {
       box-sizing: border-box;
       position: relative;
     }
-    #background {
-      will-change: background-image;
-      position: absolute;
-      height: 100%;
-      width: 100%;
-      z-index: -1;
-      background: #111;
-    }
-    #grid {
-      width: 80vmin;
-      height: 80vmin;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 2.5vmin;
-      margin-top: 8vmin;
-    }
-    prompt-controller {
-      width: 100%;
-    }
-    #buttons {
-      position: absolute;
-      top: 0;
-      left: 0;
-      padding: 5px;
+    #main-content-area {
       display: flex;
-      gap: 5px;
+      flex-direction: row;
+      align-items: flex-start; /* Align items to the start (left) */
+      gap: 15px;
+      width: 100%;
+      justify-content: center;
+      height: 100%; /* Ensure it takes full height to center content */
     }
-    button {
+    .advanced-settings-panel {
+      background-color: #202020;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      height: auto;
+      width: 280px; /* Fixed width for the sidebar */
+      min-width: 280px; /* Ensure it maintains its width */
+      opacity: 1; /* Always visible */
+      overflow: visible; /* Allow content to be visible */
+      transition: none; /* No transition needed as it's always visible */
+      color: #fff;
+      flex-shrink: 0; /* Prevent it from shrinking */
+      display: flex; /* Always use flex for internal alignment */
+      flex-direction: column; /* Always stack settings vertically */
+      padding: 15px; /* Consistent padding */
+    }
+    .advanced-settings-panel .setting {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      margin-bottom: 15px;
+      }
+.advanced-settings-panel .setting > label:first-child {
+    margin-bottom: 8px;
+    font-weight: bold;
+    text-align: center;
+    color: #fff; /* Ensure labels are white */
+  }
+
+  .advanced-settings-panel .setting .auto-row,
+  .advanced-settings-panel .setting .checkbox-setting {
+    display: flex; align-items: center; justify-content: flex-start;
+    margin-top: 8px; padding: 0 5%;
+  }
+  #grid {
+    width: 80vmin;
+    height: 80vmin;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2.5vmin;
+    margin-top: 8vmin;
+  }
+
+  #background {
+    will-change: background-image;
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    z-index: -1;
+    background: #111;
+  }
+  prompt-controller {
+    width: 100%;
+  }
+  #buttons {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 5px;
+    display: flex;
+    gap: 5px;
+  }
       font: inherit;
       font-weight: 600;
       cursor: pointer;
