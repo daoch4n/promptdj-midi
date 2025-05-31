@@ -118,22 +118,22 @@ class PromptDjMidi extends LitElement {
 
   private prompts: Map<string, Prompt>;
   private midiDispatcher: MidiDispatcher;
-  private audioAnalyser: AudioAnalyser;
+  private audioAnalyser: AudioAnalyser | null = null;
 
   @state() private playbackState: PlaybackState = 'stopped';
 
-  private session: LiveMusicSession;
-  private audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
-  private outputNode: GainNode = this.audioContext.createGain();
+  private session!: LiveMusicSession; // Initialized in connectToSession
+  private audioContext: AudioContext | null = null;
+  private outputNode: GainNode | null = null;
   private nextStartTime = 0;
-  private readonly bufferTime = 2; // adds an audio buffer in case of netowrk latency
+  private readonly bufferTime = 2; // adds an audio buffer in case of network latency
 
   @property({ type: Boolean }) private showMidi = false;
   @state() private audioLevel = 0;
   @state() private midiInputIds: string[] = [];
   @state() private activeMidiInputId: string | null = null;
 
-  @property({ type: Object })
+  @state()
   private filteredPrompts = new Set<string>();
 
   private audioLevelRafId: number | null = null;
@@ -149,11 +149,7 @@ class PromptDjMidi extends LitElement {
     super();
     this.prompts = prompts;
     this.midiDispatcher = midiDispatcher;
-    this.audioAnalyser = new AudioAnalyser(this.audioContext);
-    this.audioAnalyser.node.connect(this.audioContext.destination);
-    this.outputNode.connect(this.audioAnalyser.node);
     this.updateAudioLevel = this.updateAudioLevel.bind(this);
-    this.updateAudioLevel();
   }
 
   override async firstUpdated() {
@@ -170,11 +166,15 @@ class PromptDjMidi extends LitElement {
             this.connectionError = false;
           }
           if (e.filteredPrompt) {
-            this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text])
-            this.toastMessage.show(e.filteredPrompt.filteredReason);
+            this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
+            this.toastMessage.show(e.filteredPrompt.filteredReason as string);
           }
           if (e.serverContent?.audioChunks !== undefined) {
             if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
+            if (!this.audioContext || !this.outputNode) {
+              console.error('AudioContext or outputNode not initialized.');
+              return;
+            }
             const audioBuffer = await decodeAudioData(
               decode(e.serverContent?.audioChunks[0].data),
               this.audioContext,
@@ -232,15 +232,21 @@ class PromptDjMidi extends LitElement {
       await this.session.setWeightedPrompts({
         weightedPrompts: promptsToSend,
       });
-    } catch (e) {
-      this.toastMessage.show(e.message)
+    } catch (e: unknown) { // Explicitly type e as unknown
+      if (e instanceof Error) {
+        this.toastMessage.show(e.message)
+      } else {
+        this.toastMessage.show('An unknown error occurred.')
+      }
       this.pause();
     }
   }, 200);
 
   private updateAudioLevel() {
     this.audioLevelRafId = requestAnimationFrame(this.updateAudioLevel);
-    this.audioLevel = this.audioAnalyser.getCurrentLevel();
+    if (this.audioAnalyser) {
+      this.audioLevel = this.audioAnalyser.getCurrentLevel();
+    }
   }
 
   private dispatchPromptsChange() {
@@ -305,18 +311,23 @@ class PromptDjMidi extends LitElement {
   );
 
   private pause() {
-    this.session.pause();
+    if (this.session) this.session.pause();
     this.playbackState = 'paused';
-    this.outputNode.gain.setValueAtTime(1, this.audioContext.currentTime);
-    this.outputNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.1);
+    if (this.outputNode && this.audioContext) {
+      this.outputNode.gain.setValueAtTime(1, this.audioContext.currentTime);
+      this.outputNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.1);
+    }
     this.nextStartTime = 0;
-    this.outputNode = this.audioContext.createGain();
-    this.outputNode.connect(this.audioContext.destination);
-    this.outputNode.connect(this.audioAnalyser.node);
+    if (this.audioContext) {
+      this.outputNode = this.audioContext.createGain();
+      this.outputNode.connect(this.audioContext.destination);
+      if (this.audioAnalyser) {
+        this.outputNode.connect(this.audioAnalyser.node);
+      }
+    }
   }
 
   private play() {
-
     const promptsToSend = this.getPromptsToSend();
     if (promptsToSend.length === 0) {
       this.toastMessage.show('There needs to be one active prompt to play. Turn up a knob to resume playback.')
@@ -324,18 +335,31 @@ class PromptDjMidi extends LitElement {
       return;
     }
 
+    if (!this.audioContext) {
+      this.audioContext = new AudioContext({ sampleRate: 48000 });
+      this.audioAnalyser = new AudioAnalyser(this.audioContext);
+      this.audioAnalyser.node.connect(this.audioContext.destination);
+      this.outputNode = this.audioContext.createGain();
+      this.outputNode.connect(this.audioAnalyser.node);
+      this.updateAudioLevel(); // Start updating audio level once context is created
+    }
+
     this.audioContext.resume();
-    this.session.play();
+    if (this.session) this.session.play();
     this.playbackState = 'loading';
-    this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-    this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
+    if (this.outputNode && this.audioContext) {
+      this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+      this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
+    }
   }
 
   private stop() {
-    this.session.stop();
+    if (this.session) this.session.stop();
     this.playbackState = 'stopped';
-    this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-    this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
+    if (this.outputNode && this.audioContext) {
+      this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+      this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
+    }
     this.nextStartTime = 0;
   }
 
