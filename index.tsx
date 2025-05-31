@@ -3,11 +3,10 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { css, html, LitElement, svg } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
-
+import { classMap } from 'lit/directives/class-map.js';
 import { GoogleGenAI, type LiveMusicSession, type LiveMusicServerMessage } from '@google/genai';
 
 import { decode, decodeAudioData } from './utils/audio'
@@ -203,6 +202,13 @@ class PromptDjMidi extends LitElement {
 
   @state()
   private filteredPrompts = new Set<string>();
+
+  @state() private showAdvanced = false;
+  @state() private config = { seed: null as number | null, bpm: null as number | null, density: 0.5, brightness: 0.5, scale: '', muteBass: false, muteDrums: false, onlyBassAndDrums: false, };
+  @state() private lastDefinedDensity = 0.5;
+  @state() private autoDensity = true;
+  @state() private lastDefinedBrightness = 0.5;
+  @state() private autoBrightness = true;
 
   private audioLevelRafId: number | null = null;
   private connectionError = true;
@@ -559,57 +565,229 @@ class PromptDjMidi extends LitElement {
   private getApiKey() {
     window.open('https://aistudio.google.com/apikey', '_blank');
   }
+   private resetAll() {
+     this.setPrompts(PromptDjMidi.buildDefaultPrompts());
+   }
 
-  private resetAll() {
-    this.setPrompts(PromptDjMidi.buildDefaultPrompts());
+   private handleInputChange(event: Event) {
+    const target = event.target as HTMLInputElement | HTMLSelectElement;
+    const { id, value, type } = target;
+
+    if (type === 'checkbox') {
+      const checkbox = target as HTMLInputElement;
+      if (id === 'auto-density') {
+        this.autoDensity = checkbox.checked;
+        if (checkbox.checked) {
+          this.config = { ...this.config, density: this.lastDefinedDensity };
+        }
+      } else if (id === 'auto-brightness') {
+        this.autoBrightness = checkbox.checked;
+        if (checkbox.checked) {
+          this.config = { ...this.config, brightness: this.lastDefinedBrightness };
+        }
+      } else {
+        this.config = { ...this.config, [id]: checkbox.checked };
+      }
+    } else if (type === 'range') {
+      const numValue = parseFloat(value);
+      if (id === 'density') {
+        this.lastDefinedDensity = numValue;
+        this.autoDensity = false;
+      } else if (id === 'brightness') {
+        this.lastDefinedBrightness = numValue;
+        this.autoBrightness = false;
+      }
+      this.config = { ...this.config, [id]: numValue };
+    } else if (type === 'number') {
+      this.config = { ...this.config, [id]: value === '' ? null : parseFloat(value) };
+    } else { // For select elements
+      this.config = { ...this.config, [id]: value };
+    }
+    this.requestUpdate();
   }
 
-  override render() {
-    const bg = styleMap({
-      backgroundImage: this.makeBackground(),
+ 
+   override render() {
+     const bg = styleMap({
+       backgroundImage: this.makeBackground(),
+     });
+
+    const advancedClasses = classMap({
+      'advanced-settings': true,
+      'visible': this.showAdvanced,
     });
-    return html`
-      <div id="background" style=${bg}></div>
-      <div id="buttons">
+
+    const scaleMap = new Map<string, string>([
+      ['Auto', 'SCALE_UNSPECIFIED'],
+      ['C Major / A Minor', 'C_MAJOR_A_MINOR'],
+      ['C# Major / A# Minor', 'D_FLAT_MAJOR_B_FLAT_MINOR'],
+      ['D Major / B Minor', 'D_MAJOR_B_MINOR'],
+      ['D# Major / C Minor', 'E_FLAT_MAJOR_C_MINOR'],
+      ['E Major / C# Minor', 'E_MAJOR_D_FLAT_MINOR'],
+      ['F Major / D Minor', 'F_MAJOR_D_MINOR'],
+      ['F# Major / D# Minor', 'G_FLAT_MAJOR_E_FLAT_MINOR'],
+      ['G Major / E Minor', 'G_MAJOR_E_MINOR'],
+      ['G# Major / F Minor', 'A_FLAT_MAJOR_F_MINOR'],
+      ['A Major / F# Minor', 'A_MAJOR_G_FLAT_MINOR'],
+      ['A# Major / G Minor', 'B_FLAT_MAJOR_G_MINOR'],
+      ['B Major / G# Minor', 'B_MAJOR_A_FLAT_MINOR'],
+    ]);
+
+    const cfg = this.config;
+
+
+     return html`
+       <div id="background" style=${bg}></div>
+       <div id="buttons">
+         <button
+           @click=${this.toggleShowMidi}
+           class=${this.showMidi ? 'active' : ''}
+           >MIDI</button
+         >
+         ${this.showMidi ? html`
+           <select
+             @change=${this.handleMidiInputChange}
+             .value=${this.activeMidiInputId || ''}>
+             ${this.midiInputIds.length > 0
+           ? this.midiInputIds.map(
+             (id) =>
+               html`<option value=${id}>
+                       ${this.midiDispatcher.getDeviceName(id)}
+                     </option>`,
+           )
+           : html`<option value="">No devices found</option>`}
+           </select>
+         ` : ''}
+         ${this.connectionError || !this.geminiApiKey ? html`
+           <div style="display: flex; gap: 5px;">
+             <input
+               type="password"
+               placeholder="Gemini API Key"
+               .value=${this.geminiApiKey || ''}
+               @input=${this.handleApiKeyInputChange}
+             />
+             <button @click=${this.saveApiKeyToLocalStorage}>Save</button>
+             <button @click=${this.getApiKey}>Get API Key</button>
+           </div>
+         ` : ''}
         <button
-          @click=${this.toggleShowMidi}
-          class=${this.showMidi ? 'active' : ''}
-          >MIDI</button
+          @click=${() => this.showAdvanced = !this.showAdvanced}
+          class=${this.showAdvanced ? 'active' : ''}
+          >Advanced</button
         >
-        ${this.showMidi ? html`
-          <select
-            @change=${this.handleMidiInputChange}
-            .value=${this.activeMidiInputId || ''}>
-            ${this.midiInputIds.length > 0
-          ? this.midiInputIds.map(
-            (id) =>
-              html`<option value=${id}>
-                      ${this.midiDispatcher.getDeviceName(id)}
-                    </option>`,
-          )
-          : html`<option value="">No devices found</option>`}
-          </select>
-        ` : ''}
-        ${this.connectionError || !this.geminiApiKey ? html`
-          <div style="display: flex; gap: 5px;">
-            <input
-              type="password"
-              placeholder="Gemini API Key"
-              .value=${this.geminiApiKey || ''}
-              @input=${this.handleApiKeyInputChange}
-            />
-            <button @click=${this.saveApiKeyToLocalStorage}>Save</button>
-            <button @click=${this.getApiKey}>Get API Key</button>
-          </div>
-        ` : ''}
       </div>
-      <div id="grid">${this.renderPrompts()}</div>
-      <button id="main-audio-button" @click=${this.handleMainAudioButton} class="${this.isButtonOn ? 'is-on' : 'is-off'}">
-        ${this.renderAudioButtonContent()}
-      </button>
-      <toast-message></toast-message>
-    `;
-  }
+      <div class=${advancedClasses}>
+        <div class="setting">
+          <label for="seed">Seed</label>
+          <input
+            type="number"
+            id="seed"
+            .value=${cfg.seed ?? ''}
+            @input=${this.handleInputChange}
+            placeholder="Auto" />
+        </div>
+        <div class="setting">
+          <label for="bpm">BPM</label>
+          <input
+            type="number"
+            id="bpm"
+            min="60"
+            max="180"
+            .value=${cfg.bpm ?? ''}
+            @input=${this.handleInputChange}
+            placeholder="Auto" />
+        </div>
+        <div class="setting" auto=${this.autoDensity}>
+          <label for="density">Density</label>
+          <input
+            type="range"
+            id="density"
+            min="0"
+            max="1"
+            step="0.05"
+            .value=${this.lastDefinedDensity}
+            @input=${this.handleInputChange} />
+          <div class="auto-row">
+            <input
+              type="checkbox"
+              id="auto-density"
+              .checked=${this.autoDensity}
+              @input=${this.handleInputChange} />
+            <label for="auto-density">Auto</label>
+            <span>${(this.lastDefinedDensity ?? 0.5).toFixed(2)}</span>
+          </div>
+        </div>
+        <div class="setting" auto=${this.autoBrightness}>
+          <label for="brightness">Brightness</label>
+          <input
+            type="range"
+            id="brightness"
+            min="0"
+            max="1"
+            step="0.05"
+            .value=${this.lastDefinedBrightness}
+            @input=${this.handleInputChange} />
+          <div class="auto-row">
+            <input
+              type="checkbox"
+              id="auto-brightness"
+              .checked=${this.autoBrightness}
+              @input=${this.handleInputChange} />
+            <label for="auto-brightness">Auto</label>
+            <span>${(this.lastDefinedBrightness ?? 0.5).toFixed(2)}</span>
+          </div>
+        </div>
+        <div class="setting">
+          <label for="scale">Scale</label>
+          <select
+            id="scale"
+            .value=${cfg.scale || 'SCALE_UNSPECIFIED'}
+            @change=${this.handleInputChange}>
+            <option value="" disabled selected>Select Scale</option>
+            ${[...scaleMap.entries()].map(
+              ([displayName, enumValue]) =>
+                html`<option value=${enumValue}>${displayName}</option>`,
+            )}
+          </select>
+        </div>
+        <div class="setting">
+          <div class="setting checkbox-setting">
+            <input
+              type="checkbox"
+              id="muteBass"
+              .checked=${!!cfg.muteBass}
+              @change=${this.handleInputChange} />
+            <label for="muteBass" style="font-weight: normal;">Mute Bass</label>
+          </div>
+          <div class="setting checkbox-setting">
+            <input
+              type="checkbox"
+              id="muteDrums"
+              .checked=${!!cfg.muteDrums}
+              @change=${this.handleInputChange} />
+            <label for="muteDrums" style="font-weight: normal;"
+              >Mute Drums</label
+            >
+          </div>
+          <div class="setting checkbox-setting">
+            <input
+              type="checkbox"
+              id="onlyBassAndDrums"
+              .checked=${!!cfg.onlyBassAndDrums}
+              @change=${this.handleInputChange} />
+            <label for="onlyBassAndDrums" style="font-weight: normal;"
+              >Only Bass & Drums</label
+            >
+          </div>
+        </div>
+      </div>
+       <div id="grid">${this.renderPrompts()}</div>
+       <button id="main-audio-button" @click=${this.handleMainAudioButton} class="${this.isButtonOn ? 'is-on' : 'is-off'}">
+         ${this.renderAudioButtonContent()}
+       </button>
+       <toast-message></toast-message>
+     `;
+   }
 
   private renderPrompts() {
     return [...this.prompts.values()].map((prompt) => {
