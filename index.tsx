@@ -705,10 +705,11 @@ class PromptDjMidi extends LitElement {
           >Advanced</button
         >
       </div>
-      <div class=${advancedClasses}>
-        <div class="setting">
-          <label for="seed">Seed</label>
-          <input
+      <div id="main-content-area">
+        <div class=${advancedClasses}>
+          <div class="setting">
+            <label for="seed">Seed</label>
+            <input
             type="number"
             id="seed"
             .value=${cfg.seed ?? ''}
@@ -810,7 +811,8 @@ class PromptDjMidi extends LitElement {
           </div>
         </div>
       </div>
-       <div id="grid">${this.renderPrompts()}</div>
+        <div id="grid">${this.renderPrompts()}</div>
+      </div>
        <button id="main-audio-button" @click=${this.handleMainAudioButton} class="${this.isButtonOn ? 'is-on' : 'is-off'}">
          <div class="toggle-switch-base">
            <div class="toggle-switch-lever"></div>
