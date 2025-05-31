@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { css, html, LitElement } from 'lit';
+import { css, html, LitElement, svg } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -17,8 +17,7 @@ import { MidiDispatcher } from './utils/MidiDispatcher';
 
 import './components/WeightKnob';
 import './components/PromptController';
-import { PlayPauseButton } from './components/PlayPauseButton';
-import { ToastMessage } from './components/ToastMessage';
+import { ToastMessage } from './components/ToastMessage'; // Removed PlayPauseButton import
 
 import type { Prompt, PlaybackState } from './types';
 
@@ -76,10 +75,6 @@ class PromptDjMidi extends LitElement {
     prompt-controller {
       width: 100%;
     }
-    play-pause-button {
-      position: relative;
-      width: 15vmin;
-    }
     #buttons {
       position: absolute;
       top: 0;
@@ -114,7 +109,7 @@ class PromptDjMidi extends LitElement {
       outline: none;
       cursor: pointer;
     }
-    #turn-on-audio-button {
+    #main-audio-button { /* Renamed from #turn-on-audio-button */
       width: 15vmin; /* Match play-pause-button size */
       height: 15vmin; /* Make it a circle */
       border-radius: 50%; /* Make it circular */
@@ -128,15 +123,30 @@ class PromptDjMidi extends LitElement {
       justify-content: center;
       align-items: center;
       font-size: 0; /* Hide text, use icon */
+      position: absolute; /* Position in upper right corner */
+      top: 2.5vmin; /* Adjust as needed */
+      right: 2.5vmin; /* Adjust as needed */
     }
-    #turn-on-audio-button:hover {
+    #main-audio-button:hover {
       background: linear-gradient(145deg, #4CAF50, #388E3C); /* Keep same gradient on hover for consistency */
       box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.2); /* Inset shadow on hover for pressed effect */
     }
-    #turn-on-audio-button svg {
+    #main-audio-button svg {
         width: 60%; /* Size the icon */
         height: 60%;
         fill: white;
+    }
+    #main-audio-button .loader {
+      stroke: #ffffff;
+      stroke-width: 3;
+      stroke-linecap: round;
+      animation: spin linear 1s infinite;
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(359deg); }
     }
   `;
 
@@ -145,7 +155,7 @@ class PromptDjMidi extends LitElement {
   private audioAnalyser: AudioAnalyser | null = null;
 
   @state() private playbackState: PlaybackState = 'stopped';
-  @state() private audioReady = false; // New state for audio context readiness
+  @state() private audioReady = false; // State for audio context readiness
 
   private session!: LiveMusicSession; // Initialized in connectToSession
   private audioContext: AudioContext | null = null;
@@ -164,8 +174,7 @@ class PromptDjMidi extends LitElement {
   private audioLevelRafId: number | null = null;
   private connectionError = true;
 
-  @query('play-pause-button') private playPauseButton!: PlayPauseButton;
-  @query('toast-message') private toastMessage!: ToastMessage;
+  @query('toast-message') private toastMessage!: ToastMessage; // Removed playPauseButton query
 
   constructor(
     prompts: Map<string, Prompt>,
@@ -417,23 +426,38 @@ class PromptDjMidi extends LitElement {
     this.nextStartTime = 0;
   }
 
-  private async handlePlayPause() {
-    if (this.playbackState === 'playing') {
-      this.pause();
-    } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
-      if (this.connectionError) {
-        await this.connectToSession();
-        this.setSessionPrompts();
-      }
+  private handleMainAudioButton() { // Renamed from handleTurnOnAudio / handlePlayPause
+    if (!this.audioReady) {
+      // First click: initialize audio context and start playback
       this.play();
-    } else if (this.playbackState === 'loading') {
-      this.stop();
+    } else {
+      // Subsequent clicks: toggle play/pause
+      if (this.playbackState === 'playing') {
+        this.pause();
+      } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
+        if (this.connectionError) {
+          this.connectToSession(); // Reconnect if there was an error
+          this.setSessionPrompts();
+        }
+        this.play();
+      } else if (this.playbackState === 'loading') {
+        this.stop();
+      }
     }
-    console.debug('handlePlayPause');
   }
 
-  private handleTurnOnAudio() {
-    this.play(); // Simply call play to initialize AudioContext
+  private renderAudioButtonIcon() {
+    if (this.playbackState === 'playing') {
+      return svg`<path
+        d="M75.0037 69V39H83.7537V69H75.0037ZM56.2537 69V39H65.0037V69H56.2537Z"
+        fill="#FEFEFE"
+      />`;
+    } else if (this.playbackState === 'loading') {
+      return svg`<path shape-rendering="crispEdges" class="loader" d="M70,74.2L70,74.2c-10.7,0-19.5-8.7-19.5-19.5l0,0c0-10.7,8.7-19.5,19.5-19.5
+              l0,0c10.7,0,19.5,8.7,19.5,19.5l0,0"/>`;
+    } else {
+      return svg`<path d="M60 71.5V36.5L87.5 54L60 71.5Z" fill="#FEFEFE" />`;
+    }
   }
 
   private async toggleShowMidi() {
@@ -481,14 +505,40 @@ class PromptDjMidi extends LitElement {
         </select>
       </div>
       <div id="grid">${this.renderPrompts()}</div>
-      ${this.audioReady
-        ? html`<play-pause-button .playbackState=${this.playbackState} @click=${this.handlePlayPause}></play-pause-button>`
-        : html`<button id="turn-on-audio-button" @click=${this.handleTurnOnAudio}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M13 3h-2v10h2V3zm4.5 10.5c-.92 1.4-2.35 2.44-4 2.97V19h-1v-2.53c-1.65-.53-3.08-1.57-4-2.97-.92-1.4-1.5-3.04-1.5-4.5h2c0 1.05.47 2.05 1.28 2.82.81.77 1.86 1.28 3.02 1.28s2.21-.51 3.02-1.28c.81-.77 1.28-1.77 1.28-2.82h2c0 1.46-.58 3.1-1.5 4.5z"/>
-            </svg>
-          </button>`
-      }
+      <button id="main-audio-button" @click=${this.handleMainAudioButton}>
+        <svg width="140" height="140" viewBox="0 -10 140 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="22" y="6" width="96" height="96" rx="48" fill="black" fill-opacity="0.05" />
+          <rect x="23.5" y="7.5" width="93" height="93" rx="46.5" stroke="black" stroke-opacity="0.3" stroke-width="3" />
+          <g filter="url(#filter0_ddi_1048_7373)">
+            <rect x="25" y="9" width="90" height="90" rx="45" fill="white" fill-opacity="0.05" shape-rendering="crispEdges" />
+          </g>
+          ${this.renderAudioButtonIcon()}
+          <defs>
+            <filter id="filter0_ddi_1048_7373" x="0" y="0" width="140" height="140" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+              <feFlood flood-opacity="0" result="BackgroundImageFix" />
+              <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+              <feOffset dy="2" />
+              <feGaussianBlur stdDeviation="4" />
+              <feComposite in2="hardAlpha" operator="out" />
+              <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+              <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1048_7373" />
+              <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+              <feOffset dy="16" />
+              <feGaussianBlur stdDeviation="12.5" />
+              <feComposite in2="hardAlpha" operator="out" />
+              <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+              <feBlend mode="normal" in2="effect1_dropShadow_1048_7373" result="effect2_dropShadow_1048_7373" />
+              <feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_1048_7373" result="shape" />
+              <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+              <feOffset dy="3" />
+              <feGaussianBlur stdDeviation="1.5" />
+              <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
+              <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0" />
+              <feBlend mode="normal" in2="shape" result="effect3_innerShadow_1048_7373" />
+            </filter>
+          </defs>
+        </svg>
+      </button>
       <toast-message></toast-message>`;
   }
 
