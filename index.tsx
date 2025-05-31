@@ -17,12 +17,10 @@ import { MidiDispatcher } from './utils/MidiDispatcher';
 
 import './components/WeightKnob';
 import './components/PromptController';
-import { ToastMessage } from './components/ToastMessage'; // Removed PlayPauseButton import
+import { ToastMessage } from './components/ToastMessage';
 
 import type { Prompt, PlaybackState } from './types';
 
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY, apiVersion: 'v1alpha' });
-const model = 'lyria-realtime-exp';
 
 const DEFAULT_PROMPTS = [
   { color: '#9900ff', text: 'Bossa Nova' },
@@ -193,6 +191,10 @@ class PromptDjMidi extends LitElement {
   private nextStartTime = 0;
   private readonly bufferTime = 2; // adds an audio buffer in case of network latency
 
+  private ai!: GoogleGenAI;
+  @state() private geminiApiKey: string | null = null;
+  private readonly model = 'lyria-realtime-exp';
+
   @property({ type: Boolean }) private showMidi = false;
   @state() private audioLevel = 0;
   @state() private midiInputIds: string[] = [];
@@ -204,7 +206,7 @@ class PromptDjMidi extends LitElement {
   private audioLevelRafId: number | null = null;
   private connectionError = true;
 
-  @query('toast-message') private toastMessage!: ToastMessage; // Removed playPauseButton query
+  @query('toast-message') private toastMessage!: ToastMessage;
 
   constructor(
     prompts: Map<string, Prompt>,
@@ -214,6 +216,11 @@ class PromptDjMidi extends LitElement {
     this.prompts = prompts;
     this.midiDispatcher = midiDispatcher;
     this.updateAudioLevel = this.updateAudioLevel.bind(this);
+
+    this.geminiApiKey = localStorage.getItem('geminiApiKey');
+    if (this.geminiApiKey) {
+      this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
+    }
   }
 
   override async firstUpdated() {
@@ -222,8 +229,17 @@ class PromptDjMidi extends LitElement {
   }
 
   private async connectToSession() {
-    this.session = await ai.live.music.connect({
-      model: model,
+    if (!this.geminiApiKey) {
+      this.toastMessage.show('Please enter your Gemini API key to connect to the session.');
+      return;
+    }
+
+    if (!this.ai) {
+      this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
+    }
+
+    this.session = await this.ai.live.music.connect({
+      model: this.model,
       callbacks: {
         onmessage: async (e: LiveMusicServerMessage) => {
           if (e.setupComplete) {
@@ -504,6 +520,21 @@ class PromptDjMidi extends LitElement {
     this.midiDispatcher.activeMidiInputId = newMidiId;
   }
 
+  private saveApiKeyToLocalStorage() {
+    if (this.geminiApiKey) {
+      localStorage.setItem('geminiApiKey', this.geminiApiKey);
+      this.toastMessage.show('Gemini API key saved to local storage.');
+    } else {
+      localStorage.removeItem('geminiApiKey');
+      this.toastMessage.show('Gemini API key removed from local storage.');
+    }
+  }
+
+  private handleApiKeyInputChange(event: Event) {
+    const inputElement = event.target as HTMLInputElement;
+    this.geminiApiKey = inputElement.value;
+  }
+
   private resetAll() {
     this.setPrompts(buildDefaultPrompts());
   }
@@ -532,6 +563,13 @@ class PromptDjMidi extends LitElement {
         )
         : html`<option value="">No devices found</option>`}
         </select>
+        <input
+          type="password"
+          placeholder="Gemini API Key"
+          .value=${this.geminiApiKey || ''}
+          @input=${this.handleApiKeyInputChange}
+        />
+        <button @click=${this.saveApiKeyToLocalStorage}>Save API Key</button>
       </div>
       <div id="grid">${this.renderPrompts()}</div>
       <button id="main-audio-button" @click=${this.handleMainAudioButton} class="${this.isButtonOn ? 'is-on' : 'is-off'}">
