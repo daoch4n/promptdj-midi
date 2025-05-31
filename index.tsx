@@ -22,7 +22,7 @@ import { ToastMessage } from './components/ToastMessage';
 
 import type { Prompt, PlaybackState } from './types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, apiVersion: 'v1alpha' });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY, apiVersion: 'v1alpha' });
 const model = 'lyria-realtime-exp';
 
 const DEFAULT_PROMPTS = [
