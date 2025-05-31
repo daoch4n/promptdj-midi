@@ -30,9 +30,6 @@ jobs:
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: Create CNAME file
-        run: echo "promptdj.com" > dist/CNAME
-
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/zen'
