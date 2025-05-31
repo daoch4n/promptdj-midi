@@ -65,8 +65,13 @@ export class PromptController extends LitElement {
       -webkit-font-smoothing: antialiased;
       background: #000;
       color: #fff;
+      cursor: text; /* Indicate text input */
       &:not(:focus) {
         text-overflow: ellipsis;
+      }
+      &:focus {
+        background: #333; /* Darker background on focus */
+        border: 0.1vmin solid #fff; /* Subtle white border on focus */
       }
     }
     :host([filtered=true]) #text {
@@ -214,4 +219,4 @@ declare global {
   interface HTMLElementTagNameMap {
     'prompt-controller': PromptController;
   }
-} 
+}
