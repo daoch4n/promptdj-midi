@@ -743,6 +743,14 @@ class PromptDjMidi extends LitElement {
 ${this.renderPrompts()}
         </div>
 <div class=${advancedClasses}>
+<button
+            id="main-audio-button"
+            class=${this.isButtonOn ? 'is-on' : ''}
+            @click=${this.handleMainAudioButton}>
+            <div class="toggle-switch-base">
+              <div class="toggle-switch-lever"></div>
+            </div>
+          </button>
           <h3>Advanced Settings</h3>
           <div class="setting">
             <label for="density">Density</label>
