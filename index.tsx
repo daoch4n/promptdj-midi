@@ -826,18 +826,18 @@ class PromptDjMidi extends LitElement {
  
      const scaleMap = new Map<string, { value: string, color: string }>([
        ['Auto', { value: 'SCALE_UNSPECIFIED', color: '#888888' }],
-       ['C Major / A Minor', { value: 'C_MAJOR_A_MINOR', color: 'hsl(0, 100%, 50%)' }],
-       ['C# Major / A# Minor', { value: 'D_FLAT_MAJOR_B_FLAT_MINOR', color: 'hsl(30, 100%, 50%)' }],
-       ['D Major / B Minor', { value: 'D_MAJOR_B_MINOR', color: 'hsl(60, 100%, 50%)' }],
-       ['D# Major / C Minor', { value: 'E_FLAT_MAJOR_C_MINOR', color: 'hsl(90, 100%, 50%)' }],
-       ['E Major / C# Minor', { value: 'E_MAJOR_D_FLAT_MINOR', color: 'hsl(120, 100%, 50%)' }],
-       ['F Major / D Minor', { value: 'F_MAJOR_D_MINOR', color: 'hsl(150, 100%, 50%)' }],
-       ['F# Major / D# Minor', { value: 'G_FLAT_MAJOR_E_FLAT_MINOR', color: 'hsl(180, 100%, 50%)' }],
-       ['G Major / E Minor', { value: 'G_MAJOR_E_MINOR', color: 'hsl(210, 100%, 50%)' }],
-       ['G# Major / F Minor', { value: 'A_FLAT_MAJOR_F_MINOR', color: 'hsl(240, 100%, 50%)' }],
-       ['A Major / F# Minor', { value: 'A_MAJOR_G_FLAT_MINOR', color: 'hsl(270, 100%, 50%)' }],
-       ['A# Major / G Minor', { value: 'B_FLAT_MAJOR_G_MINOR', color: 'hsl(300, 100%, 50%)' }],
-       ['B Major / G# Minor', { value: 'B_MAJOR_A_FLAT_MINOR', color: 'hsl(330, 100%, 50%)' }],
+       ['C Major / A Minor', { value: 'C_MAJOR_A_MINOR', color: 'hsl(0, 100%, 35%)' }],
+       ['C# Major / A# Minor', { value: 'D_FLAT_MAJOR_B_FLAT_MINOR', color: 'hsl(30, 100%, 35%)' }],
+       ['D Major / B Minor', { value: 'D_MAJOR_B_MINOR', color: 'hsl(60, 100%, 35%)' }],
+       ['D# Major / C Minor', { value: 'E_FLAT_MAJOR_C_MINOR', color: 'hsl(90, 100%, 35%)' }],
+       ['E Major / C# Minor', { value: 'E_MAJOR_D_FLAT_MINOR', color: 'hsl(120, 100%, 35%)' }],
+       ['F Major / D Minor', { value: 'F_MAJOR_D_MINOR', color: 'hsl(150, 100%, 35%)' }],
+       ['F# Major / D# Minor', { value: 'G_FLAT_MAJOR_E_FLAT_MINOR', color: 'hsl(180, 100%, 35%)' }],
+       ['G Major / E Minor', { value: 'G_MAJOR_E_MINOR', color: 'hsl(210, 100%, 35%)' }],
+       ['G# Major / F Minor', { value: 'A_FLAT_MAJOR_F_MINOR', color: 'hsl(240, 100%, 35%)' }],
+       ['A Major / F# Minor', { value: 'A_MAJOR_G_FLAT_MINOR', color: 'hsl(270, 100%, 35%)' }],
+       ['A# Major / G Minor', { value: 'B_FLAT_MAJOR_G_MINOR', color: 'hsl(300, 100%, 35%)' }],
+       ['B Major / G# Minor', { value: 'B_MAJOR_A_FLAT_MINOR', color: 'hsl(330, 100%, 35%)' }],
      ]);
  
      const cfg = this.config;

@@ -38,6 +38,7 @@ export class DJStyleSelector extends LitElement {
       box-shadow: 0 0 7px var(--glow-color, #007bff); /* Subtle outer glow */
       color: #fff;
       font-weight: bold;
+      text-shadow: 0px 0px 4px rgba(0,0,0,0.7), 0px 0px 1px rgba(0,0,0,0.9);
     }
   `;
 
