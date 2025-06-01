@@ -93,10 +93,16 @@ class PromptDjMidi extends LitElement {
       width: 100%;
       max-width: 1600px;
       height: 100%;
-      padding: 8vmin 5vmin;
-      padding-right: 240px; /* Added for fixed panel */
+      padding: 8vmin 5vmin; /* Default padding */
       box-sizing: border-box;
     }
+
+    @media (min-width: 768px) {
+      #main-content-area {
+        padding-right: 240px; /* Apply padding only for desktop */
+      }
+    }
+
     .advanced-settings-panel {
       font-family: 'DS-Digital', cursive;
       position: fixed;
@@ -117,6 +123,24 @@ class PromptDjMidi extends LitElement {
       padding-top: 20px;
       box-sizing: border-box;
     }
+
+    @media (max-width: 767px) {
+      .advanced-settings-panel {
+        width: 80vw; /* Adjust width for mobile */
+        transform: translateX(100%); /* Hide off-screen */
+        transition: transform 0.3s ease-in-out;
+        /* position, right, top, height, z-index are already set as desired */
+      }
+
+      .advanced-settings-panel.active {
+        transform: translateX(0); /* Show panel */
+      }
+
+      #main-content-area {
+        padding-right: 5vmin; /* Mobile padding when panel is closed */
+      }
+    }
+
     .advanced-settings-panel .setting {
       display: flex;
       flex-direction: column;
@@ -136,7 +160,8 @@ class PromptDjMidi extends LitElement {
     }
 
     .advanced-settings-panel .setting weight-knob {
-      width: 100px;
+      width: 70%; /* Make it a percentage of its container */
+      max-width: 120px; /* Optional: set a max-width if needed for larger panel states */
       margin: 0 auto; /* Center the knob if its container is wider */
     }
  
@@ -178,6 +203,22 @@ class PromptDjMidi extends LitElement {
      gap: 2.5vmin;
      margin-top: 0;
    }
+
+    @media (max-width: 767px) {
+      #grid {
+        grid-template-columns: repeat(2, 1fr);
+        width: 90vmin; /* Adjust width if necessary for better fit */
+        height: auto; /* Adjust height to content if necessary */
+      }
+    }
+
+    @media (max-width: 479px) {
+      #grid {
+        grid-template-columns: repeat(1, 1fr);
+        width: 90vmin; /* Or even 95vmin if 1 column feels too narrow */
+        /* Height remains auto or adjust as needed */
+      }
+    }
  
    #background {
      will-change: background-image;
@@ -196,8 +237,9 @@ class PromptDjMidi extends LitElement {
      left: 0;
      padding: 10px;
      display: flex;
-     gap: 5px;
+      gap: 10px; /* Increased gap */
      align-items: center;
+      flex-wrap: wrap; /* Allow items to wrap */
    }
    #buttons button {
        font: inherit;
@@ -257,6 +299,22 @@ class PromptDjMidi extends LitElement {
       display: block;
       cursor: pointer;
     }
+
+    @media (max-width: 767px) {
+      play-pause-button {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 10px; /* Optional: adjust margin */
+      }
+    }
+
+    @media (max-width: 479px) {
+      play-pause-button {
+        width: 60px;
+        height: 60px;
+      }
+    }
+
    .solo-group-header {
      font-weight: bold;
      margin-top: 15px; /* Add some space above the header */
@@ -271,6 +329,46 @@ class PromptDjMidi extends LitElement {
      box-shadow: 0 0 8px #ff0000, 0 0 12px #ff0000; /* Red glow */
      border-color: #ff4444; /* Optional: change border color too */
    }
+
+    .settings-toggle-button {
+      display: none; /* Hidden by default */
+    }
+
+    @media (max-width: 767px) {
+      .settings-toggle-button {
+        display: inline-block; /* Or block, flex, etc. as needed */
+        font-size: 1.5rem; /* Example size */
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        /* position it appropriately if needed, e.g., within #buttons */
+      }
+    }
+
+    @media (max-width: 479px) {
+      #buttons {
+        justify-content: flex-start; /* Ensure items don't center when wrapped */
+      }
+      #buttons .api-controls,
+      #buttons .seed-controls {
+        display: flex; /* ensure it's flex if not already */
+        flex-direction: column;
+        align-items: stretch; /* Stretch items like inputs */
+        width: 100%; /* Make the container take full width */
+        gap: 5px; /* Add gap between label and input if structure is label then input */
+      }
+      #buttons .api-controls input[type="text"],
+      #buttons .seed-controls input[type="number"],
+      #buttons .api-controls button { /* Target button within api-controls too */
+        width: 100%; /* Make form elements and button take full width */
+        box-sizing: border-box; /* Important for width: 100% to include padding/border */
+      }
+      #buttons select { /* If there's a select element for MIDI that should also go full width */
+        width: 100%;
+        box-sizing: border-box;
+      }
+    }
    `;
  
    private prompts: Map<string, Prompt>;
@@ -295,6 +393,7 @@ class PromptDjMidi extends LitElement {
    @state() private audioLevel = 0;
    @state() private midiInputIds: string[] = [];
    @state() private activeMidiInputId: string | null = null;
+   @state() private isSettingsPanelOpen = false;
  
    @state()
    private filteredPrompts = new Set<string>();
@@ -639,6 +738,10 @@ class PromptDjMidi extends LitElement {
      this.geminiApiKey = inputElement.value;
    }
  
+   private toggleSettingsPanel() {
+    this.isSettingsPanelOpen = !this.isSettingsPanelOpen;
+   }
+
    private getApiKey() {
      window.open('https://aistudio.google.com/apikey', '_blank');
    }
@@ -822,6 +925,7 @@ class PromptDjMidi extends LitElement {
  
      const advancedClasses = classMap({
        'advanced-settings-panel': true,
+       'active': this.isSettingsPanelOpen,
      });
  
      const scaleMap = new Map<string, { value: string, color: string }>([
@@ -852,6 +956,9 @@ class PromptDjMidi extends LitElement {
             class=${this.showMidi ? 'active' : ''}
             >MIDI</button
           >
+           <button class="settings-toggle-button" @click=${this.toggleSettingsPanel}>
+             ☰
+           </button>
           ${this.showMidi ? html`
             <select
               @change=${this.handleMidiInputChange}
