@@ -35,13 +35,13 @@ export class WeightKnob extends LitElement {
     #halo {
       position: absolute;
       z-index: -1;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 50%;
+      left: 50%;
+      width: 66.67px; /* 1.5x smaller than 100px base */
+      height: 66.67px;
       border-radius: 50%;
       mix-blend-mode: lighten;
-      transform: scale(2); /* Default large scale */
+      transform: translate(-50%, -50%); /* Centering using transform */
       will-change: transform;
       opacity: 0.5; /* Added for semi-transparency */
     }
@@ -130,7 +130,7 @@ export class WeightKnob extends LitElement {
     const haloStyle = styleMap({
       display: this.value > 0 ? 'block' : 'none',
       background: this.color,
-      transform: `scale(${scale})`,
+      transform: `translate(-50%, -50%) scale(${scale})`,
     });
 
     return html`
