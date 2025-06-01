@@ -185,7 +185,6 @@ class PromptDjMidi extends LitElement {
       cursor: pointer;
       font-size: 0.9em;
       margin-top: 15px; /* Space above */
-      width: 100%; /* Make it full width like other controls */
       box-sizing: border-box; /* Ensure padding doesn't make it overflow */
       transition: background-color 0.2s, box-shadow 0.2s;
     }
