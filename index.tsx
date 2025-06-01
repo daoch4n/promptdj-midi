@@ -325,12 +325,15 @@ class PromptDjMidi extends LitElement {
    @state() private autoTopK = PromptDjMidi.INITIAL_AUTO_STATES.autoTopK;
    @state() private autoGuidance = PromptDjMidi.INITIAL_AUTO_STATES.autoGuidance;
 
+   @state() private apiKeyInvalid = false;
    @state() private lastDefinedTemperature = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
    @state() private lastDefinedTopK = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTopK;
    @state() private lastDefinedGuidance = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedGuidance;
  
    private audioLevelRafId: number | null = null;
    private connectionError = true;
+   private readonly maxRetries = 3;
+   private currentRetryAttempt = 0;
  
    @query('toast-message') private toastMessage!: ToastMessage;
  
@@ -371,6 +374,8 @@ class PromptDjMidi extends LitElement {
            onmessage: async (e: LiveMusicServerMessage) => {
              if (e.setupComplete) {
                this.connectionError = false;
+               this.apiKeyInvalid = false;
+               this.currentRetryAttempt = 0; // Reset on successful connection setup
              }
              if (e.filteredPrompt) {
                this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
@@ -412,31 +417,53 @@ class PromptDjMidi extends LitElement {
                this.nextStartTime += audioBuffer.duration;
              }
            },
-           onerror: (e: ErrorEvent) => {
-             this.connectionError = true;
-             if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-               this.toastMessage.show('Connection lost. Attempting to reconnect...');
-             }
-             this.connectToSession();
-           },
-           onclose: (e: CloseEvent) => {
-             this.connectionError = true;
-             if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-               this.toastMessage.show('Connection lost. Attempting to reconnect...');
-             }
-             this.connectToSession();
-           },
+           onerror: (e: ErrorEvent) => this.handleConnectionIssue('Connection error'),
+           onclose: (e: CloseEvent) => this.handleConnectionIssue(`Connection closed (code: ${e.code})`),
          },
        });
      } catch (error) {
+       // This catch block handles initial connection errors (e.g., invalid API key on first try)
        this.connectionError = true;
-       this.stop();
+       if (error instanceof Error && error.message.toLowerCase().includes('authentication failed')) {
+         this.apiKeyInvalid = true;
+       }
+       // For initial connection failures, we typically don't auto-retry here as it's often a setup issue.
+       // The user might need to correct something (like API key) and try again manually.
+       this.stop(); // Ensure playback is stopped
        if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-         this.toastMessage.show('Failed to connect to session. Check your API key.');
+         this.toastMessage.show('Failed to connect to session. Check your API key and network connection.');
        }
        console.error('Failed to connect to session:', error);
+       // Reset retries for the next explicit user action
+       this.currentRetryAttempt = 0;
      }
    }
+
+  private handleConnectionIssue(messagePrefix: string) {
+    this.connectionError = true;
+    this.currentRetryAttempt++;
+
+    if (this.currentRetryAttempt <= this.maxRetries) {
+      this.playbackState = 'loading'; // Activate spinner during retry attempts
+      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+        this.toastMessage.show(`${messagePrefix}. Attempting to reconnect (attempt ${this.currentRetryAttempt} of ${this.maxRetries})...`);
+      }
+      setTimeout(() => {
+        // Before retrying, ensure that if an API key was marked invalid by a direct catch,
+        // and the user hasn't changed it, we don't loop on auth errors.
+        // However, connectToSession itself will show the API key input if apiKeyInvalid is true.
+        this.connectToSession();
+      }, 2000); // 2-second delay
+    } else {
+      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+        this.toastMessage.show('Failed to reconnect after multiple attempts. Please check your connection and try playing again.');
+      }
+      this.playbackState = 'stopped'; // Or 'paused'
+      this.currentRetryAttempt = 0; // Reset for the next manual attempt
+      // Consider if apiKeyInvalid should be set true here if repeated failures might indicate it.
+      // For now, a general message is shown. The user can try saving the key again if they suspect it.
+    }
+  }
  
    private getPromptsToSend() {
      return Array.from(this.prompts.values())
@@ -604,20 +631,41 @@ class PromptDjMidi extends LitElement {
    }
  
    private async handleMainAudioButton() {
+    // Reset retry attempts when user manually clicks play/pause
+    // This ensures that a user action starts the retry cycle fresh if needed.
+    // If connectToSession is successful, it will reset currentRetryAttempt to 0 anyway.
+    // If it fails and goes into retries, this reset prevents interference.
+     this.currentRetryAttempt = 0;
+
      if (!this.audioReady) {
-       await this.connectToSession();
+       this.playbackState = 'loading';
+       await this.connectToSession(); // connectToSession will handle its own retries internally now
+       if (this.connectionError || this.apiKeyInvalid) { // Check status after connectToSession (and its retries) are done
+         this.playbackState = 'stopped';
+         // Toast message is handled by connectToSession or handleConnectionIssue if max retries are hit
+         if (!this.toastMessage.active) { // Show a generic message if no specific one from retries is up
+            this.toastMessage.show('Failed to connect. Please check your API key and connection.');
+         }
+         return;
+       }
        await this.setSessionPrompts();
        this.play();
      } else {
        if (this.playbackState === 'playing') {
          this.pause();
        } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
-         if (this.connectionError) {
-           await this.connectToSession();
-           if (this.connectionError) {
+         if (this.connectionError || this.apiKeyInvalid) {
+           this.playbackState = 'loading';
+           await this.connectToSession(); // connectToSession will handle its own retries
+           if (this.connectionError || this.apiKeyInvalid) { // Check status after attempts
+             this.playbackState = (this.playbackState === 'loading' || this.playbackState === 'playing') ? 'stopped' : this.playbackState;
+             if (!this.toastMessage.active) {
+                this.toastMessage.show('Failed to reconnect. Please check your connection or API key.');
+             }
              return;
            }
          }
+         // If connection is now fine (or was already fine)
          await this.setSessionPrompts();
          this.play();
        } else if (this.playbackState === 'loading') {
@@ -646,14 +694,16 @@ class PromptDjMidi extends LitElement {
    }
  
    private saveApiKeyToLocalStorage() {
-     if (this.geminiApiKey) {
-       localStorage.setItem('geminiApiKey', this.geminiApiKey);
-       this.toastMessage.show('Gemini API key saved to local storage.');
-     } else {
-       localStorage.removeItem('geminiApiKey');
-       this.toastMessage.show('Gemini API key removed from local storage.');
-     }
-     this.handleMainAudioButton();
+    if (this.geminiApiKey) {
+      localStorage.setItem('geminiApiKey', this.geminiApiKey);
+      this.apiKeyInvalid = false;
+      this.connectionError = false;
+      this.toastMessage.show('Gemini API key saved to local storage.');
+    } else {
+      localStorage.removeItem('geminiApiKey');
+      this.toastMessage.show('Gemini API key removed from local storage.');
+    }
+    this.handleMainAudioButton();
    }
  
    private handleApiKeyInputChange(event: Event) {
@@ -930,7 +980,7 @@ class PromptDjMidi extends LitElement {
             : html`<option value="">No devices found</option>`}
             </select>
           ` : ''}
-          ${this.connectionError || !this.geminiApiKey ? html`
+          ${!this.geminiApiKey || this.apiKeyInvalid ? html`
             <button @click=${this.getApiKey}>Get API Key</button>
             <div class="api-controls">
               <input
