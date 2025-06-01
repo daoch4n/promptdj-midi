@@ -147,3 +147,61 @@ body.dragging * {
   content: none;
 }
 
+/* Ensure #buttons can serve as a context for absolute positioning if needed */
+#buttons {
+  position: relative; /* Add if not present, or verify */
+  /* ... existing styles like display: flex, gap, align-items: center ... */
+}
+
+/* Base style for seed-controls (already partially defined) */
+#buttons .seed-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px; /* From original styles */
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  /* Add some margin if needed to space it from the MIDI control */
+  margin-left: 10px; /* Example: Adjust as needed */
+}
+
+/* Styles for when seed input is hoverable (API key hidden) */
+#buttons .seed-controls.seed-controls-hoverable {
+  /* Initial state: hidden */
+  opacity: 0;
+  visibility: hidden;
+  /* Uncomment and adjust if using absolute positioning to prevent layout shift */
+  /*
+  position: absolute;
+  left: 180px; // Estimate: width of MIDI button + MIDI select + some gap
+  top: 0; // Align with the top of the #buttons div
+  background-color: #202020; // Or whatever the #buttons bg is, to avoid transparency issues
+  padding: 3px 6px; // Match styling of other inputs if needed
+  border-radius: 4px; // Match styling
+  z-index: 10; // Ensure it's above other elements in #buttons if overlapping
+  */
+}
+
+/* Hover state for hoverable seed input */
+#buttons:hover .seed-controls.seed-controls-hoverable {
+  opacity: 1;
+  visibility: visible;
+  /* If using absolute, it remains absolutely positioned, just becomes visible */
+}
+
+/* Ensure consistent height and vertical alignment for all items in #buttons */
+#buttons > * {
+  vertical-align: middle; /* May help align items if they have different heights */
+}
+
+#buttons input[type="number"]#seed {
+    /* Check if width needs adjustment; it's currently 18vmin */
+    /* May need to be less if space is tight next to MIDI */
+    /* width: 12vmin; /* Example adjustment */
+}
+
+/* It might be good to ensure that the .seed-controls label and input also inherit opacity for transition */
+#buttons .seed-controls.seed-controls-hoverable label,
+#buttons .seed-controls.seed-controls-hoverable input {
+    transition: opacity 0.3s ease-in-out; /* so they fade smoothly with the container */
+}
