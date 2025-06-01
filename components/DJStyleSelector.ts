@@ -34,8 +34,8 @@ export class DJStyleSelector extends LitElement {
       box-shadow: 0 0 4px -1px var(--glow-color, #007bff);
     }
     .option.selected {
-      background-color: #555; /* More neutral background */
-      box-shadow: 0 0 7px var(--glow-color, #007bff); /* Subtle glow */
+      background-color: var(--glow-color, #007bff); /* Use variable for inner color */
+      box-shadow: 0 0 7px var(--glow-color, #007bff); /* Subtle outer glow */
       color: #fff;
       font-weight: bold;
     }
