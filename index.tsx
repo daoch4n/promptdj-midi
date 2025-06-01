@@ -734,6 +734,7 @@ class PromptDjMidi extends LitElement {
             </select>
           ` : ''}
           ${this.connectionError || !this.geminiApiKey ? html`
+            <button @click=${this.getApiKey}>Get API Key</button>
             <div class="api-controls">
               <input
                 type="password"
@@ -742,7 +743,6 @@ class PromptDjMidi extends LitElement {
                 @input=${this.handleApiKeyInputChange}
               />
               <button @click=${this.saveApiKeyToLocalStorage}>Save</button>
-              <button @click=${this.getApiKey}>Get API Key</button>
             </div>
             <div class="seed-controls">
                 <label for="seed">Seed</label>
