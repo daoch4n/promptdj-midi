@@ -75,13 +75,6 @@ class PromptDjMidi extends LitElement {
   };
 
   static override styles = css`
-    html, body {
-      height: 100%;
-      margin: 0;
-    }
-    body {
-      overflow:hidden;
-    }
     :host {
       height: 100%;
       display: flex;
