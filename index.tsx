@@ -740,109 +740,110 @@ class PromptDjMidi extends LitElement {
           ` : ''}
         </div>
         <div id="main-content-area">
-         <div id="grid">${this.renderPrompts()}</div>
-           <div class=${advancedClasses}>
-            <button id="main-audio-button" @click=${this.handleMainAudioButton} class="${this.isButtonOn ? 'is-on' : 'is-off'}">
-                <div class="toggle-switch-base">
-                <div class="toggle-switch-lever"></div>
-                </div>
-            </button>
-            <div class="setting" auto=${this.autoBpm}>
-                <label for="bpm">BPM</label>
-                <weight-knob
-                    id="bpm"
-                    .value=${(this.lastDefinedBpm - 60) / 60}
-                    @input=${this.handleInputChange}
-                ></weight-knob>
-                <div class="auto-row">
-                    <input
-                        type="checkbox"
-                        id="auto-bpm"
-                        .checked=${this.autoBpm}
-                        @input=${this.handleInputChange} />
-                    <label for="auto-bpm">Auto</label>
-                    <span>${(this.lastDefinedBpm ?? 120).toFixed(0)}</span>
-                </div>
+           </div>
+         </div>
+         </div>
+          <div class=${advancedClasses}>
+           <button id="main-audio-button" @click=${this.handleMainAudioButton} class="${this.isButtonOn ? 'is-on' : 'is-off'}">
+               <div class="toggle-switch-base">
+               <div class="toggle-switch-lever"></div>
+               </div>
+           </button>
+           <div class="setting" auto=${this.autoBpm}>
+               <label for="bpm">BPM</label>
+               <weight-knob
+                   id="bpm"
+                   .value=${(this.lastDefinedBpm - 60) / 60}
+                   @input=${this.handleInputChange}
+               ></weight-knob>
+               <div class="auto-row">
+                   <input
+                       type="checkbox"
+                       id="auto-bpm"
+                       .checked=${this.autoBpm}
+                       @input=${this.handleInputChange} />
+                   <label for="auto-bpm">Auto</label>
+                   <span>${(this.lastDefinedBpm ?? 120).toFixed(0)}</span>
+               </div>
+           </div>
+          <div class="setting" auto=${this.autoDensity}>
+            <label for="density">Density</label>
+            <weight-knob
+              id="density"
+              .value=${this.lastDefinedDensity * 2}
+              @input=${this.handleInputChange}
+            ></weight-knob>
+            <div class="auto-row">
+              <input
+                type="checkbox"
+                id="auto-density"
+                .checked=${this.autoDensity}
+                @input=${this.handleInputChange} />
+              <label for="auto-density">Auto</label>
+              <span>${(this.lastDefinedDensity ?? 0.5).toFixed(2)}</span>
             </div>
-           <div class="setting" auto=${this.autoDensity}>
-             <label for="density">Density</label>
-             <weight-knob
-               id="density"
-               .value=${this.lastDefinedDensity * 2}
-               @input=${this.handleInputChange}
-             ></weight-knob>
-             <div class="auto-row">
-               <input
-                 type="checkbox"
-                 id="auto-density"
-                 .checked=${this.autoDensity}
-                 @input=${this.handleInputChange} />
-               <label for="auto-density">Auto</label>
-               <span>${(this.lastDefinedDensity ?? 0.5).toFixed(2)}</span>
-             </div>
-           </div>
-           <div class="setting" auto=${this.autoBrightness}>
-             <label for="brightness">Brightness</label>
-             <weight-knob
-               id="brightness"
-               .value=${this.lastDefinedBrightness * 2}
-               @input=${this.handleInputChange}
-             ></weight-knob>
-             <div class="auto-row">
-               <input
-                 type="checkbox"
-                 id="auto-brightness"
-                 .checked=${this.autoBrightness}
-                 @input=${this.handleInputChange} />
-               <label for="auto-brightness">Auto</label>
-               <span>${(this.lastDefinedBrightness ?? 0.5).toFixed(2)}</span>
-             </div>
-           </div>
-           <div class="setting">
-             <label for="scale">Scale</label>
-             <select
-               id="scale"
-               .value=${cfg.scale || 'SCALE_UNSPECIFIED'}
-               @change=${this.handleInputChange}>
-               <option value="" disabled selected>Select Scale</option>
-               ${[...scaleMap.entries()].map(
-                 ([displayName, enumValue]) =>
-                   html`<option value=${enumValue}>${displayName}</option>`,
-               )}
-             </select>
-           </div>
-           <div class="setting">
-             <div class="setting checkbox-setting">
-               <input
-                 type="checkbox"
-                 id="muteBass"
-                 .checked=${!!cfg.muteBass}
-                 @change=${this.handleInputChange} />
-               <label for="muteBass" style="font-weight: normal;">Mute Bass</label>
-             </div>
-             <div class="setting checkbox-setting">
-               <input
-                 type="checkbox"
-                 id="muteDrums"
-                 .checked=${!!cfg.muteDrums}
-                 @change=${this.handleInputChange} />
-               <label for="muteDrums" style="font-weight: normal;"
-                 >Mute Drums</label
-               >
-             </div>
-             <div class="setting checkbox-setting">
-               <input
-                 type="checkbox"
-                 id="onlyBassAndDrums"
-                 .checked=${!!cfg.onlyBassAndDrums}
-                 @change=${this.handleInputChange} />
-               <label for="onlyBassAndDrums" style="font-weight: normal;"
-                 >Only Bass & Drums</label
-               >
-             </div>
-           </div>
-         </div>
-         </div>
+          </div>
+          <div class="setting" auto=${this.autoBrightness}>
+            <label for="brightness">Brightness</label>
+            <weight-knob
+              id="brightness"
+              .value=${this.lastDefinedBrightness * 2}
+              @input=${this.handleInputChange}
+            ></weight-knob>
+            <div class="auto-row">
+              <input
+                type="checkbox"
+                id="auto-brightness"
+                .checked=${this.autoBrightness}
+                @input=${this.handleInputChange} />
+              <label for="auto-brightness">Auto</label>
+              <span>${(this.lastDefinedBrightness ?? 0.5).toFixed(2)}</span>
+            </div>
+          </div>
+          <div class="setting">
+            <label for="scale">Scale</label>
+            <select
+              id="scale"
+              .value=${cfg.scale || 'SCALE_UNSPECIFIED'}
+              @change=${this.handleInputChange}>
+              <option value="" disabled selected>Select Scale</option>
+              ${[...scaleMap.entries()].map(
+                ([displayName, enumValue]) =>
+                  html`<option value=${enumValue}>${displayName}</option>`,
+              )}
+            </select>
+          </div>
+          <div class="setting">
+            <div class="setting checkbox-setting">
+              <input
+                type="checkbox"
+                id="muteBass"
+                .checked=${!!cfg.muteBass}
+                @change=${this.handleInputChange} />
+              <label for="muteBass" style="font-weight: normal;">Mute Bass</label>
+            </div>
+            <div class="setting checkbox-setting">
+              <input
+                type="checkbox"
+                id="muteDrums"
+                .checked=${!!cfg.muteDrums}
+                @change=${this.handleInputChange} />
+              <label for="muteDrums" style="font-weight: normal;"
+                >Mute Drums</label
+              >
+            </div>
+            <div class="setting checkbox-setting">
+              <input
+                type="checkbox"
+                id="onlyBassAndDrums"
+                .checked=${!!cfg.onlyBassAndDrums}
+                @change=${this.handleInputChange} />
+              <label for="onlyBassAndDrums" style="font-weight: normal;"
+                >Only Bass & Drums</label
+              >
+            </div>
+          </div>
+          </div>
           <toast-message></toast-message>
         `;
      }
