@@ -136,7 +136,14 @@ export class PromptController extends LitElement {
   override firstUpdated() {
     // contenteditable is applied to textInput so we can "shrink-wrap" to text width
     // It's set here and not render() because Lit doesn't believe it's a valid attribute.
-    this.textInput.setAttribute('contenteditable', 'plaintext-only');
+this.textInput.setAttribute('contenteditable', 'true');
+this.textInput.addEventListener('paste', (e: ClipboardEvent) => {
+  e.preventDefault();
+  const text = e.clipboardData?.getData('text/plain');
+  if (text) {
+    document.execCommand('insertText', false, text);
+  }
+});
 
     // contenteditable will do weird things if this is part of the template.
     this.textInput.textContent = this.text;
