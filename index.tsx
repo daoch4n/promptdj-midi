@@ -648,6 +648,67 @@ class PromptDjMidi extends LitElement {
         }
       }
     }
+
+    private handleAutoToggleClick(event: Event) {
+      const target = event.currentTarget as HTMLElement;
+      const id = target.id as 'auto-density' | 'auto-brightness' | 'auto-bpm';
+      let newDensity = this.config.density;
+      let newBrightness = this.config.brightness;
+      let newBpm = this.config.bpm;
+
+      switch (id) {
+        case 'auto-density':
+          this.autoDensity = !this.autoDensity;
+          if (!this.autoDensity) { // Switched to Manual
+            newDensity = this.lastDefinedDensity;
+          } else { // Switched to Auto
+            newDensity = 0.5; // Default auto value for density (0-1 scale)
+          }
+          // Update config only if it changed to avoid redundant updates if already 0.5
+          if (this.config.density !== newDensity) {
+            this.config = { ...this.config, density: newDensity };
+          }
+          break;
+        case 'auto-brightness':
+          this.autoBrightness = !this.autoBrightness;
+          if (!this.autoBrightness) { // Switched to Manual
+            newBrightness = this.lastDefinedBrightness;
+          } else { // Switched to Auto
+            newBrightness = 0.5; // Default auto value for brightness (0-1 scale)
+          }
+          if (this.config.brightness !== newBrightness) {
+            this.config = { ...this.config, brightness: newBrightness };
+          }
+          break;
+        case 'auto-bpm':
+          this.autoBpm = !this.autoBpm;
+          if (!this.autoBpm) { // Switched to Manual
+            newBpm = this.lastDefinedBpm;
+          } else { // Switched to Auto
+            // For BPM, null is used to signify auto to the backend in updatePlaybackParameters.
+            // Or, if a default BPM is preferred for config, set it here (e.g., 120).
+            // Let's use null in config as well for consistency with what might be sent.
+            newBpm = null;
+          }
+          if (this.config.bpm !== newBpm) {
+            this.config = { ...this.config, bpm: newBpm };
+          }
+          break;
+      }
+      this.requestUpdate();
+
+      if (this.session) {
+        this.session.updatePlaybackParameters({
+          density: this.config.density,
+          brightness: this.config.brightness,
+          bpm: this.config.bpm, // This will be the newBpm value set above
+          muteBass: this.config.muteBass,
+          muteDrums: this.config.muteDrums,
+          onlyBassAndDrums: this.config.onlyBassAndDrums,
+          scale: this.config.scale === 'SCALE_UNSPECIFIED' ? null : this.config.scale,
+        });
+      }
+    }
  
     private handleInputChange(event: Event) {
      const target = event.target as HTMLInputElement | HTMLSelectElement | WeightKnob;
@@ -782,14 +843,12 @@ ${this.renderPrompts()}
               .value=${this.autoDensity ? 1 : cfg.density * 2}
               @input=${this.handleInputChange}
             ></weight-knob>
-            <div class="checkbox-setting">
-              <input
-                type="checkbox"
-                id="auto-density"
-                .checked=${this.autoDensity}
-                @change=${this.handleInputChange}
-              />
-              <label for="auto-density">Auto</label>
+            <div
+              id="auto-density"
+              class="option-button ${this.autoDensity ? 'selected' : ''}"
+              @click=${this.handleAutoToggleClick}
+            >
+              Auto
             </div>
           </div>
           <div class="setting">
@@ -799,14 +858,12 @@ ${this.renderPrompts()}
               .value=${this.autoBrightness ? 1 : cfg.brightness * 2}
               @input=${this.handleInputChange}
             ></weight-knob>
-            <div class="checkbox-setting">
-              <input
-                type="checkbox"
-                id="auto-brightness"
-                .checked=${this.autoBrightness}
-                @change=${this.handleInputChange}
-              />
-              <label for="auto-brightness">Auto</label>
+            <div
+              id="auto-brightness"
+              class="option-button ${this.autoBrightness ? 'selected' : ''}"
+              @click=${this.handleAutoToggleClick}
+            >
+              Auto
             </div>
           </div>
           <div class="setting">
@@ -817,14 +874,12 @@ ${this.renderPrompts()}
               .displayValue=${this.autoBpm ? 'AUTO' : (cfg.bpm ?? 120).toFixed(0)}
               @input=${this.handleInputChange}
             ></weight-knob>
-            <div class="checkbox-setting">
-              <input
-                type="checkbox"
-                id="auto-bpm"
-                .checked=${this.autoBpm}
-                @change=${this.handleInputChange}
-              />
-              <label for="auto-bpm">Auto</label>
+            <div
+              id="auto-bpm"
+              class="option-button ${this.autoBpm ? 'selected' : ''}"
+              @click=${this.handleAutoToggleClick}
+            >
+              Auto
             </div>
           </div>
           <div class="setting">
