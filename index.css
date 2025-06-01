@@ -1,12 +1,16 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* To prevent scrollbars if content slightly overflows */
+  overflow-x: hidden; /* To prevent horizontal scrollbars */
 }
 
 body {
-  width: 100vw; /* Ensure body takes full viewport width */
+  width: 100%; /* Ensure body takes full viewport width, not 100vw */
 }
 
 body {
@@ -146,4 +150,3 @@ body.dragging * {
 .advanced-settings-panel .setting .checkbox-setting input[type="checkbox"]:checked::after {
   content: none;
 }
-
