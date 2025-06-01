@@ -81,6 +81,15 @@ class PromptDjMidi extends LitElement {
   };
 
   static override styles = css`
+    @keyframes rgb-glow {
+      0% { box-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000; } /* Red */
+      17% { box-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff; } /* Magenta */
+      33% { box-shadow: 0 0 5px #0000ff, 0 0 10px #0000ff; } /* Blue */
+      50% { box-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff; } /* Cyan */
+      67% { box-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00; } /* Green */
+      83% { box-shadow: 0 0 5px #ffff00, 0 0 10px #ffff00; } /* Yellow */
+      100% { box-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000; } /* Red */
+    }
     :host {
       height: 100%;
       display: flex;
@@ -169,10 +178,19 @@ class PromptDjMidi extends LitElement {
     }
     .advanced-settings-panel .setting .option-button.selected {
       background-color: #0069d9; /* Active blue background */
-      box-shadow: 0 0 8px #007bff; /* Brighter blue glow */
+      /* box-shadow: 0 0 8px #007bff; */ /* Removed to avoid conflict with specific auto button glow */
       border-color: #0056b3; /* Optional: to match the blue theme */
       color: #fff;
       font-weight: bold;
+    }
+
+    .advanced-settings-panel .setting .option-button[id^="auto-"].selected {
+      /* Keep background and border for consistency, or define different ones if needed */
+      background-color: #0069d9;
+      border-color: #0056b3;
+      color: #fff;
+      font-weight: bold;
+      animation: rgb-glow 40s linear infinite; /* Apply the RGB glow animation */
     }
 
     /* Add these rules within the static styles */
