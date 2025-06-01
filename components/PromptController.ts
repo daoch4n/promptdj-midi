@@ -26,7 +26,6 @@ export class PromptController extends LitElement {
       flex-shrink: 0;
     }
     #midi {
-      font-family: monospace;
       text-align: center;
       font-size: 1.5vmin;
       border: 0.2vmin solid #fff;
