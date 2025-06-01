@@ -567,23 +567,48 @@ class PromptDjMidi extends LitElement {
  
    private async handleMainAudioButton() {
      if (!this.audioReady) {
+       // This is the first time user clicks play, or API key was not set/valid previously
        await this.connectToSession();
-       await this.setSessionPrompts();
-       this.play();
+
+       // connectToSession internally sets connectionError and playbackState to 'stopped' on failure.
+       // It also shows relevant toasts.
+       if (this.connectionError || !this.session) {
+         // Explicitly ensure playbackState is 'stopped' if connection failed and no session.
+         // Though connectToSession should handle this, belt-and-suspenders.
+         this.playbackState = 'stopped';
+         return;
+       }
+       // If connection is successful and session exists:
+       await this.setSessionPrompts(); // Check for empty prompts, which calls this.pause()
+       if (this.playbackState === 'paused') { // setSessionPrompts might pause if no prompts are active
+         return; // Do not proceed to play if it was paused due to no active prompts
+       }
+       this.play(); // this.play() sets playbackState to 'loading' then 'playing'
      } else {
+       // Audio has been initialized at least once (this.audioReady is true)
        if (this.playbackState === 'playing') {
-         this.pause();
-       } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
-         if (this.connectionError) {
+         this.pause(); // this.pause() sets playbackState to 'paused'
+       } else if (this.playbackState === 'paused') {
+         // If paused, and button is clicked again: try to resume play.
+         if (this.connectionError) { // If connection was lost previously
            await this.connectToSession();
-           if (this.connectionError) {
+           if (this.connectionError || !this.session) { // If reconnection fails
+             this.playbackState = 'stopped'; // Go to stopped if reconnection failed
              return;
            }
          }
-         await this.setSessionPrompts();
-         this.play();
+         await this.setSessionPrompts(); // Check for empty prompts
+         if (this.playbackState === 'paused') { // setSessionPrompts might pause
+            return;
+         }
+         this.play(); // this.play() sets playbackState to 'loading' then 'playing'
        } else if (this.playbackState === 'loading') {
-         this.stop();
+         // If currently loading and button is clicked: pause.
+         this.pause(); // this.pause() sets playbackState to 'paused'
+       } else if (this.playbackState === 'stopped') {
+         // If stopped (and audio was previously ready), and button is clicked: pause.
+         // This effectively means "go to a paused state from a fully stopped but initializable state"
+         this.pause(); // this.pause() sets playbackState to 'paused'
        }
      }
    }
