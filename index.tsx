@@ -189,7 +189,7 @@ class PromptDjMidi extends LitElement {
         border-radius: 4px;
         padding: 3px 6px;
     }
-    #buttons input[type="password"] {
+    #buttons input[type="text"] {
         width: 150px;
     }
     #buttons input[type="number"] {
@@ -737,7 +737,7 @@ class PromptDjMidi extends LitElement {
             <button @click=${this.getApiKey}>Get API Key</button>
             <div class="api-controls">
               <input
-                type="password"
+                type="text"
                 placeholder="Gemini API Key"
                 .value=${this.geminiApiKey || ''}
                 @input=${this.handleApiKeyInputChange}
