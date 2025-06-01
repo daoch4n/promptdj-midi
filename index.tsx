@@ -91,867 +91,866 @@ class PromptDjMidi extends LitElement {
       align-items: stretch;
       margin-bottom: 15px;
       }
-.advanced-settings-panel .setting > label:first-child {
-    margin-bottom: 8px;
-    font-weight: bold;
-    text-align: center;
-    color: #fff; /* Ensure labels are white */
-  }
-
-  .advanced-settings-panel .setting .auto-row,
-  .advanced-settings-panel .setting .checkbox-setting {
-    display: flex; align-items: center; justify-content: flex-start;
-    margin-top: 8px; padding: 0 5%;
-  }
-  #grid {
-    width: 80vmin;
-    height: 80vmin;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 2.5vmin;
-    margin-top: 8vmin;
-  }
-
-  #background {
-    will-change: background-image;
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    z-index: -1;
-    background: #111;
-  }
-  prompt-controller {
-    width: 100%;
-  }
-  #buttons {
-    position: absolute;
-    top: 0;
-    left: 0;
-    padding: 5px;
-    display: flex;
-    gap: 5px;
-  }
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      color: #fff;
-      background: #0002;
-      -webkit-font-smoothing: antialiased;
-      border: 1.5px solid #fff;
-      border-radius: 4px;
-      user-select: none;
-      padding: 3px 6px;
-      &.active {
-        background-color: #fff;
-        color: #000;
-      }
-    }
-    select {
-      font: inherit;
-      padding: 5px;
-      background: #fff;
-      color: #000;
-      border-radius: 4px;
-      border: none;
-      outline: none;
-      cursor: pointer;
-    }
-    #main-audio-button {
-      /* A.1: Main Container Styling */
-      width: 60px;
-      height: 30px;
-      border-radius: 4px; /* Housing with slight rounding */
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      background: #202020; /* Dark housing color */
-      border: 1px solid #111; /* Darker border */
-      box-shadow: 0 1px 2px rgba(0,0,0,0.7); /* External shadow for housing */
-      padding: 0; /* Remove padding if it interferes */
-      position: absolute;
-      top: 5vmin;
-      right: 2.5vmin;
-      font-size: 0;
-      /* Remove transition for box-shadow if halo is gone, or keep if active state changes shadow */
-      /* transition: box-shadow 0.3s ease; Removed subtle-rgb-halo-leak */
-    }
-    #main-audio-button.is-on {
-      /* Styles for ON state - lever and LED will handle this primarily */
-      /* No specific background or main box-shadow animation here anymore */
-    }
-    #main-audio-button.is-off {
-      /* Styles for OFF state - mostly default #main-audio-button styles apply */
-      /* Ensure no lingering halo animation if it was here */
-    }
-    /* Inner circle and loader are removed from HTML, so CSS can be removed or ignored */
-    /* #main-audio-button .inner-circle { ... } */
-    /* #main-audio-button .loader { ... } */
-
-    /* A.2: Toggle Switch Base Styling */
-    .toggle-switch-base {
-      width: 100%;
-      height: 100%;
-      background-color: #252525; /* Darker than housing */
-      border-radius: 4px; /* Match housing's rounding, or slightly less */
-      position: relative;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
-    }
-
-    /* A.3: Toggle Switch Lever Styling */
-    .toggle-switch-lever {
-      position: absolute;
-      width: 24px;
-      height: 24px;
-      background-color: #505050; /* Lighter grey for lever */
-      border-radius: 3px;
-      top: 3px; /* (30px base height - 24px lever height) / 2 */
-      /* B.1: Lever Position - Off State (default) */
-      left: 3px;
-      transition: left 0.2s ease-in-out;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    }
-
-    /* B.2: Lever Position - On State */
-    #main-audio-button.is-on .toggle-switch-lever {
-      left: calc(100% - 24px - 3px); /* 60px - 24px - 3px = 33px */
-    }
-
-    /* B.3: LED Indicator */
-    .toggle-switch-base::after {
-      content: '';
-      position: absolute;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #444; /* LED off color */
-      right: 5px; /* Positioned on the right side of the switch base */
-      top: 50%;
-      transform: translateY(-50%);
-      transition: background 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-
-    #main-audio-button.is-on .toggle-switch-base::after {
-      background: #00ff00; /* Bright green for LED on */
-      box-shadow: 0 0 3px #00ff00, 0 0 5px #00ff00; /* Glow effect */
-    }
-
-    /* C.1: Interaction Styling - Hover */
-    #main-audio-button:hover .toggle-switch-lever {
-      background-color: #606060; /* Slightly lighten lever */
-    }
-
-    /* C.2: Interaction Styling - Active/Pressed */
-    #main-audio-button:active .toggle-switch-lever {
-      box-shadow: inset 0 1px 2px rgba(0,0,0,0.5); /* Make lever look pressed */
-    }
-
-    #main-audio-button .loader { /* If loader is absolutely needed elsewhere, style it here. For now, it's removed from button. */
-      stroke: #ffffff;
-      stroke-width: 3;
-      stroke-linecap: round;
-      animation: spin linear 1s infinite;
-      transform-origin: center;
-      transform-box: fill-box;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(359deg); }
-    }
-    /* subtle-rgb-halo-leak animation removed as LED is used now */
-    /* @keyframes subtle-rgb-halo-leak { ... } */
-  `;
-
-  private prompts: Map<string, Prompt>;
-  private midiDispatcher: MidiDispatcher;
-  private audioAnalyser: AudioAnalyser | null = null;
-
-  @state() private playbackState: PlaybackState = 'stopped';
-  @state() private audioReady = false; // State for audio context readiness
-
-  private session!: LiveMusicSession; // Initialized in connectToSession
-  private audioContext: AudioContext | null = null;
-  private outputNode: GainNode | null = null;
-  private nextStartTime = 0;
-  private readonly bufferTime = 2; // adds an audio buffer in case of network latency
-
-  private ai!: GoogleGenAI;
-  @state() private geminiApiKey: string | null = null;
-  private readonly model = 'lyria-realtime-exp';
-
-
-  @property({ type: Boolean }) private showMidi = false;
-  @state() private audioLevel = 0;
-  @state() private midiInputIds: string[] = [];
-  @state() private activeMidiInputId: string | null = null;
-
-  @state()
-  private filteredPrompts = new Set<string>();
-
-  @state() private config = { seed: null as number | null, bpm: null as number | null, density: 0.5, brightness: 0.5, scale: '', muteBass: false, muteDrums: false, onlyBassAndDrums: false, };
-  @state() private lastDefinedDensity = 0.5;
-  @state() private autoDensity = true;
-  @state() private lastDefinedBrightness = 0.5;
-  @state() private autoBrightness = true;
-
-  private audioLevelRafId: number | null = null;
-  private connectionError = true;
-
-  @query('toast-message') private toastMessage!: ToastMessage;
-
-  constructor(
-    prompts: Map<string, Prompt>,
-    midiDispatcher: MidiDispatcher,
-  ) {
-    super();
-    this.prompts = prompts;
-    this.midiDispatcher = midiDispatcher;
-    this.updateAudioLevel = this.updateAudioLevel.bind(this);
-
-    this.geminiApiKey = localStorage.getItem('geminiApiKey');
-    // If API key is already set, hide the input field by default
-
-    if (this.geminiApiKey) {
-      this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
-      // Initially hide the API key field if a key is saved, but allow it to reappear on error
-    }
-  }
-
-  override async firstUpdated() {
-    // Ensure toastMessage is ready before connecting to session
-    await customElements.whenDefined('toast-message');
-  }
-
-  private async connectToSession() {
-    if (!this.geminiApiKey) {
-      this.toastMessage.show('Please enter your Gemini API key to connect to the session.');
-      return;
-    }
-
-    if (!this.ai) {
-      this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
-    }
-
-    try {
-      this.session = await this.ai.live.music.connect({
-        model: this.model,
-        callbacks: {
-          onmessage: async (e: LiveMusicServerMessage) => {
-            if (e.setupComplete) {
-              this.connectionError = false;
-            }
-            if (e.filteredPrompt) {
-              this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
-              if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-                this.toastMessage.show(e.filteredPrompt.filteredReason as string);
-              }
-            }
-            if (e.serverContent?.audioChunks !== undefined) {
-              if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
-              if (!this.audioContext || !this.outputNode) {
-                // Also show a toast message here if audio context is not initialized.
-                if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-                  this.toastMessage.show('Audio context not initialized. Please refresh.');
-                }
-                console.error('AudioContext or outputNode not initialized.');
-                return;
-              }
-              const audioBuffer = await decodeAudioData(
-                decode(e.serverContent?.audioChunks[0].data),
-                this.audioContext,
-                48000,
-                2,
-              );
-              const source = this.audioContext.createBufferSource();
-              source.buffer = audioBuffer;
-              source.connect(this.outputNode);
-              if (this.nextStartTime === 0) {
-                this.nextStartTime = this.audioContext.currentTime + this.bufferTime;
-                setTimeout(() => {
-                  this.playbackState = 'playing';
-                }, this.bufferTime * 1000);
-              }
-
-              if (this.nextStartTime < this.audioContext.currentTime) {
-                this.playbackState = 'loading';
-                this.nextStartTime = 0;
-                return;
-              }
-              source.start(this.nextStartTime);
-              this.nextStartTime += audioBuffer.duration;
-            }
-          },
-          onerror: (e: ErrorEvent) => {
-            this.connectionError = true;
-            if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-              this.toastMessage.show('Connection lost. Attempting to reconnect...');
-            }
-            this.connectToSession();
-          },
-          onclose: (e: CloseEvent) => {
-            this.connectionError = true;
-            if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-              this.toastMessage.show('Connection lost. Attempting to reconnect...');
-            }
-            this.connectToSession();
-          },
-        },
-      });
-    } catch (error) {
-      this.connectionError = true;
-      this.stop();
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show('Failed to connect to session. Check your API key.');
-      }
-      console.error('Failed to connect to session:', error);
-    }
-  }
-
-  private getPromptsToSend() {
-    return Array.from(this.prompts.values())
-      .filter((p) => {
-        return !this.filteredPrompts.has(p.text) && p.weight !== 0;
-      })
-  }
-
-  private setSessionPrompts = throttle(async () => {
-    const promptsToSend = this.getPromptsToSend();
-    if (promptsToSend.length === 0) {
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show('There needs to be one active prompt to play.')
-      }
-      this.pause();
-      return;
-    }
-    try {
-      if (this.session) { // Add null check for this.session
-        await this.session.setWeightedPrompts({
-          weightedPrompts: promptsToSend,
-        });
-      }
-    } catch (e: unknown) { // Explicitly type e as unknown
-      if (e instanceof Error) {
-        if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-          this.toastMessage.show(e.message)
-        }
-      } else {
-        if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-          this.toastMessage.show('An unknown error occurred.')
-        }
-      }
-      this.pause();
-    }
-  }, 200);
-
-  private updateAudioLevel() {
-    this.audioLevelRafId = requestAnimationFrame(this.updateAudioLevel);
-    if (this.audioAnalyser) {
-      this.audioLevel = this.audioAnalyser.getCurrentLevel();
-    }
-  }
-
-  private dispatchPromptsChange() {
-    this.dispatchEvent(
-      new CustomEvent('prompts-changed', { detail: this.prompts }),
-    );
-    return this.setSessionPrompts();
-  }
-
-  private handlePromptChanged(e: CustomEvent<Prompt>) {
-    const { promptId, text, weight, cc } = e.detail;
-    const prompt = this.prompts.get(promptId);
-
-    if (!prompt) {
-      console.error('prompt not found', promptId);
-      return;
-    }
-
-    prompt.text = text;
-    prompt.weight = weight;
-    prompt.cc = cc;
-
-    const newPrompts = new Map(this.prompts);
-    newPrompts.set(promptId, prompt);
-
-    this.setPrompts(newPrompts);
-  }
-
-  private setPrompts(newPrompts: Map<string, Prompt>) {
-    this.prompts = newPrompts;
-    this.requestUpdate();
-    this.dispatchPromptsChange();
-  }
-
-  /** Generates radial gradients for each prompt based on weight and color. */
-  private readonly makeBackground = throttle(
-    () => {
-      const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
-
-      const MAX_WEIGHT = 0.5;
-      const MAX_ALPHA = 0.6;
-
-      const bg: string[] = [];
-
-      [...this.prompts.values()].forEach((p, i) => {
-        const alphaPct = clamp01(p.weight / MAX_WEIGHT) * MAX_ALPHA;
-        const alpha = Math.round(alphaPct * 0xff)
-          .toString(16)
-          .padStart(2, '0');
-
-        const stop = p.weight / 2;
-        const x = (i % 4) / 3;
-        const y = Math.floor(i / 4) / 3;
-        const s = `radial-gradient(circle at ${x * 100}% ${y * 100}%, ${p.color}${alpha} 0px, ${p.color}00 ${stop * 100}%)`;
-
-        bg.push(s);
-      });
-
-      return bg.join(', ');
-    },
-    30, // don't re-render more than once every XXms
-  );
-
-  private pause() {
-    if (this.session) { // Add null check for this.session
-      this.session.pause();
-    }
-    this.playbackState = 'paused';
-    if (this.outputNode && this.audioContext) {
-      this.outputNode.gain.setValueAtTime(1, this.audioContext.currentTime);
-      this.outputNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.1);
-    }
-    this.nextStartTime = 0;
-    if (this.audioContext) {
-      this.outputNode = this.audioContext.createGain();
-      this.outputNode.connect(this.audioContext.destination);
-      if (this.audioAnalyser) {
-        this.outputNode.connect(this.audioAnalyser.node);
-      }
-    }
-  }
-
-  private play() {
-    const promptsToSend = this.getPromptsToSend();
-    if (promptsToSend.length === 0) {
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show('There needs to be one active prompt to play. Turn up a knob to resume playback.')
-      }
-      this.pause();
-      return;
-    }
-
-    if (!this.audioContext) {
-      this.audioContext = new AudioContext({ sampleRate: 48000 });
-      this.audioAnalyser = new AudioAnalyser(this.audioContext);
-      this.audioAnalyser.node.connect(this.audioContext.destination);
-      this.outputNode = this.audioContext.createGain();
-      this.outputNode.connect(this.audioAnalyser.node);
-      this.updateAudioLevel(); // Start updating audio level once context is created
-    }
-
-    this.audioContext.resume();
-    this.audioReady = true; // Set audioReady to true after context resumes
-    if (this.session) { // Add null check for this.session
-      this.session.play();
-    }
-    this.playbackState = 'loading';
-    if (this.outputNode && this.audioContext) {
-      this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-      this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
-    }
-  }
-
-  private stop() {
-    if (this.session) { // Add null check for this.session
-      this.session.stop();
-    }
-    this.playbackState = 'stopped';
-    if (this.outputNode && this.audioContext) {
-      this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-      this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
-    }
-    this.nextStartTime = 0;
-  }
-
-  private async handleMainAudioButton() { // Renamed from handleTurnOnAudio / handlePlayPause
-    if (!this.audioReady) {
-      // First click: initialize audio context and start playback
-      await this.connectToSession();
-      await this.setSessionPrompts();
-      this.play();
-    } else {
-      // Subsequent clicks: toggle play/pause
-      if (this.playbackState === 'playing') {
-        this.pause();
-      } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
-        if (this.connectionError) {
-          await this.connectToSession(); // Reconnect if there was an error
-          if (this.connectionError) { // If still error after reconnect, don't proceed to set prompts
-            return;
-          }
-        }
-        await this.setSessionPrompts();
-        this.play();
-      } else if (this.playbackState === 'loading') {
-        this.stop();
-      }
-    }
-  }
-
-  private get isButtonOn() {
-    return this.playbackState === 'playing' || this.playbackState === 'loading';
-  }
-
-  // renderAudioButtonContent() is no longer needed and will be removed.
-
-  private async toggleShowMidi() {
-    this.showMidi = !this.showMidi;
-    if (!this.showMidi) return;
-    const inputIds = await this.midiDispatcher.getMidiAccess();
-    this.midiInputIds = inputIds;
-    this.activeMidiInputId = this.midiDispatcher.activeMidiInputId;
-  }
-
-  private handleMidiInputChange(event: Event) {
-    const selectElement = event.target as HTMLSelectElement;
-    const newMidiId = selectElement.value;
-    this.activeMidiInputId = newMidiId;
-    this.midiDispatcher.activeMidiInputId = newMidiId;
-  }
-
-
-
-  private saveApiKeyToLocalStorage() {
-    if (this.geminiApiKey) {
-      localStorage.setItem('geminiApiKey', this.geminiApiKey);
-      this.toastMessage.show('Gemini API key saved to local storage.');
-      // Do not hide the field here. Visibility is managed by connection status.
-    } else {
-      localStorage.removeItem('geminiApiKey');
-      this.toastMessage.show('Gemini API key removed from local storage.');
-    }
-    // Trigger the power button as requested
-    this.handleMainAudioButton();
-  }
-
-  private handleApiKeyInputChange(event: Event) {
-    const inputElement = event.target as HTMLInputElement;
-    this.geminiApiKey = inputElement.value;
-  }
-
-  private getApiKey() {
-    window.open('https://aistudio.google.com/apikey', '_blank');
-  }
-   private resetAll() {
-     this.setPrompts(PromptDjMidi.buildDefaultPrompts());
+ .advanced-settings-panel .setting > label:first-child {
+     margin-bottom: 8px;
+     font-weight: bold;
+     text-align: center;
+     color: #fff; /* Ensure labels are white */
    }
-
-   private handleInputChange(event: Event) {
-    const target = event.target as HTMLInputElement | HTMLSelectElement;
-    const { id, value, type } = target;
-
-    if (type === 'checkbox') {
-      const checkbox = target as HTMLInputElement;
-      if (id === 'auto-density') {
-        this.autoDensity = checkbox.checked;
-        if (checkbox.checked) {
-          this.config = { ...this.config, density: this.lastDefinedDensity };
-        }
-      } else if (id === 'auto-brightness') {
-        this.autoBrightness = checkbox.checked;
-        if (checkbox.checked) {
-          this.config = { ...this.config, brightness: this.lastDefinedBrightness };
-        }
-      } else {
-        this.config = { ...this.config, [id]: checkbox.checked };
-      }
-    } else if (target instanceof HTMLInputElement && target.type === 'range') {
-      const numValue = parseFloat(value);
-      if (id === 'density') {
-        this.lastDefinedDensity = numValue;
-        this.autoDensity = false;
-      } else if (id === 'brightness') {
-        this.lastDefinedBrightness = numValue;
-        this.autoBrightness = false;
-      }
-      this.config = { ...this.config, [id]: numValue };
-    } else if (target.tagName === 'WEIGHT-KNOB') {
-      const numValue = parseFloat(value) / 2; // Divide by 2 to map 0-2 to 0-1
-      if (id === 'density') {
-        this.lastDefinedDensity = numValue;
-        this.autoDensity = false;
-      } else if (id === 'brightness') {
-        this.lastDefinedBrightness = numValue;
-        this.autoBrightness = false;
-      }
-      this.config = { ...this.config, [id]: numValue };
-    } else if (type === 'number') {
-      this.config = { ...this.config, [id]: value === '' ? null : parseFloat(value) };
-    } else { // For select elements
-      this.config = { ...this.config, [id]: value };
-    }
-    this.requestUpdate();
-  }
-
  
-   override render() {
-     const bg = styleMap({
-       backgroundImage: this.makeBackground(),
-     });
-
-    const advancedClasses = classMap({
-      'advanced-settings-panel': true, // Added for the new panel styling
-      'advanced-settings': true,       // Kept for existing content layout if any
-    });
-
-    const scaleMap = new Map<string, string>([
-      ['Auto', 'SCALE_UNSPECIFIED'],
-      ['C Major / A Minor', 'C_MAJOR_A_MINOR'],
-      ['C# Major / A# Minor', 'D_FLAT_MAJOR_B_FLAT_MINOR'],
-      ['D Major / B Minor', 'D_MAJOR_B_MINOR'],
-      ['D# Major / C Minor', 'E_FLAT_MAJOR_C_MINOR'],
-      ['E Major / C# Minor', 'E_MAJOR_D_FLAT_MINOR'],
-      ['F Major / D Minor', 'F_MAJOR_D_MINOR'],
-      ['F# Major / D# Minor', 'G_FLAT_MAJOR_E_FLAT_MINOR'],
-      ['G Major / E Minor', 'G_MAJOR_E_MINOR'],
-      ['G# Major / F Minor', 'A_FLAT_MAJOR_F_MINOR'],
-      ['A Major / F# Minor', 'A_MAJOR_G_FLAT_MINOR'],
-      ['A# Major / G Minor', 'B_FLAT_MAJOR_G_MINOR'],
-      ['B Major / G# Minor', 'B_MAJOR_A_FLAT_MINOR'],
-    ]);
-
-    const cfg = this.config;
-
-
-     return html`
-       <div id="background" style=${bg}></div>
-       <div id="buttons">
-         <button
-           @click=${this.toggleShowMidi}
-           class=${this.showMidi ? 'active' : ''}
-           >MIDI</button
-         >
-         ${this.showMidi ? html`
-           <select
-             @change=${this.handleMidiInputChange}
-             .value=${this.activeMidiInputId || ''}>
-             ${this.midiInputIds.length > 0
-           ? this.midiInputIds.map(
-             (id) =>
-               html`<option value=${id}>
-                       ${this.midiDispatcher.getDeviceName(id)}
-                     </option>`,
-           )
-           : html`<option value="">No devices found</option>`}
-           </select>
-         ` : ''}
-         ${this.connectionError || !this.geminiApiKey ? html`
-           <div style="display: flex; gap: 5px;">
-             <input
-               type="password"
-               placeholder="Gemini API Key"
-               .value=${this.geminiApiKey || ''}
-               @input=${this.handleApiKeyInputChange}
-             />
-             <button @click=${this.saveApiKeyToLocalStorage}>Save</button>
-             <button @click=${this.getApiKey}>Get API Key</button>
-           </div>
-         ` : ''}
-       </div>
-:start_line:751
-       <div id="main-content-area">
-        <div id="grid">${this.renderPrompts()}</div>
-         <div class=${advancedClasses}>
-           <div class="setting">
-             <label for="seed">Seed</label>
-             <input
-             type="number"
-             id="seed"
-             .value=${cfg.seed ?? ''}
-             @input=${this.handleInputChange}
-             placeholder="Auto" />
-         </div>
-         <div class="setting">
-           <label for="bpm">BPM</label>
-           <input
-             type="number"
-             id="bpm"
-             min="60"
-             max="180"
-             .value=${cfg.bpm ?? ''}
-             @input=${this.handleInputChange}
-             placeholder="Auto" />
-         </div>
-         <div class="setting" auto=${this.autoDensity}>
-           <label for="density">Density</label>
-           <weight-knob
-             id="density"
-             min="0"
-             max="1"
-             step="0.05"
-             .value=${this.lastDefinedDensity}
-             @input=${this.handleInputChange}
-           ></weight-knob>
-           <div class="auto-row">
-             <input
-               type="checkbox"
-               id="auto-density"
-               .checked=${this.autoDensity}
-               @input=${this.handleInputChange} />
-             <label for="auto-density">Auto</label>
-             <span>${(this.lastDefinedDensity ?? 0.5).toFixed(2)}</span>
-           </div>
-         </div>
-         <div class="setting" auto=${this.autoBrightness}>
-           <label for="brightness">Brightness</label>
-           <weight-knob
-             id="brightness"
-             min="0"
-             max="1"
-             step="0.05"
-             .value=${this.lastDefinedBrightness}
-             @input=${this.handleInputChange}
-           ></weight-knob>
-           <div class="auto-row">
-             <input
-               type="checkbox"
-               id="auto-brightness"
-               .checked=${this.autoBrightness}
-               @input=${this.handleInputChange} />
-             <label for="auto-brightness">Auto</label>
-             <span>${(this.lastDefinedBrightness ?? 0.5).toFixed(2)}</span>
-           </div>
-         </div>
-         <div class="setting">
-           <label for="scale">Scale</label>
-           <select
-             id="scale"
-             .value=${cfg.scale || 'SCALE_UNSPECIFIED'}
-             @change=${this.handleInputChange}>
-             <option value="" disabled selected>Select Scale</option>
-             ${[...scaleMap.entries()].map(
-               ([displayName, enumValue]) =>
-                 html`<option value=${enumValue}>${displayName}</option>`,
-             )}
-           </select>
-         </div>
-         <div class="setting">
-           <div class="setting checkbox-setting">
-             <input
-               type="checkbox"
-               id="muteBass"
-               .checked=${!!cfg.muteBass}
-               @change=${this.handleInputChange} />
-             <label for="muteBass" style="font-weight: normal;">Mute Bass</label>
-           </div>
-           <div class="setting checkbox-setting">
-             <input
-               type="checkbox"
-               id="muteDrums"
-               .checked=${!!cfg.muteDrums}
-               @change=${this.handleInputChange} />
-             <label for="muteDrums" style="font-weight: normal;"
-               >Mute Drums</label
-             >
-           </div>
-           <div class="setting checkbox-setting">
-             <input
-               type="checkbox"
-               id="onlyBassAndDrums"
-               .checked=${!!cfg.onlyBassAndDrums}
-               @change=${this.handleInputChange} />
-             <label for="onlyBassAndDrums" style="font-weight: normal;"
-               >Only Bass & Drums</label
-             >
-           </div>
-         </div>
-       </div>
-       </div>
-        <button id="main-audio-button" @click=${this.handleMainAudioButton} class="${this.isButtonOn ? 'is-on' : 'is-off'}">
-          <div class="toggle-switch-base">
-            <div class="toggle-switch-lever"></div>
-          </div>
-        </button>
-        <toast-message></toast-message>
-      `;
+   .advanced-settings-panel .setting .auto-row,
+   .advanced-settings-panel .setting .checkbox-setting {
+     display: flex; align-items: center; justify-content: flex-start;
+     margin-top: 8px; padding: 0 5%;
    }
-
-  private renderPrompts() {
-    return [...this.prompts.values()].map((prompt) => {
-      return html`<prompt-controller
-        promptId=${prompt.promptId}
-        filtered=${this.filteredPrompts.has(prompt.text)}
-        cc=${prompt.cc}
-        text=${prompt.text}
-        weight=${prompt.weight}
-        color=${prompt.color}
-        .midiDispatcher=${this.midiDispatcher}
-        .showCC=${this.showMidi}
-        audioLevel=${this.audioLevel}
-        @prompt-changed=${this.handlePromptChanged}>
-      </prompt-controller>`;
-    });
-  }
-
-  static getInitialPrompts(): Map<string, Prompt> {
-    const { localStorage } = window;
-    const storedPrompts = localStorage.getItem('prompts');
-
-    if (storedPrompts) {
-      try {
-        const prompts = JSON.parse(storedPrompts) as Prompt[];
-        console.log('Loading stored prompts', prompts);
-        return new Map(prompts.map((prompt) => [prompt.promptId, prompt]));
-      } catch (e) {
-        console.error('Failed to parse stored prompts', e);
-      }
+   #grid {
+     width: 80vmin;
+     height: 80vmin;
+     display: grid;
+     grid-template-columns: repeat(4, 1fr);
+     gap: 2.5vmin;
+     margin-top: 8vmin;
+   }
+ 
+   #background {
+     will-change: background-image;
+     position: absolute;
+     height: 100%;
+     width: 100%;
+     z-index: -1;
+     background: #111;
+   }
+   prompt-controller {
+     width: 100%;
+   }
+   #buttons {
+     position: absolute;
+     top: 0;
+     left: 0;
+     padding: 5px;
+     display: flex;
+     gap: 5px;
+   }
+       font: inherit;
+       font-weight: 600;
+       cursor: pointer;
+       color: #fff;
+       background: #0002;
+       -webkit-font-smoothing: antialiased;
+       border: 1.5px solid #fff;
+       border-radius: 4px;
+       user-select: none;
+       padding: 3px 6px;
+       &.active {
+         background-color: #fff;
+         color: #000;
+       }
+     }
+     select {
+       font: inherit;
+       padding: 5px;
+       background: #fff;
+       color: #000;
+       border-radius: 4px;
+       border: none;
+       outline: none;
+       cursor: pointer;
+     }
+     #main-audio-button {
+       /* A.1: Main Container Styling */
+       width: 60px;
+       height: 30px;
+       border-radius: 4px; /* Housing with slight rounding */
+       display: flex;
+       justify-content: center;
+       align-items: center;
+       cursor: pointer;
+       background: #202020; /* Dark housing color */
+       border: 1px solid #111; /* Darker border */
+       box-shadow: 0 1px 2px rgba(0,0,0,0.7); /* External shadow for housing */
+       padding: 0; /* Remove padding if it interferes */
+       position: absolute;
+       top: 5vmin;
+       right: 2.5vmin;
+       font-size: 0;
+       /* Remove transition for box-shadow if halo is gone, or keep if active state changes shadow */
+       /* transition: box-shadow 0.3s ease; Removed subtle-rgb-halo-leak */
+     }
+     #main-audio-button.is-on {
+       /* Styles for ON state - lever and LED will handle this primarily */
+       /* No specific background or main box-shadow animation here anymore */
+     }
+     #main-audio-button.is-off {
+       /* Styles for OFF state - mostly default #main-audio-button styles apply */
+       /* Ensure no lingering halo animation if it was here */
+     }
+     /* Inner circle and loader are removed from HTML, so CSS can be removed or ignored */
+     /* #main-audio-button .inner-circle { ... } */
+     /* #main-audio-button .loader { ... } */
+ 
+     /* A.2: Toggle Switch Base Styling */
+     .toggle-switch-base {
+       width: 100%;
+       height: 100%;
+       background-color: #252525; /* Darker than housing */
+       border-radius: 4px; /* Match housing's rounding, or slightly less */
+       position: relative;
+       box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+     }
+ 
+     /* A.3: Toggle Switch Lever Styling */
+     .toggle-switch-lever {
+       position: absolute;
+       width: 24px;
+       height: 24px;
+       background-color: #505050; /* Lighter grey for lever */
+       border-radius: 3px;
+       top: 3px; /* (30px base height - 24px lever height) / 2 */
+       /* B.1: Lever Position - Off State (default) */
+       left: 3px;
+       transition: left 0.2s ease-in-out;
+       box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+     }
+ 
+     /* B.2: Lever Position - On State */
+     #main-audio-button.is-on .toggle-switch-lever {
+       left: calc(100% - 24px - 3px); /* 60px - 24px - 3px = 33px */
+     }
+ 
+     /* B.3: LED Indicator */
+     .toggle-switch-base::after {
+       content: '';
+       position: absolute;
+       width: 6px;
+       height: 6px;
+       border-radius: 50%;
+       background: #444; /* LED off color */
+       right: 5px; /* Positioned on the right side of the switch base */
+       top: 50%;
+       transform: translateY(-50%);
+       transition: background 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+     }
+ 
+     #main-audio-button.is-on .toggle-switch-base::after {
+       background: #00ff00; /* Bright green for LED on */
+       box-shadow: 0 0 3px #00ff00, 0 0 5px #00ff00; /* Glow effect */
+     }
+ 
+     /* C.1: Interaction Styling - Hover */
+     #main-audio-button:hover .toggle-switch-lever {
+       background-color: #606060; /* Slightly lighten lever */
+     }
+ 
+     /* C.2: Interaction Styling - Active/Pressed */
+     #main-audio-button:active .toggle-switch-lever {
+       box-shadow: inset 0 1px 2px rgba(0,0,0,0.5); /* Make lever look pressed */
+     }
+ 
+     #main-audio-button .loader { /* If loader is absolutely needed elsewhere, style it here. For now, it's removed from button. */
+       stroke: #ffffff;
+       stroke-width: 3;
+       stroke-linecap: round;
+       animation: spin linear 1s infinite;
+       transform-origin: center;
+       transform-box: fill-box;
+     }
+     @keyframes spin {
+       from { transform: rotate(0deg); }
+       to { transform: rotate(359deg); }
+     }
+     /* subtle-rgb-halo-leak animation removed as LED is used now */
+     /* @keyframes subtle-rgb-halo-leak { ... } */
+   `;
+ 
+   private prompts: Map<string, Prompt>;
+   private midiDispatcher: MidiDispatcher;
+   private audioAnalyser: AudioAnalyser | null = null;
+ 
+   @state() private playbackState: PlaybackState = 'stopped';
+   @state() private audioReady = false; // State for audio context readiness
+ 
+   private session!: LiveMusicSession; // Initialized in connectToSession
+   private audioContext: AudioContext | null = null;
+   private outputNode: GainNode | null = null;
+   private nextStartTime = 0;
+   private readonly bufferTime = 2; // adds an audio buffer in case of network latency
+ 
+   private ai!: GoogleGenAI;
+   @state() private geminiApiKey: string | null = null;
+   private readonly model = 'lyria-realtime-exp';
+ 
+ 
+   @property({ type: Boolean }) private showMidi = false;
+   @state() private audioLevel = 0;
+   @state() private midiInputIds: string[] = [];
+   @state() private activeMidiInputId: string | null = null;
+ 
+   @state()
+   private filteredPrompts = new Set<string>();
+ 
+   @state() private config = { seed: null as number | null, bpm: null as number | null, density: 0.5, brightness: 0.5, scale: '', muteBass: false, muteDrums: false, onlyBassAndDrums: false, };
+   @state() private lastDefinedDensity = 0.5;
+   @state() private autoDensity = true;
+   @state() private lastDefinedBrightness = 0.5;
+   @state() private autoBrightness = true;
+ 
+   private audioLevelRafId: number | null = null;
+   private connectionError = true;
+ 
+   @query('toast-message') private toastMessage!: ToastMessage;
+ 
+   constructor(
+     prompts: Map<string, Prompt>,
+     midiDispatcher: MidiDispatcher,
+   ) {
+     super();
+     this.prompts = prompts;
+     this.midiDispatcher = midiDispatcher;
+     this.updateAudioLevel = this.updateAudioLevel.bind(this);
+ 
+     this.geminiApiKey = localStorage.getItem('geminiApiKey');
+     // If API key is already set, hide the input field by default
+ 
+     if (this.geminiApiKey) {
+       this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
+       // Initially hide the API key field if a key is saved, but allow it to reappear on error
+     }
+   }
+ 
+   override async firstUpdated() {
+     // Ensure toastMessage is ready before connecting to session
+     await customElements.whenDefined('toast-message');
+   }
+ 
+   private async connectToSession() {
+     if (!this.geminiApiKey) {
+       this.toastMessage.show('Please enter your Gemini API key to connect to the session.');
+       return;
+     }
+ 
+     if (!this.ai) {
+       this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
+     }
+ 
+     try {
+       this.session = await this.ai.live.music.connect({
+         model: this.model,
+         callbacks: {
+           onmessage: async (e: LiveMusicServerMessage) => {
+             if (e.setupComplete) {
+               this.connectionError = false;
+             }
+             if (e.filteredPrompt) {
+               this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
+               if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+                 this.toastMessage.show(e.filteredPrompt.filteredReason as string);
+               }
+             }
+             if (e.serverContent?.audioChunks !== undefined) {
+               if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
+               if (!this.audioContext || !this.outputNode) {
+                 // Also show a toast message here if audio context is not initialized.
+                 if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+                   this.toastMessage.show('Audio context not initialized. Please refresh.');
+                 }
+                 console.error('AudioContext or outputNode not initialized.');
+                 return;
+               }
+               const audioBuffer = await decodeAudioData(
+                 decode(e.serverContent?.audioChunks[0].data),
+                 this.audioContext,
+                 48000,
+                 2,
+               );
+               const source = this.audioContext.createBufferSource();
+               source.buffer = audioBuffer;
+               source.connect(this.outputNode);
+               if (this.nextStartTime === 0) {
+                 this.nextStartTime = this.audioContext.currentTime + this.bufferTime;
+                 setTimeout(() => {
+                   this.playbackState = 'playing';
+                 }, this.bufferTime * 1000);
+               }
+ 
+               if (this.nextStartTime < this.audioContext.currentTime) {
+                 this.playbackState = 'loading';
+                 this.nextStartTime = 0;
+                 return;
+               }
+               source.start(this.nextStartTime);
+               this.nextStartTime += audioBuffer.duration;
+             }
+           },
+           onerror: (e: ErrorEvent) => {
+             this.connectionError = true;
+             if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+               this.toastMessage.show('Connection lost. Attempting to reconnect...');
+             }
+             this.connectToSession();
+           },
+           onclose: (e: CloseEvent) => {
+             this.connectionError = true;
+             if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+               this.toastMessage.show('Connection lost. Attempting to reconnect...');
+             }
+             this.connectToSession();
+           },
+         },
+       });
+     } catch (error) {
+       this.connectionError = true;
+       this.stop();
+       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+         this.toastMessage.show('Failed to connect to session. Check your API key.');
+       }
+       console.error('Failed to connect to session:', error);
+     }
+   }
+ 
+   private getPromptsToSend() {
+     return Array.from(this.prompts.values())
+       .filter((p) => {
+         return !this.filteredPrompts.has(p.text) && p.weight !== 0;
+       })
+   }
+ 
+   private setSessionPrompts = throttle(async () => {
+     const promptsToSend = this.getPromptsToSend();
+     if (promptsToSend.length === 0) {
+       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+         this.toastMessage.show('There needs to be one active prompt to play.')
+       }
+       this.pause();
+       return;
+     }
+     try {
+       if (this.session) { // Add null check for this.session
+         await this.session.setWeightedPrompts({
+           weightedPrompts: promptsToSend,
+         });
+       }
+     } catch (e: unknown) { // Explicitly type e as unknown
+       if (e instanceof Error) {
+         if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+           this.toastMessage.show(e.message)
+         }
+       } else {
+         if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+           this.toastMessage.show('An unknown error occurred.')
+         }
+       }
+       this.pause();
+     }
+   }, 200);
+ 
+   private updateAudioLevel() {
+     this.audioLevelRafId = requestAnimationFrame(this.updateAudioLevel);
+     if (this.audioAnalyser) {
+       this.audioLevel = this.audioAnalyser.getCurrentLevel();
+     }
+   }
+ 
+   private dispatchPromptsChange() {
+     this.dispatchEvent(
+       new CustomEvent('prompts-changed', { detail: this.prompts }),
+     );
+     return this.setSessionPrompts();
+   }
+ 
+   private handlePromptChanged(e: CustomEvent<Prompt>) {
+     const { promptId, text, weight, cc } = e.detail;
+     const prompt = this.prompts.get(promptId);
+ 
+     if (!prompt) {
+       console.error('prompt not found', promptId);
+       return;
+     }
+ 
+     prompt.text = text;
+     prompt.weight = weight;
+     prompt.cc = cc;
+ 
+     const newPrompts = new Map(this.prompts);
+     newPrompts.set(promptId, prompt);
+ 
+     this.setPrompts(newPrompts);
+   }
+ 
+   private setPrompts(newPrompts: Map<string, Prompt>) {
+     this.prompts = newPrompts;
+     this.requestUpdate();
+     this.dispatchPromptsChange();
+   }
+ 
+   /** Generates radial gradients for each prompt based on weight and color. */
+   private readonly makeBackground = throttle(
+     () => {
+       const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
+ 
+       const MAX_WEIGHT = 0.5;
+       const MAX_ALPHA = 0.6;
+ 
+       const bg: string[] = [];
+ 
+       [...this.prompts.values()].forEach((p, i) => {
+         const alphaPct = clamp01(p.weight / MAX_WEIGHT) * MAX_ALPHA;
+         const alpha = Math.round(alphaPct * 0xff)
+           .toString(16)
+           .padStart(2, '0');
+ 
+         const stop = p.weight / 2;
+         const x = (i % 4) / 3;
+         const y = Math.floor(i / 4) / 3;
+         const s = `radial-gradient(circle at ${x * 100}% ${y * 100}%, ${p.color}${alpha} 0px, ${p.color}00 ${stop * 100}%)`;
+ 
+         bg.push(s);
+       });
+ 
+       return bg.join(', ');
+     },
+     30, // don't re-render more than once every XXms
+   );
+ 
+   private pause() {
+     if (this.session) { // Add null check for this.session
+       this.session.pause();
+     }
+     this.playbackState = 'paused';
+     if (this.outputNode && this.audioContext) {
+       this.outputNode.gain.setValueAtTime(1, this.audioContext.currentTime);
+       this.outputNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.1);
+     }
+     this.nextStartTime = 0;
+     if (this.audioContext) {
+       this.outputNode = this.audioContext.createGain();
+       this.outputNode.connect(this.audioContext.destination);
+       if (this.audioAnalyser) {
+         this.outputNode.connect(this.audioAnalyser.node);
+       }
+     }
+   }
+ 
+   private play() {
+     const promptsToSend = this.getPromptsToSend();
+     if (promptsToSend.length === 0) {
+       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+         this.toastMessage.show('There needs to be one active prompt to play. Turn up a knob to resume playback.')
+       }
+       this.pause();
+       return;
+     }
+ 
+     if (!this.audioContext) {
+       this.audioContext = new AudioContext({ sampleRate: 48000 });
+       this.audioAnalyser = new AudioAnalyser(this.audioContext);
+       this.audioAnalyser.node.connect(this.audioContext.destination);
+       this.outputNode = this.audioContext.createGain();
+       this.outputNode.connect(this.audioAnalyser.node);
+       this.updateAudioLevel(); // Start updating audio level once context is created
+     }
+ 
+     this.audioContext.resume();
+     this.audioReady = true; // Set audioReady to true after context resumes
+     if (this.session) { // Add null check for this.session
+       this.session.play();
+     }
+     this.playbackState = 'loading';
+     if (this.outputNode && this.audioContext) {
+       this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+       this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
+     }
+   }
+ 
+   private stop() {
+     if (this.session) { // Add null check for this.session
+       this.session.stop();
+     }
+     this.playbackState = 'stopped';
+     if (this.outputNode && this.audioContext) {
+       this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+       this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
+     }
+     this.nextStartTime = 0;
+   }
+ 
+   private async handleMainAudioButton() { // Renamed from handleTurnOnAudio / handlePlayPause
+     if (!this.audioReady) {
+       // First click: initialize audio context and start playback
+       await this.connectToSession();
+       await this.setSessionPrompts();
+       this.play();
+     } else {
+       // Subsequent clicks: toggle play/pause
+       if (this.playbackState === 'playing') {
+         this.pause();
+       } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
+         if (this.connectionError) {
+           await this.connectToSession(); // Reconnect if there was an error
+           if (this.connectionError) { // If still error after reconnect, don't proceed to set prompts
+             return;
+           }
+         }
+         await this.setSessionPrompts();
+         this.play();
+       } else if (this.playbackState === 'loading') {
+         this.stop();
+       }
+     }
+   }
+ 
+   private get isButtonOn() {
+     return this.playbackState === 'playing' || this.playbackState === 'loading';
+   }
+ 
+   // renderAudioButtonContent() is no longer needed and will be removed.
+ 
+   private async toggleShowMidi() {
+     this.showMidi = !this.showMidi;
+     if (!this.showMidi) return;
+     const inputIds = await this.midiDispatcher.getMidiAccess();
+     this.midiInputIds = inputIds;
+     this.activeMidiInputId = this.midiDispatcher.activeMidiInputId;
+   }
+ 
+   private handleMidiInputChange(event: Event) {
+     const selectElement = event.target as HTMLSelectElement;
+     const newMidiId = selectElement.value;
+     this.activeMidiInputId = newMidiId;
+     this.midiDispatcher.activeMidiInputId = newMidiId;
+   }
+ 
+ 
+ 
+   private saveApiKeyToLocalStorage() {
+     if (this.geminiApiKey) {
+       localStorage.setItem('geminiApiKey', this.geminiApiKey);
+       this.toastMessage.show('Gemini API key saved to local storage.');
+       // Do not hide the field here. Visibility is managed by connection status.
+     } else {
+       localStorage.removeItem('geminiApiKey');
+       this.toastMessage.show('Gemini API key removed from local storage.');
+     }
+     // Trigger the power button as requested
+     this.handleMainAudioButton();
+   }
+ 
+   private handleApiKeyInputChange(event: Event) {
+     const inputElement = event.target as HTMLInputElement;
+     this.geminiApiKey = inputElement.value;
+   }
+ 
+   private getApiKey() {
+     window.open('https://aistudio.google.com/apikey', '_blank');
+   }
+    private resetAll() {
+      this.setPrompts(PromptDjMidi.buildDefaultPrompts());
     }
-
-    console.log('No stored prompts, using default prompts');
-
-    return PromptDjMidi.buildDefaultPrompts();
-  }
-
-  static buildDefaultPrompts() {
-    // Construct default prompts
-    // Pick 3 random prompts to start with weight 1
-    const startOn = [...DEFAULT_PROMPTS]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
-
-    const prompts = new Map<string, Prompt>();
-
-    for (let i = 0; i < DEFAULT_PROMPTS.length; i++) {
-      const promptId = `prompt-${i}`;
-      const prompt = DEFAULT_PROMPTS[i];
-      const { text, color } = prompt;
-      prompts.set(promptId, {
-        promptId,
-        text,
-        weight: startOn.includes(prompt) ? 1 : 0,
-        cc: i,
-        color,
-      });
-    }
-
-    return prompts;
-  }
-
-  static setStoredPrompts(prompts: Map<string, Prompt>) {
-    const storedPrompts = JSON.stringify([...prompts.values()]);
-    const { localStorage } = window;
-    localStorage.setItem('prompts', storedPrompts);
-  }
-}
-
-function main(parent: HTMLElement) {
-  const midiDispatcher = new MidiDispatcher();
-  const initialPrompts = PromptDjMidi.getInitialPrompts();
-  const pdjMidi = new PromptDjMidi(
-    initialPrompts,
-    midiDispatcher,
-  );
-  parent.appendChild(pdjMidi);
-}
-
-main(document.body);
+ 
+    private handleInputChange(event: Event) {
+     const target = event.target as HTMLInputElement | HTMLSelectElement;
+     const { id, value, type } = target;
+ 
+     if (type === 'checkbox') {
+       const checkbox = target as HTMLInputElement;
+       if (id === 'auto-density') {
+         this.autoDensity = checkbox.checked;
+         if (checkbox.checked) {
+           this.config = { ...this.config, density: this.lastDefinedDensity };
+         }
+       } else if (id === 'auto-brightness') {
+         this.autoBrightness = checkbox.checked;
+         if (checkbox.checked) {
+           this.config = { ...this.config, brightness: this.lastDefinedBrightness };
+         }
+       } else {
+         this.config = { ...this.config, [id]: checkbox.checked };
+       }
+     } else if (target instanceof HTMLInputElement && target.type === 'range') {
+       const numValue = parseFloat(value);
+       if (id === 'density') {
+         this.lastDefinedDensity = numValue;
+         this.autoDensity = false;
+       } else if (id === 'brightness') {
+         this.lastDefinedBrightness = numValue;
+         this.autoBrightness = false;
+       }
+       this.config = { ...this.config, [id]: numValue };
+     } else if (target.tagName === 'WEIGHT-KNOB') {
+       const numValue = parseFloat(value) / 2; // Divide by 2 to map 0-2 to 0-1
+       if (id === 'density') {
+         this.lastDefinedDensity = numValue;
+         this.autoDensity = false;
+       } else if (id === 'brightness') {
+         this.lastDefinedBrightness = numValue;
+         this.autoBrightness = false;
+       }
+       this.config = { ...this.config, [id]: numValue };
+     } else if (type === 'number') {
+       this.config = { ...this.config, [id]: value === '' ? null : parseFloat(value) };
+     } else { // For select elements
+       this.config = { ...this.config, [id]: value };
+     }
+     this.requestUpdate();
+   }
+ 
+  
+    override render() {
+       const bg = styleMap({
+         backgroundImage: this.makeBackground(),
+       });
+ 
+     const advancedClasses = classMap({
+       'advanced-settings-panel': true, // Added for the new panel styling
+       'advanced-settings': true,       // Kept for existing content layout if any
+     });
+ 
+     const scaleMap = new Map<string, string>([
+       ['Auto', 'SCALE_UNSPECIFIED'],
+       ['C Major / A Minor', 'C_MAJOR_A_MINOR'],
+       ['C# Major / A# Minor', 'D_FLAT_MAJOR_B_FLAT_MINOR'],
+       ['D Major / B Minor', 'D_MAJOR_B_MINOR'],
+       ['D# Major / C Minor', 'E_FLAT_MAJOR_C_MINOR'],
+       ['E Major / C# Minor', 'E_MAJOR_D_FLAT_MINOR'],
+       ['F Major / D Minor', 'F_MAJOR_D_MINOR'],
+       ['F# Major / D# Minor', 'G_FLAT_MAJOR_E_FLAT_MINOR'],
+       ['G Major / E Minor', 'G_MAJOR_E_MINOR'],
+       ['G# Major / F Minor', 'A_FLAT_MAJOR_F_MINOR'],
+       ['A Major / F# Minor', 'A_MAJOR_G_FLAT_MINOR'],
+       ['A# Major / G Minor', 'B_FLAT_MAJOR_G_MINOR'],
+       ['B Major / G# Minor', 'B_MAJOR_A_FLAT_MINOR'],
+     ]);
+ 
+     const cfg = this.config;
+ 
+ 
+      return html`
+        <div id="background" style=${bg}></div>
+        <div id="buttons">
+          <button
+            @click=${this.toggleShowMidi}
+            class=${this.showMidi ? 'active' : ''}
+            >MIDI</button
+          >
+          ${this.showMidi ? html`
+            <select
+              @change=${this.handleMidiInputChange}
+              .value=${this.activeMidiInputId || ''}>
+              ${this.midiInputIds.length > 0
+            ? this.midiInputIds.map(
+              (id) =>
+                html`<option value=${id}>
+                        ${this.midiDispatcher.getDeviceName(id)}
+                      </option>`,
+            )
+            : html`<option value="">No devices found</option>`}
+            </select>
+          ` : ''}
+          ${this.connectionError || !this.geminiApiKey ? html`
+            <div style="display: flex; gap: 5px;">
+              <input
+                type="password"
+                placeholder="Gemini API Key"
+                .value=${this.geminiApiKey || ''}
+                @input=${this.handleApiKeyInputChange}
+              />
+              <button @click=${this.saveApiKeyToLocalStorage}>Save</button>
+              <button @click=${this.getApiKey}>Get API Key</button>
+            </div>
+          ` : ''}
+        </div>
+        <div id="main-content-area">
+         <div id="grid">${this.renderPrompts()}</div>
+           <div class=${advancedClasses}>
+             <div class="setting">
+               <label for="seed">Seed</label>
+               <input
+               type="number"
+               id="seed"
+               .value=${cfg.seed ?? ''}
+               @input=${this.handleInputChange}
+               placeholder="Auto" />
+           </div>
+           <div class="setting">
+             <label for="bpm">BPM</label>
+             <input
+               type="number"
+               id="bpm"
+               min="60"
+               max="180"
+               .value=${cfg.bpm ?? ''}
+               @input=${this.handleInputChange}
+               placeholder="Auto" />
+           </div>
+           <div class="setting" auto=${this.autoDensity}>
+             <label for="density">Density</label>
+             <weight-knob
+               id="density"
+               min="0"
+               max="1"
+               step="0.05"
+               .value=${this.lastDefinedDensity}
+               @input=${this.handleInputChange}
+             ></weight-knob>
+             <div class="auto-row">
+               <input
+                 type="checkbox"
+                 id="auto-density"
+                 .checked=${this.autoDensity}
+                 @input=${this.handleInputChange} />
+               <label for="auto-density">Auto</label>
+               <span>${(this.lastDefinedDensity ?? 0.5).toFixed(2)}</span>
+             </div>
+           </div>
+           <div class="setting" auto=${this.autoBrightness}>
+             <label for="brightness">Brightness</label>
+             <weight-knob
+               id="brightness"
+               min="0"
+               max="1"
+               step="0.05"
+               .value=${this.lastDefinedBrightness}
+               @input=${this.handleInputChange}
+             ></weight-knob>
+             <div class="auto-row">
+               <input
+                 type="checkbox"
+                 id="auto-brightness"
+                 .checked=${this.autoBrightness}
+                 @input=${this.handleInputChange} />
+               <label for="auto-brightness">Auto</label>
+               <span>${(this.lastDefinedBrightness ?? 0.5).toFixed(2)}</span>
+             </div>
+           </div>
+           <div class="setting">
+             <label for="scale">Scale</label>
+             <select
+               id="scale"
+               .value=${cfg.scale || 'SCALE_UNSPECIFIED'}
+               @change=${this.handleInputChange}>
+               <option value="" disabled selected>Select Scale</option>
+               ${[...scaleMap.entries()].map(
+                 ([displayName, enumValue]) =>
+                   html`<option value=${enumValue}>${displayName}</option>`,
+               )}
+             </select>
+           </div>
+           <div class="setting">
+             <div class="setting checkbox-setting">
+               <input
+                 type="checkbox"
+                 id="muteBass"
+                 .checked=${!!cfg.muteBass}
+                 @change=${this.handleInputChange} />
+               <label for="muteBass" style="font-weight: normal;">Mute Bass</label>
+             </div>
+             <div class="setting checkbox-setting">
+               <input
+                 type="checkbox"
+                 id="muteDrums"
+                 .checked=${!!cfg.muteDrums}
+                 @change=${this.handleInputChange} />
+               <label for="muteDrums" style="font-weight: normal;"
+                 >Mute Drums</label
+               >
+             </div>
+             <div class="setting checkbox-setting">
+               <input
+                 type="checkbox"
+                 id="onlyBassAndDrums"
+                 .checked=${!!cfg.onlyBassAndDrums}
+                 @change=${this.handleInputChange} />
+               <label for="onlyBassAndDrums" style="font-weight: normal;"
+                 >Only Bass & Drums</label
+               >
+             </div>
+           </div>
+         </div>
+         </div>
+          <button id="main-audio-button" @click=${this.handleMainAudioButton} class="${this.isButtonOn ? 'is-on' : 'is-off'}">
+            <div class="toggle-switch-base">
+              <div class="toggle-switch-lever"></div>
+            </div>
+          </button>
+          <toast-message></toast-message>
+        `;
+     }
+ 
+   private renderPrompts() {
+     return [...this.prompts.values()].map((prompt) => {
+       return html`<prompt-controller
+         promptId=${prompt.promptId}
+         filtered=${this.filteredPrompts.has(prompt.text)}
+         cc=${prompt.cc}
+         text=${prompt.text}
+         weight=${prompt.weight}
+         color=${prompt.color}
+         .midiDispatcher=${this.midiDispatcher}
+         .showCC=${this.showMidi}
+         audioLevel=${this.audioLevel}
+         @prompt-changed=${this.handlePromptChanged}>
+       </prompt-controller>`;
+     });
+   }
+ 
+   static getInitialPrompts(): Map<string, Prompt> {
+     const { localStorage } = window;
+     const storedPrompts = localStorage.getItem('prompts');
+ 
+     if (storedPrompts) {
+       try {
+         const prompts = JSON.parse(storedPrompts) as Prompt[];
+         console.log('Loading stored prompts', prompts);
+         return new Map(prompts.map((prompt) => [prompt.promptId, prompt]));
+       } catch (e) {
+         console.error('Failed to parse stored prompts', e);
+       }
+     }
+ 
+     console.log('No stored prompts, using default prompts');
+ 
+     return PromptDjMidi.buildDefaultPrompts();
+   }
+ 
+   static buildDefaultPrompts() {
+     // Construct default prompts
+     // Pick 3 random prompts to start with weight 1
+     const startOn = [...DEFAULT_PROMPTS]
+       .sort(() => Math.random() - 0.5)
+       .slice(0, 3);
+ 
+     const prompts = new Map<string, Prompt>();
+ 
+     for (let i = 0; i < DEFAULT_PROMPTS.length; i++) {
+       const promptId = `prompt-${i}`;
+       const prompt = DEFAULT_PROMPTS[i];
+       const { text, color } = prompt;
+       prompts.set(promptId, {
+         promptId,
+         text,
+         weight: startOn.includes(prompt) ? 1 : 0,
+         cc: i,
+         color,
+       });
+     }
+ 
+     return prompts;
+   }
+ 
+   static setStoredPrompts(prompts: Map<string, Prompt>) {
+     const storedPrompts = JSON.stringify([...prompts.values()]);
+     const { localStorage } = window;
+     localStorage.setItem('prompts', storedPrompts);
+   }
+ }
+ 
+ function main(parent: HTMLElement) {
+   const midiDispatcher = new MidiDispatcher();
+   const initialPrompts = PromptDjMidi.getInitialPrompts();
+   const pdjMidi = new PromptDjMidi(
+     initialPrompts,
+     midiDispatcher,
+   );
+   parent.appendChild(pdjMidi);
+ }
+ 
+ main(document.body);
