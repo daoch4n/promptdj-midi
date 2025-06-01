@@ -208,7 +208,7 @@ class PromptDjMidi extends LitElement {
        border: 1px solid #111;
        box-shadow: 0 1px 2px rgba(0,0,0,0.7);
        padding: 0;
-       margin: 0 auto 25px auto;
+       margin: 0 auto 40px auto;
        font-size: 0;
      }
 
