@@ -52,7 +52,7 @@ export class PromptController extends LitElement {
       max-width: 100%;
       min-width: 2vmin;
       padding: 0.1em 0.3em;
-      margin-top: 0.5vmin;
+      margin-top: calc(0.5vmin - 10px);
       flex-shrink: 0;
       border-radius: 0.25vmin;
       text-align: center;
