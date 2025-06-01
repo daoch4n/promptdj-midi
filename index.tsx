@@ -159,10 +159,12 @@ class PromptDjMidi extends LitElement {
     }
     .advanced-settings-panel .setting .option-button:hover {
       background-color: #444;
+      box-shadow: 0 0 5px -1px #007bff; /* Dimmer blue glow */
     }
     .advanced-settings-panel .setting .option-button.selected {
-      background-color: #888888;
-      box-shadow: 0 0 4px #888888, 0 0 6px #888888;
+      background-color: #0069d9; /* Active blue background */
+      box-shadow: 0 0 8px #007bff; /* Brighter blue glow */
+      border-color: #0056b3; /* Optional: to match the blue theme */
       color: #fff;
       font-weight: bold;
     }
@@ -824,18 +826,18 @@ class PromptDjMidi extends LitElement {
  
      const scaleMap = new Map<string, { value: string, color: string }>([
        ['Auto', { value: 'SCALE_UNSPECIFIED', color: '#888888' }],
-       ['C Major / A Minor', { value: 'C_MAJOR_A_MINOR', color: 'hsl(0, 100%, 60%)' }],
-       ['C# Major / A# Minor', { value: 'D_FLAT_MAJOR_B_FLAT_MINOR', color: 'hsl(30, 100%, 60%)' }],
-       ['D Major / B Minor', { value: 'D_MAJOR_B_MINOR', color: 'hsl(60, 100%, 60%)' }],
-       ['D# Major / C Minor', { value: 'E_FLAT_MAJOR_C_MINOR', color: 'hsl(90, 100%, 60%)' }],
-       ['E Major / C# Minor', { value: 'E_MAJOR_D_FLAT_MINOR', color: 'hsl(120, 100%, 60%)' }],
-       ['F Major / D Minor', { value: 'F_MAJOR_D_MINOR', color: 'hsl(150, 100%, 60%)' }],
-       ['F# Major / D# Minor', { value: 'G_FLAT_MAJOR_E_FLAT_MINOR', color: 'hsl(180, 100%, 60%)' }],
-       ['G Major / E Minor', { value: 'G_MAJOR_E_MINOR', color: 'hsl(210, 100%, 60%)' }],
-       ['G# Major / F Minor', { value: 'A_FLAT_MAJOR_F_MINOR', color: 'hsl(240, 100%, 60%)' }],
-       ['A Major / F# Minor', { value: 'A_MAJOR_G_FLAT_MINOR', color: 'hsl(270, 100%, 60%)' }],
-       ['A# Major / G Minor', { value: 'B_FLAT_MAJOR_G_MINOR', color: 'hsl(300, 100%, 60%)' }],
-       ['B Major / G# Minor', { value: 'B_MAJOR_A_FLAT_MINOR', color: 'hsl(330, 100%, 60%)' }],
+       ['C Major / A Minor', { value: 'C_MAJOR_A_MINOR', color: 'hsl(0, 100%, 50%)' }],
+       ['C# Major / A# Minor', { value: 'D_FLAT_MAJOR_B_FLAT_MINOR', color: 'hsl(30, 100%, 50%)' }],
+       ['D Major / B Minor', { value: 'D_MAJOR_B_MINOR', color: 'hsl(60, 100%, 50%)' }],
+       ['D# Major / C Minor', { value: 'E_FLAT_MAJOR_C_MINOR', color: 'hsl(90, 100%, 50%)' }],
+       ['E Major / C# Minor', { value: 'E_MAJOR_D_FLAT_MINOR', color: 'hsl(120, 100%, 50%)' }],
+       ['F Major / D Minor', { value: 'F_MAJOR_D_MINOR', color: 'hsl(150, 100%, 50%)' }],
+       ['F# Major / D# Minor', { value: 'G_FLAT_MAJOR_E_FLAT_MINOR', color: 'hsl(180, 100%, 50%)' }],
+       ['G Major / E Minor', { value: 'G_MAJOR_E_MINOR', color: 'hsl(210, 100%, 50%)' }],
+       ['G# Major / F Minor', { value: 'A_FLAT_MAJOR_F_MINOR', color: 'hsl(240, 100%, 50%)' }],
+       ['A Major / F# Minor', { value: 'A_MAJOR_G_FLAT_MINOR', color: 'hsl(270, 100%, 50%)' }],
+       ['A# Major / G Minor', { value: 'B_FLAT_MAJOR_G_MINOR', color: 'hsl(300, 100%, 50%)' }],
+       ['B Major / G# Minor', { value: 'B_MAJOR_A_FLAT_MINOR', color: 'hsl(330, 100%, 50%)' }],
      ]);
  
      const cfg = this.config;
