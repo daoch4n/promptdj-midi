@@ -214,6 +214,7 @@ class PromptDjMidi extends LitElement {
  
    @state() private playbackState: PlaybackState = 'stopped';
    @state() private audioReady = false; // State for audio context readiness
+   private previousPlaybackStateOnError: PlaybackState | null = null;
  
    private session!: LiveMusicSession; // Initialized in connectToSession
    private audioContext: AudioContext | null = null;
@@ -348,25 +349,50 @@ class PromptDjMidi extends LitElement {
                this.nextStartTime += audioBuffer.duration;
              }
            },
-           onerror: (e: ErrorEvent) => {
+           onerror: async (e: ErrorEvent) => {
              this.connectionError = true;
              if (this.toastMessage && typeof this.toastMessage.show === 'function') {
                this.toastMessage.show('Connection lost. Attempting to reconnect...');
              }
-             this.connectToSession();
+             this.previousPlaybackStateOnError = this.playbackState;
+             this.playbackState = 'loading';
+             try {
+               await this.connectToSession();
+               // If connectToSession resolves without error, it means reconnection was successful (or handled its own error state)
+               // The playbackState should have been restored or set appropriately within the nested call
+             } catch (error) {
+               // This catch is for errors specifically from the connectToSession attempt during error recovery
+               this.playbackState = 'stopped';
+               this.previousPlaybackStateOnError = null;
+               // Toast/logging for this specific failure scenario might be needed if not handled by connectToSession
+             }
            },
-           onclose: (e: CloseEvent) => {
+           onclose: async (e: CloseEvent) => {
              this.connectionError = true;
              if (this.toastMessage && typeof this.toastMessage.show === 'function') {
                this.toastMessage.show('Connection lost. Attempting to reconnect...');
              }
-             this.connectToSession();
+             this.previousPlaybackStateOnError = this.playbackState;
+             this.playbackState = 'loading';
+             try {
+               await this.connectToSession();
+             } catch (error) {
+               this.playbackState = 'stopped';
+               this.previousPlaybackStateOnError = null;
+             }
            },
          },
        });
+       // If connection is successful and it was a reconnection attempt, restore state
+       if (this.previousPlaybackStateOnError !== null) {
+         this.playbackState = this.previousPlaybackStateOnError;
+         this.previousPlaybackStateOnError = null;
+       }
      } catch (error) {
        this.connectionError = true;
-       this.stop();
+       this.playbackState = 'stopped'; // Ensure stopped on initial connection failure
+       this.previousPlaybackStateOnError = null; // Reset
+       this.stop(); // stop() also sets playbackState to 'stopped', but good to be explicit here.
        if (this.toastMessage && typeof this.toastMessage.show === 'function') {
          this.toastMessage.show('Failed to connect to session. Check your API key.');
        }
@@ -695,7 +721,7 @@ class PromptDjMidi extends LitElement {
             : html`<option value="">No devices found</option>`}
             </select>
           ` : ''}
-          ${this.connectionError || !this.geminiApiKey ? html`
+          ${this.playbackState === 'stopped' && (this.connectionError || !this.geminiApiKey) ? html`
             <button @click=${this.getApiKey}>Get API Key</button>
             <div class="api-controls">
               <input
