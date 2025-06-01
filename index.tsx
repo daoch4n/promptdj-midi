@@ -282,7 +282,7 @@ class PromptDjMidi extends LitElement {
    @state()
    private filteredPrompts = new Set<string>();
  
-   @state() private config = { seed: null as number | null, bpm: null as number | null, density: 0.5, brightness: 0.5, scale: '', muteBass: false, muteDrums: false, onlyBassAndDrums: false, };
+   @state() private config = { seed: null as number | null, bpm: null as number | null, density: 0.5, brightness: 0.5, scale: 'SCALE_UNSPECIFIED', muteBass: false, muteDrums: false, onlyBassAndDrums: false, };
    @state() private lastDefinedDensity = 0.5;
    @state() private autoDensity = true;
    @state() private lastDefinedBrightness = 0.5;
