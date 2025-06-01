@@ -911,7 +911,7 @@ ${this.renderPrompts()}
             @play-pause-click=${this.handleMainAudioButton}
           ></play-pause-button>
           <div class="setting">
-            <label for="density">Density</label>
+            <label for="density">Density: <span class="label-value">${(this.config.density ?? 0.5).toFixed(2)}</span></label>
             <weight-knob
               id="density"
               .value=${this.autoDensity ? 1 : cfg.density * 2}
@@ -926,7 +926,7 @@ ${this.renderPrompts()}
             </div>
           </div>
           <div class="setting">
-            <label for="brightness">Brightness</label>
+            <label for="brightness">Brightness: <span class="label-value">${(this.config.brightness ?? 0.5).toFixed(2)}</span></label>
             <weight-knob
               id="brightness"
               .value=${this.autoBrightness ? 1 : cfg.brightness * 2}
