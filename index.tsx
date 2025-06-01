@@ -324,6 +324,7 @@ class PromptDjMidi extends LitElement {
    @state() private autoTemperature = PromptDjMidi.INITIAL_AUTO_STATES.autoTemperature;
    @state() private autoTopK = PromptDjMidi.INITIAL_AUTO_STATES.autoTopK;
    @state() private autoGuidance = PromptDjMidi.INITIAL_AUTO_STATES.autoGuidance;
+   @state() private showSeedInputHoverEffect = false;
 
    @state() private apiKeyInvalid = false;
    @state() private lastDefinedTemperature = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
@@ -344,6 +345,7 @@ class PromptDjMidi extends LitElement {
      super();
      this.prompts = prompts;
      this.midiDispatcher = midiDispatcher;
+     this.config.seed = Math.floor(Math.random() * 1000000) + 1;
      this.updateAudioLevel = this.updateAudioLevel.bind(this);
  
      this.geminiApiKey = localStorage.getItem('geminiApiKey');
@@ -980,6 +982,15 @@ class PromptDjMidi extends LitElement {
             : html`<option value="">No devices found</option>`}
             </select>
           ` : ''}
+          <div class=${classMap({ 'seed-controls': true, 'seed-controls-hoverable': this.geminiApiKey && !this.apiKeyInvalid })}>
+              <label for="seed">Seed</label>
+              <input
+                  type="number"
+                  id="seed"
+                  .value=${cfg.seed ?? ''}
+                  @input=${this.handleInputChange}
+                  placeholder="Auto" />
+          </div>
           ${!this.geminiApiKey || this.apiKeyInvalid ? html`
             <button @click=${this.getApiKey}>Get API Key</button>
             <div class="api-controls">
@@ -990,15 +1001,6 @@ class PromptDjMidi extends LitElement {
                 @input=${this.handleApiKeyInputChange}
               />
               <button @click=${this.saveApiKeyToLocalStorage}>Save</button>
-            </div>
-            <div class="seed-controls">
-                <label for="seed">Seed</label>
-                <input
-                    type="number"
-                    id="seed"
-                    .value=${cfg.seed ?? ''}
-                    @input=${this.handleInputChange}
-                    placeholder="Auto" />
             </div>
           ` : ''}
         </div>
