@@ -135,6 +135,11 @@ class PromptDjMidi extends LitElement {
         text-align: center;
         color: #fff; /* Ensure labels are white */
     }
+    .advanced-settings-panel .setting > label .label-value {
+      font-weight: normal; /* Labels are bold, so values can be normal */
+      color: #dddddd;     /* Slightly lighter or different color for the value */
+      margin-left: 8px;  /* Space between label text and value */
+    }
 
     .advanced-settings-panel .setting weight-knob {
       width: 100px;
@@ -961,7 +966,7 @@ ${this.renderPrompts()}
             ></dj-style-selector>
           </div>
           <div class="setting">
-            <label for="temperature">Temperature</label>
+            <label for="temperature">Temperature: <span class="label-value">${(this.config.temperature ?? 1.1).toFixed(1)}</span></label>
             <weight-knob
               id="temperature"
               .value=${( (this.config.temperature ?? 1.1) - 0) / (3 - 0) * 2 }
@@ -970,7 +975,7 @@ ${this.renderPrompts()}
             ></weight-knob>
           </div>
           <div class="setting">
-            <label for="topK">Top K</label>
+            <label for="topK">Top K: <span class="label-value">${(this.config.topK ?? 40).toFixed(0)}</span></label>
             <weight-knob
               id="topK"
               .value=${( (this.config.topK ?? 40) - 1) / (100 - 1) * 2 }
@@ -979,7 +984,7 @@ ${this.renderPrompts()}
             ></weight-knob>
           </div>
           <div class="setting">
-            <label for="guidance">Guidance</label>
+            <label for="guidance">Guidance: <span class="label-value">${(this.config.guidance ?? 4.0).toFixed(1)}</span></label>
             <weight-knob
               id="guidance"
               .value=${( (this.config.guidance ?? 4.0) - 0) / (6 - 0) * 2 }
