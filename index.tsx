@@ -105,6 +105,7 @@ class PromptDjMidi extends LitElement {
       box-sizing: border-box;
     }
     .advanced-settings-panel {
+      font-family: 'DS-Digital', cursive;
       position: fixed;
       right: 0;
       top: 0;
