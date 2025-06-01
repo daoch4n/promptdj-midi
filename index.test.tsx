@@ -218,6 +218,38 @@ describe('PromptDjMidi - PlayPauseButton State During Network Error Recovery', (
     expect(component.toastMessage.show).toHaveBeenCalledWith('Failed to connect to session. Check your API key.');
   });
 
+  it('should transition to "paused" when button clicked while "loading" (and audioReady is true)', async () => {
+    // Arrange
+    component.audioReady = true; // Prerequisite for this specific path in handleMainAudioButton
+    component.playbackState = 'loading'; // Set the state to loading
+    // Ensure a session object is assigned, as pause() might try to use it.
+    // The actual mockSession.pause is what we'll check.
+    component.session = mockSession;
+    await component.updateComplete;
+
+    // Act
+    await component.handleMainAudioButton();
+
+    // Assert
+    expect(component.playbackState).toBe('paused');
+    expect(mockPause).toHaveBeenCalled();
+  });
+
+  it('should transition to "paused" when button clicked while "stopped" (and audioReady is true)', async () => {
+    // Arrange
+    component.audioReady = true; // Prerequisite
+    component.playbackState = 'stopped'; // Set the state to stopped
+    component.connectionError = false; // Not in an error state that would prevent this action
+    component.session = mockSession; // Ensure session object is present
+    await component.updateComplete;
+
+    // Act
+    await component.handleMainAudioButton();
+
+    // Assert
+    expect(component.playbackState).toBe('paused');
+    expect(mockPause).toHaveBeenCalled();
+  });
 });
 
 
