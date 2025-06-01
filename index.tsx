@@ -7,7 +7,7 @@ import { css, html, LitElement, svg } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { classMap } from 'lit/directives/class-map.js';
-import { GoogleGenAI, type LiveMusicSession, type LiveMusicServerMessage } from '@google/genai';
+import { GoogleGenAI, type LiveMusicSession, type LiveMusicServerMessage, type Scale } from '@google/genai';
 
 import { decode, decodeAudioData } from './utils/audio'
 import { throttle } from './utils/throttle'
@@ -297,7 +297,7 @@ class PromptDjMidi extends LitElement {
    @state() private autoBrightness = PromptDjMidi.INITIAL_AUTO_STATES.autoBrightness;
    @state() private lastDefinedBpm = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBpm;
    @state() private autoBpm = PromptDjMidi.INITIAL_AUTO_STATES.autoBpm;
-
+ 
    private audioLevelRafId: number | null = null;
    private connectionError = true;
  
@@ -636,64 +636,65 @@ class PromptDjMidi extends LitElement {
     private resetAll() {
       // Reset config properties
       this.config = { ...PromptDjMidi.INITIAL_CONFIG };
-
+ 
       // Reset auto states
       this.autoDensity = PromptDjMidi.INITIAL_AUTO_STATES.autoDensity;
       this.autoBrightness = PromptDjMidi.INITIAL_AUTO_STATES.autoBrightness;
       this.autoBpm = PromptDjMidi.INITIAL_AUTO_STATES.autoBpm;
-
+ 
       // Reset last defined states
       this.lastDefinedDensity = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedDensity;
       this.lastDefinedBrightness = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBrightness;
       this.lastDefinedBpm = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBpm;
-
+ 
       // Reset prompts
       this.setPrompts(PromptDjMidi.buildDefaultPrompts());
-
+ 
       // Request UI update
       this.requestUpdate(); // Important to reflect changes in UI
-
+ 
       // Send reset parameters to session
       this._sendPlaybackParametersToSession();
     }
-
+ 
     private _sendPlaybackParametersToSession() {
       if (this.session) {
-        this.session.updatePlaybackParameters({
-          density: this.config.density,
-          brightness: this.config.brightness,
-          bpm: this.config.bpm,
-          muteBass: this.config.muteBass,
-          muteDrums: this.config.muteDrums,
-          onlyBassAndDrums: this.config.onlyBassAndDrums,
-          scale: this.config.scale === 'SCALE_UNSPECIFIED' ? null : this.config.scale,
-          temperature: this.config.temperature,
-          topK: this.config.topK,
-          guidance: this.config.guidance,
-          // Include seed if it's managed and sent this way
-          seed: this.config.seed,
+        this.session.setMusicGenerationConfig({
+          musicGenerationConfig: {
+            density: this.config.density,
+            brightness: this.config.brightness,
+            bpm: this.config.bpm === null ? undefined : this.config.bpm,
+            muteBass: this.config.muteBass,
+            muteDrums: this.config.muteDrums,
+            onlyBassAndDrums: this.config.onlyBassAndDrums,
+            scale: this.config.scale === 'SCALE_UNSPECIFIED' ? undefined : (this.config.scale as Scale),
+            temperature: this.config.temperature,
+            guidance: this.config.guidance,
+            // Include seed if it's managed and sent this way
+            seed: this.config.seed === null ? undefined : this.config.seed,
+          }
         });
       }
     }
-
+ 
     private handleToggleClick(event: Event) {
       const target = event.currentTarget as HTMLElement;
       const id = target.id as 'muteBass' | 'muteDrums' | 'onlyBassAndDrums';
-
+ 
       if (id === 'muteBass' || id === 'muteDrums' || id === 'onlyBassAndDrums') {
         this.config = { ...this.config, [id]: !this.config[id] };
         this.requestUpdate();
         this._sendPlaybackParametersToSession(); // Replace previous session call
       }
     }
-
+ 
     private handleAutoToggleClick(event: Event) {
       const target = event.currentTarget as HTMLElement;
       const id = target.id as 'auto-density' | 'auto-brightness' | 'auto-bpm';
       let newDensity = this.config.density;
       let newBrightness = this.config.brightness;
       let newBpm = this.config.bpm;
-
+ 
       switch (id) {
         case 'auto-density':
           this.autoDensity = !this.autoDensity;
@@ -804,7 +805,7 @@ class PromptDjMidi extends LitElement {
      this.requestUpdate();
    }
  
-  
+   
     override render() {
        const bg = styleMap({
          backgroundImage: this.makeBackground(),
@@ -833,7 +834,7 @@ class PromptDjMidi extends LitElement {
      const cfg = this.config;
  
      const djStyleSelectorOptions = Array.from(scaleMap, ([label, { value, color }]) => ({ label, value, color } as DJStyleSelectorOption));
-
+ 
       return html`
         <div id="background" style=${bg}></div>
         <div id="buttons">
@@ -968,7 +969,7 @@ ${this.renderPrompts()}
             ></weight-knob>
           </div>
           <div class="setting">
-            <label>Mute Bass</label>
+            
             <div
               id="muteBass"
               class="option-button ${this.config.muteBass ? 'selected' : ''}"
@@ -978,7 +979,7 @@ ${this.renderPrompts()}
             </div>
           </div>
           <div class="setting">
-            <label>Mute Drums</label>
+            
             <div
               id="muteDrums"
               class="option-button ${this.config.muteDrums ? 'selected' : ''}"
@@ -988,7 +989,7 @@ ${this.renderPrompts()}
             </div>
           </div>
           <div class="setting">
-            <label>Only Bass & Drums</label>
+            
             <div
               id="onlyBassAndDrums"
               class="option-button ${this.config.onlyBassAndDrums ? 'selected' : ''}"
@@ -1009,83 +1010,83 @@ ${this.renderPrompts()}
         </div>
       `;
     }
-
+ 
     private renderPrompts() {
-  return html`<div id="grid">
-    ${[...this.prompts.values()].map((prompt) => {
-      return html`<prompt-controller
-        promptId=${prompt.promptId}
-        filtered=${this.filteredPrompts.has(prompt.text)}
-        cc=${prompt.cc}
-        text=${prompt.text}
-        weight=${prompt.weight}
-        color=${prompt.color}
-        .midiDispatcher=${this.midiDispatcher}
-        .showCC=${this.showMidi}
-        audioLevel=${this.audioLevel}
-        @prompt-changed=${this.handlePromptChanged}>
-      </prompt-controller>`;
-    })}
-  </div>`;
-}
- 
-   static getInitialPrompts(): Map<string, Prompt> {
-     const { localStorage } = window;
-     const storedPrompts = localStorage.getItem('prompts');
- 
-     if (storedPrompts) {
-       try {
-         const prompts = JSON.parse(storedPrompts) as Prompt[];
-         console.log('Loading stored prompts', prompts);
-         return new Map(prompts.map((prompt) => [prompt.promptId, prompt]));
-       } catch (e) {
-         console.error('Failed to parse stored prompts', e);
-       }
-     }
- 
-     console.log('No stored prompts, using default prompts');
- 
-     return PromptDjMidi.buildDefaultPrompts();
-   }
- 
-   static buildDefaultPrompts() {
-     const startOn = [...DEFAULT_PROMPTS]
-       .sort(() => Math.random() - 0.5)
-       .slice(0, 3);
- 
-     const prompts = new Map<string, Prompt>();
- 
-     for (let i = 0; i < DEFAULT_PROMPTS.length; i++) {
-       const promptId = `prompt-${i}`;
-       const prompt = DEFAULT_PROMPTS[i];
-       const { text, color } = prompt;
-       prompts.set(promptId, {
-         promptId,
-         text,
-         weight: startOn.includes(prompt) ? 1 : 0,
-         cc: i,
-         color,
-       });
-     }
- 
-     return prompts;
-   }
- 
-   static setStoredPrompts(prompts: Map<string, Prompt>) {
-     const storedPrompts = JSON.stringify([...prompts.values()]);
-     const { localStorage } = window;
-     localStorage.setItem('prompts', storedPrompts);
-   }
+   return html`<div id="grid">
+     ${[...this.prompts.values()].map((prompt) => {
+       return html`<prompt-controller
+         promptId=${prompt.promptId}
+         filtered=${this.filteredPrompts.has(prompt.text)}
+         cc=${prompt.cc}
+         text=${prompt.text}
+         weight=${prompt.weight}
+         color=${prompt.color}
+         .midiDispatcher=${this.midiDispatcher}
+         .showCC=${this.showMidi}
+         audioLevel=${this.audioLevel}
+         @prompt-changed=${this.handlePromptChanged}>
+       </prompt-controller>`;
+     })}
+   </div>`;
  }
  
- function main(parent: HTMLElement) {
-   const midiDispatcher = new MidiDispatcher();
-   const initialPrompts = PromptDjMidi.getInitialPrompts();
-   const pdjMidi = new PromptDjMidi(
-     initialPrompts,
-     midiDispatcher,
-   );
-   parent.appendChild(pdjMidi);
- }
+    static getInitialPrompts(): Map<string, Prompt> {
+      const { localStorage } = window;
+      const storedPrompts = localStorage.getItem('prompts');
  
- main(document.body);
+      if (storedPrompts) {
+        try {
+          const prompts = JSON.parse(storedPrompts) as Prompt[];
+          console.log('Loading stored prompts', prompts);
+          return new Map(prompts.map((prompt) => [prompt.promptId, prompt]));
+        } catch (e) {
+          console.error('Failed to parse stored prompts', e);
+        }
+      }
+ 
+      console.log('No stored prompts, using default prompts');
+ 
+      return PromptDjMidi.buildDefaultPrompts();
+    }
+ 
+    static buildDefaultPrompts() {
+      const startOn = [...DEFAULT_PROMPTS]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+ 
+      const prompts = new Map<string, Prompt>();
+ 
+      for (let i = 0; i < DEFAULT_PROMPTS.length; i++) {
+        const promptId = `prompt-${i}`;
+        const prompt = DEFAULT_PROMPTS[i];
+        const { text, color } = prompt;
+        prompts.set(promptId, {
+          promptId,
+          text,
+          weight: startOn.includes(prompt) ? 1 : 0,
+          cc: i,
+          color,
+        });
+      }
+ 
+      return prompts;
+    }
+ 
+    static setStoredPrompts(prompts: Map<string, Prompt>) {
+      const storedPrompts = JSON.stringify([...prompts.values()]);
+      const { localStorage } = window;
+      localStorage.setItem('prompts', storedPrompts);
+    }
+  }
+ 
+  function main(parent: HTMLElement) {
+    const midiDispatcher = new MidiDispatcher();
+    const initialPrompts = PromptDjMidi.getInitialPrompts();
+    const pdjMidi = new PromptDjMidi(
+      initialPrompts,
+      midiDispatcher,
+    );
+    parent.appendChild(pdjMidi);
+  }
+ 
+  main(document.body);
