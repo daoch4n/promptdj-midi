@@ -941,11 +941,10 @@ ${this.renderPrompts()}
             </div>
           </div>
           <div class="setting">
-            <label for="bpm">BPM</label>
+            <label for="bpm">BPM: <span class="label-value">${this.autoBpm ? 'AUTO' : (this.config.bpm ?? 120).toFixed(0)}</span></label>
             <weight-knob
               id="bpm"
               .value=${this.autoBpm ? 1 : ((cfg.bpm ?? 120) - 60) / (180 - 60) * 2}
-              .displayValue=${this.autoBpm ? 'AUTO' : (cfg.bpm ?? 120).toFixed(0)}
               @input=${this.handleInputChange}
             ></weight-knob>
             <div
