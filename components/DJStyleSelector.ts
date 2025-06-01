@@ -16,7 +16,6 @@ export class DJStyleSelector extends LitElement {
       flex-direction: column;
       align-items: stretch;
       gap: 5px;
-      font-family: 'Roboto', sans-serif; /* Example font */
     }
     .option {
       background-color: #333;
