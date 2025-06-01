@@ -175,31 +175,6 @@ class PromptDjMidi extends LitElement {
     }
 
     /* Add these rules within the static styles */
-    .advanced-settings-panel .new-mix-button {
-      background-color: #333; /* Base background */
-      color: #fff;
-      border: 1px solid #555;
-      border-radius: 4px;
-      padding: 8px 12px;
-      text-align: center;
-      cursor: pointer;
-      font-size: 0.9em;
-      margin-top: 15px; /* Space above */
-      width: 100%; /* Make it full width like other controls */
-      box-sizing: border-box; /* Ensure padding doesn't make it overflow */
-      transition: background-color 0.2s, box-shadow 0.2s;
-    }
-
-    .advanced-settings-panel .new-mix-button:hover {
-      background-color: #444; /* Darken on hover */
-    }
-
-    .advanced-settings-panel .new-mix-button:active {
-      background-color: #888888; /* Gray background on click */
-      box-shadow: 0 0 4px #888888, 0 0 6px #888888; /* Gray glow on click */
-      color: #fff;
-      font-weight: bold;
-    }
    #grid {
      width: 80vmin;
      height: 80vmin;
@@ -1022,7 +997,15 @@ ${this.renderPrompts()}
               Only Bass & Drums
             </div>
           </div>
-          <button class="new-mix-button" @click=${this.resetAll}>New Mix</button>
+          <div class="setting">
+            <div
+              id="reset-button"
+              class="option-button"
+              @click=${this.resetAll}
+            >
+              Reset
+            </div>
+          </div>
         </div>
       `;
     }
