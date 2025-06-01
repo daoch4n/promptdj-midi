@@ -806,6 +806,7 @@ ${this.renderPrompts()}
             <weight-knob
               id="bpm"
               .value=${this.autoBpm ? 1 : ((cfg.bpm ?? 120) - 60) / (180 - 60) * 2}
+              .displayValue=${this.autoBpm ? 'AUTO' : (cfg.bpm ?? 120).toFixed(0)}
               @input=${this.handleInputChange}
             ></weight-knob>
             <div class="checkbox-setting">
