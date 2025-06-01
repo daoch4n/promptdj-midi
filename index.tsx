@@ -47,6 +47,33 @@ const DEFAULT_PROMPTS = [
 /** The grid of prompt inputs. */
 @customElement('prompt-dj-midi')
 class PromptDjMidi extends LitElement {
+  // Inside PromptDjMidi class
+  private static readonly INITIAL_CONFIG = {
+    seed: null as number | null,
+    bpm: null as number | null, // Consistent with autoBpm=true initially setting config.bpm to null
+    density: 0.5,
+    brightness: 0.5,
+    scale: 'SCALE_UNSPECIFIED',
+    muteBass: false,
+    muteDrums: false,
+    onlyBassAndDrums: false,
+    temperature: 1.1,
+    topK: 40,
+    guidance: 4.0
+  };
+
+  private static readonly INITIAL_AUTO_STATES = {
+    autoDensity: true,
+    autoBrightness: true,
+    autoBpm: true
+  };
+
+  private static readonly INITIAL_LAST_DEFINED_STATES = {
+    lastDefinedDensity: 0.5,
+    lastDefinedBrightness: 0.5,
+    lastDefinedBpm: 120
+  };
+
   static override styles = css`
     html, body {
       height: 100%;
@@ -282,13 +309,13 @@ class PromptDjMidi extends LitElement {
    @state()
    private filteredPrompts = new Set<string>();
  
-   @state() private config = { seed: null as number | null, bpm: null as number | null, density: 0.5, brightness: 0.5, scale: 'SCALE_UNSPECIFIED', muteBass: false, muteDrums: false, onlyBassAndDrums: false, };
-   @state() private lastDefinedDensity = 0.5;
-   @state() private autoDensity = true;
-   @state() private lastDefinedBrightness = 0.5;
-   @state() private autoBrightness = true;
-   @state() private lastDefinedBpm = 120;
-   @state() private autoBpm = true;
+   @state() private config = { ...PromptDjMidi.INITIAL_CONFIG };
+   @state() private lastDefinedDensity = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedDensity;
+   @state() private autoDensity = PromptDjMidi.INITIAL_AUTO_STATES.autoDensity;
+   @state() private lastDefinedBrightness = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBrightness;
+   @state() private autoBrightness = PromptDjMidi.INITIAL_AUTO_STATES.autoBrightness;
+   @state() private lastDefinedBpm = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBpm;
+   @state() private autoBpm = PromptDjMidi.INITIAL_AUTO_STATES.autoBpm;
 
    private audioLevelRafId: number | null = null;
    private connectionError = true;
@@ -626,7 +653,46 @@ class PromptDjMidi extends LitElement {
      window.open('https://aistudio.google.com/apikey', '_blank');
    }
     private resetAll() {
+      // Reset config properties
+      this.config = { ...PromptDjMidi.INITIAL_CONFIG };
+
+      // Reset auto states
+      this.autoDensity = PromptDjMidi.INITIAL_AUTO_STATES.autoDensity;
+      this.autoBrightness = PromptDjMidi.INITIAL_AUTO_STATES.autoBrightness;
+      this.autoBpm = PromptDjMidi.INITIAL_AUTO_STATES.autoBpm;
+
+      // Reset last defined states
+      this.lastDefinedDensity = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedDensity;
+      this.lastDefinedBrightness = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBrightness;
+      this.lastDefinedBpm = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBpm;
+
+      // Reset prompts
       this.setPrompts(PromptDjMidi.buildDefaultPrompts());
+
+      // Request UI update
+      this.requestUpdate(); // Important to reflect changes in UI
+
+      // Send reset parameters to session
+      this._sendPlaybackParametersToSession();
+    }
+
+    private _sendPlaybackParametersToSession() {
+      if (this.session) {
+        this.session.updatePlaybackParameters({
+          density: this.config.density,
+          brightness: this.config.brightness,
+          bpm: this.config.bpm,
+          muteBass: this.config.muteBass,
+          muteDrums: this.config.muteDrums,
+          onlyBassAndDrums: this.config.onlyBassAndDrums,
+          scale: this.config.scale === 'SCALE_UNSPECIFIED' ? null : this.config.scale,
+          temperature: this.config.temperature,
+          topK: this.config.topK,
+          guidance: this.config.guidance,
+          // Include seed if it's managed and sent this way
+          seed: this.config.seed,
+        });
+      }
     }
 
     private handleToggleClick(event: Event) {
@@ -636,16 +702,7 @@ class PromptDjMidi extends LitElement {
       if (id === 'muteBass' || id === 'muteDrums' || id === 'onlyBassAndDrums') {
         this.config = { ...this.config, [id]: !this.config[id] };
         this.requestUpdate();
-        // Also call a method to update the session parameters if it exists
-        // For example, if there's a method like this.updatePlaybackParameters()
-        // that sends the config to the backend.
-        if (this.session) {
-            this.session.updatePlaybackParameters({
-                muteBass: this.config.muteBass,
-                muteDrums: this.config.muteDrums,
-                onlyBassAndDrums: this.config.onlyBassAndDrums,
-            });
-        }
+        this._sendPlaybackParametersToSession(); // Replace previous session call
       }
     }
 
@@ -696,18 +753,7 @@ class PromptDjMidi extends LitElement {
           break;
       }
       this.requestUpdate();
-
-      if (this.session) {
-        this.session.updatePlaybackParameters({
-          density: this.config.density,
-          brightness: this.config.brightness,
-          bpm: this.config.bpm, // This will be the newBpm value set above
-          muteBass: this.config.muteBass,
-          muteDrums: this.config.muteDrums,
-          onlyBassAndDrums: this.config.onlyBassAndDrums,
-          scale: this.config.scale === 'SCALE_UNSPECIFIED' ? null : this.config.scale,
-        });
-      }
+      this._sendPlaybackParametersToSession(); // Replace previous session call
     }
  
     private handleInputChange(event: Event) {
@@ -729,27 +775,50 @@ class PromptDjMidi extends LitElement {
         const knob = target as WeightKnob;
         const knobValue = knob.value; // This is the 0-2 value
         if (id === 'density') {
-            this.lastDefinedDensity = knobValue / 2;
+            this.lastDefinedDensity = knobValue / 2; // 0-1 scale
             this.autoDensity = false;
             this.config = { ...this.config, density: this.lastDefinedDensity };
         } else if (id === 'brightness') {
-            this.lastDefinedBrightness = knobValue / 2;
+            this.lastDefinedBrightness = knobValue / 2; // 0-1 scale
             this.autoBrightness = false;
             this.config = { ...this.config, brightness: this.lastDefinedBrightness };
         } else if (id === 'bpm') {
-            this.lastDefinedBpm = Math.round((knobValue / 2) * (180 - 60) + 60);
+            const minBpm = 60;
+            const maxBpm = 180;
+            const newBpm = Math.round((knobValue / 2) * (maxBpm - minBpm) + minBpm);
+            this.lastDefinedBpm = newBpm;
             this.autoBpm = false;
-            this.config = { ...this.config, bpm: this.lastDefinedBpm };
+            this.config = { ...this.config, bpm: newBpm };
+        } else if (id === 'temperature') {
+            const minTemp = 0;
+            const maxTemp = 3;
+            const newTemp = parseFloat(((knobValue / 2) * (maxTemp - minTemp) + minTemp).toFixed(1)); // Keep one decimal
+            this.config = { ...this.config, temperature: newTemp };
+        } else if (id === 'topK') {
+            const minTopK = 1;
+            const maxTopK = 100;
+            const newTopK = Math.round((knobValue / 2) * (maxTopK - minTopK) + minTopK);
+            this.config = { ...this.config, topK: newTopK };
+        } else if (id === 'guidance') {
+            const minGuidance = 0;
+            const maxGuidance = 6;
+            const newGuidance = parseFloat(((knobValue / 2) * (maxGuidance - minGuidance) + minGuidance).toFixed(1)); // Keep one decimal
+            this.config = { ...this.config, guidance: newGuidance };
         }
+        this._sendPlaybackParametersToSession(); // Add this call
      } else if (target instanceof HTMLInputElement && target.type === 'number') {
         const value = (target as HTMLInputElement).value;
         this.config = { ...this.config, [id]: value === '' ? null : parseFloat(value) };
+        this._sendPlaybackParametersToSession(); // Also call for direct number inputs like seed
      } else if (event instanceof CustomEvent && event.detail !== undefined) { // For DJStyleSelector
         const value = event.detail;
         this.config = { ...this.config, [id]: value };
+        this._sendPlaybackParametersToSession(); // Also call for DJStyleSelector (scale)
      } else { // For standard HTMLSelectElement
         const value = (target as HTMLSelectElement).value;
         this.config = { ...this.config, [id]: value };
+        // Note: This branch is not currently used by any standard select, but if it were,
+        // it would also need: this._sendPlaybackParametersToSession();
      }
      this.requestUpdate();
    }
@@ -890,6 +959,33 @@ ${this.renderPrompts()}
               .value=${cfg.scale}
               @change=${this.handleInputChange}
             ></dj-style-selector>
+          </div>
+          <div class="setting">
+            <label for="temperature">Temperature</label>
+            <weight-knob
+              id="temperature"
+              .value=${( (this.config.temperature ?? 1.1) - 0) / (3 - 0) * 2 }
+              .displayValue=${(this.config.temperature ?? 1.1).toFixed(1)}
+              @input=${this.handleInputChange}
+            ></weight-knob>
+          </div>
+          <div class="setting">
+            <label for="topK">Top K</label>
+            <weight-knob
+              id="topK"
+              .value=${( (this.config.topK ?? 40) - 1) / (100 - 1) * 2 }
+              .displayValue=${(this.config.topK ?? 40).toFixed(0)}
+              @input=${this.handleInputChange}
+            ></weight-knob>
+          </div>
+          <div class="setting">
+            <label for="guidance">Guidance</label>
+            <weight-knob
+              id="guidance"
+              .value=${( (this.config.guidance ?? 4.0) - 0) / (6 - 0) * 2 }
+              .displayValue=${(this.config.guidance ?? 4.0).toFixed(1)}
+              @input=${this.handleInputChange}
+            ></weight-knob>
           </div>
           <div class="setting">
             <label>Mute Bass</label>
