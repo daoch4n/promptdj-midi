@@ -1,3 +1,7 @@
+body {
+  font-family: 'DS-Digital', cursive;
+}
+
 body.dragging {
   cursor: ns-resize;
 }
