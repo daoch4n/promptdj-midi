@@ -766,7 +766,6 @@ ${this.renderPrompts()}
               <div class="toggle-switch-lever"></div>
             </div>
           </button>
-          <h3>Advanced Settings</h3>
           <div class="setting">
             <label for="density">Density</label>
             <weight-knob
