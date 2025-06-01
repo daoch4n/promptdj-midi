@@ -178,6 +178,15 @@ class PromptDjMidi extends LitElement {
      gap: 2.5vmin;
      margin-top: 0;
    }
+
+    @media (max-width: 767px) {
+      #grid {
+        grid-template-columns: 1fr; /* Ensures 1 knob per row */
+        width: 50vw; /* Set width to half viewport width */
+        height: auto; /* Adjust height to content if necessary */
+        margin: 0 auto; /* Center the grid */
+      }
+    }
  
    #background {
      will-change: background-image;
