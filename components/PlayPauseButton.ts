@@ -178,7 +178,11 @@ export class PlayPauseButton extends LitElement {
   }
 
   override render() {
-    return html`${this.renderSvg()}<div class="hitbox"></div>`;
+    return html`${this.renderSvg()}<div class="hitbox" @click=${this.handleClick}></div>`;
+  }
+
+  private handleClick() {
+    this.dispatchEvent(new CustomEvent('play-pause-click'));
   }
 }
 

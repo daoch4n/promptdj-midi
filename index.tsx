@@ -20,6 +20,7 @@ import { ToastMessage } from './components/ToastMessage';
 import type { WeightKnob } from './components/WeightKnob';
 import './components/DJStyleSelector';
 import type { DJStyleSelectorOption } from './components/DJStyleSelector';
+import './components/PlayPauseButton';
 
 import type { Prompt, PlaybackState } from './types';
 
@@ -198,72 +199,13 @@ class PromptDjMidi extends LitElement {
         width: 18vmin;
     }
 
-     #main-audio-button {
-       width: calc(100% - 40px); /* Adjusts for panel padding */
-       height: 40px;
-       border-radius: 6px;
-       display: flex;
-       justify-content: center;
-       align-items: center;
-       cursor: pointer;
-       background: #202020;
-       border: 1px solid #111;
-       box-shadow: 0 1px 2px rgba(0,0,0,0.7);
-       padding: 0;
-       margin: 0 auto 40px auto;
-       font-size: 0;
-     }
-
-     .toggle-switch-base {
-       width: 100%;
-       height: 100%;
-       background-color: #252525;
-       border-radius: 6px;
-       position: relative;
-       box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
-     }
- 
-     .toggle-switch-lever {
-       position: absolute;
-       width: calc(50% - 8px);
-       height: 32px;
-       background-color: #505050;
-       border-radius: 4px;
-       top: 4px;
-       left: 4px;
-       transition: left 0.2s ease-in-out;
-       box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-     }
- 
-     #main-audio-button.is-on .toggle-switch-lever {
-       left: calc(50% + 4px);
-     }
- 
-     .toggle-switch-base::after {
-       content: '';
-       position: absolute;
-       width: 8px;
-       height: 8px;
-       border-radius: 50%;
-       background: #444; /* LED off color */
-       right: 8px;
-       top: 50%;
-       transform: translateY(-50%);
-       transition: background 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-     }
- 
-     #main-audio-button.is-on .toggle-switch-base::after {
-       background: #00ff00; /* Bright green for LED on */
-       box-shadow: 0 0 4px #00ff00, 0 0 7px #00ff00; /* Glow effect */
-     }
- 
-     #main-audio-button:hover .toggle-switch-lever {
-       background-color: #606060;
-     }
- 
-     #main-audio-button:active .toggle-switch-lever {
-       box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
-     }
+    play-pause-button {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 15px auto; /* top right&left bottom */
+      display: block;
+      cursor: pointer;
+    }
    `;
  
    private prompts: Map<string, Prompt>;
@@ -761,14 +703,10 @@ class PromptDjMidi extends LitElement {
 ${this.renderPrompts()}
         </div>
 <div class=${advancedClasses}>
-<button
-            id="main-audio-button"
-            class=${this.isButtonOn ? 'is-on' : ''}
-            @click=${this.handleMainAudioButton}>
-            <div class="toggle-switch-base">
-              <div class="toggle-switch-lever"></div>
-            </div>
-          </button>
+          <play-pause-button
+            .playbackState=${this.playbackState}
+            @play-pause-click=${this.handleMainAudioButton}
+          ></play-pause-button>
           <div class="setting">
             <label for="density">Density</label>
             <weight-knob
