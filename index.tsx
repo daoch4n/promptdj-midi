@@ -17,6 +17,7 @@ import { MidiDispatcher } from './utils/MidiDispatcher';
 import './components/WeightKnob';
 import './components/PromptController';
 import { ToastMessage } from './components/ToastMessage';
+import type { WeightKnob } from './components/WeightKnob';
 
 import type { Prompt, PlaybackState } from './types';
 
@@ -63,27 +64,29 @@ class PromptDjMidi extends LitElement {
     #main-content-area {
       display: flex;
       flex-direction: row;
-      align-items: flex-start; /* Align items to the start (left) */
-      gap: 15px;
-      width: 100%;
+      align-items: flex-start;
       justify-content: center;
-      height: 100%; /* Ensure it takes full height to center content */
+      gap: 5vmin;
+      width: 100%;
+      max-width: 1600px;
+      height: 100%;
+      padding: 8vmin 5vmin;
+      box-sizing: border-box;
     }
     .advanced-settings-panel {
       background-color: #202020;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       height: auto;
+      min-height: 80vmin;
       width: 280px; /* Fixed width for the sidebar */
       min-width: 280px; /* Ensure it maintains its width */
-      opacity: 1; /* Always visible */
-      overflow: visible; /* Allow content to be visible */
-      transition: none; /* No transition needed as it's always visible */
       color: #fff;
-      flex-shrink: 0; /* Prevent it from shrinking */
-      display: flex; /* Always use flex for internal alignment */
-      flex-direction: column; /* Always stack settings vertically */
-      padding: 15px; /* Consistent padding */
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      box-sizing: border-box;
     }
     .advanced-settings-panel .setting {
       display: flex;
@@ -91,12 +94,12 @@ class PromptDjMidi extends LitElement {
       align-items: stretch;
       margin-bottom: 15px;
       }
- .advanced-settings-panel .setting > label:first-child {
-     margin-bottom: 8px;
-     font-weight: bold;
-     text-align: center;
-     color: #fff; /* Ensure labels are white */
-   }
+    .advanced-settings-panel .setting > label:first-child {
+        margin-bottom: 8px;
+        font-weight: bold;
+        text-align: center;
+        color: #fff; /* Ensure labels are white */
+    }
  
    .advanced-settings-panel .setting .auto-row,
    .advanced-settings-panel .setting .checkbox-setting {
@@ -109,7 +112,7 @@ class PromptDjMidi extends LitElement {
      display: grid;
      grid-template-columns: repeat(4, 1fr);
      gap: 2.5vmin;
-     margin-top: 8vmin;
+     margin-top: 0;
    }
  
    #background {
@@ -127,10 +130,12 @@ class PromptDjMidi extends LitElement {
      position: absolute;
      top: 0;
      left: 0;
-     padding: 5px;
+     padding: 10px;
      display: flex;
      gap: 5px;
+     align-items: center;
    }
+   #buttons button {
        font: inherit;
        font-weight: 600;
        cursor: pointer;
@@ -141,12 +146,12 @@ class PromptDjMidi extends LitElement {
        border-radius: 4px;
        user-select: none;
        padding: 3px 6px;
-       &.active {
-         background-color: #fff;
-         color: #000;
-       }
-     }
-     select {
+   }
+    #buttons button.active {
+        background-color: #fff;
+        color: #000;
+    }
+    #buttons select {
        font: inherit;
        padding: 5px;
        background: #fff;
@@ -156,76 +161,79 @@ class PromptDjMidi extends LitElement {
        outline: none;
        cursor: pointer;
      }
+    #buttons .api-controls, #buttons .seed-controls {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+    }
+    #buttons .seed-controls label {
+        font-weight: 600;
+        color: #fff;
+    }
+    #buttons input {
+        background: #0002;
+        border: 1.5px solid #fff;
+        color: #fff;
+        border-radius: 4px;
+        padding: 3px 6px;
+    }
+    #buttons input[type="password"] {
+        width: 150px;
+    }
+    #buttons input[type="number"] {
+        width: 80px;
+    }
+
      #main-audio-button {
-       /* A.1: Main Container Styling */
-       width: 60px;
-       height: 30px;
-       border-radius: 4px; /* Housing with slight rounding */
+       width: 80%;
+       max-width: 150px;
+       height: 40px;
+       border-radius: 6px;
        display: flex;
        justify-content: center;
        align-items: center;
        cursor: pointer;
-       background: #202020; /* Dark housing color */
-       border: 1px solid #111; /* Darker border */
-       box-shadow: 0 1px 2px rgba(0,0,0,0.7); /* External shadow for housing */
-       padding: 0; /* Remove padding if it interferes */
-       position: absolute;
-       top: 5vmin;
-       right: 2.5vmin;
+       background: #202020;
+       border: 1px solid #111;
+       box-shadow: 0 1px 2px rgba(0,0,0,0.7);
+       padding: 0;
+       margin: 0 auto 25px auto;
        font-size: 0;
-       /* Remove transition for box-shadow if halo is gone, or keep if active state changes shadow */
-       /* transition: box-shadow 0.3s ease; Removed subtle-rgb-halo-leak */
      }
-     #main-audio-button.is-on {
-       /* Styles for ON state - lever and LED will handle this primarily */
-       /* No specific background or main box-shadow animation here anymore */
-     }
-     #main-audio-button.is-off {
-       /* Styles for OFF state - mostly default #main-audio-button styles apply */
-       /* Ensure no lingering halo animation if it was here */
-     }
-     /* Inner circle and loader are removed from HTML, so CSS can be removed or ignored */
-     /* #main-audio-button .inner-circle { ... } */
-     /* #main-audio-button .loader { ... } */
- 
-     /* A.2: Toggle Switch Base Styling */
+
      .toggle-switch-base {
        width: 100%;
        height: 100%;
-       background-color: #252525; /* Darker than housing */
-       border-radius: 4px; /* Match housing's rounding, or slightly less */
+       background-color: #252525;
+       border-radius: 6px;
        position: relative;
        box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
      }
  
-     /* A.3: Toggle Switch Lever Styling */
      .toggle-switch-lever {
        position: absolute;
-       width: 24px;
-       height: 24px;
-       background-color: #505050; /* Lighter grey for lever */
-       border-radius: 3px;
-       top: 3px; /* (30px base height - 24px lever height) / 2 */
-       /* B.1: Lever Position - Off State (default) */
-       left: 3px;
+       width: calc(50% - 8px);
+       height: 32px;
+       background-color: #505050;
+       border-radius: 4px;
+       top: 4px;
+       left: 4px;
        transition: left 0.2s ease-in-out;
        box-shadow: 0 1px 2px rgba(0,0,0,0.3);
      }
  
-     /* B.2: Lever Position - On State */
      #main-audio-button.is-on .toggle-switch-lever {
-       left: calc(100% - 24px - 3px); /* 60px - 24px - 3px = 33px */
+       left: calc(50% + 4px);
      }
  
-     /* B.3: LED Indicator */
      .toggle-switch-base::after {
        content: '';
        position: absolute;
-       width: 6px;
-       height: 6px;
+       width: 8px;
+       height: 8px;
        border-radius: 50%;
        background: #444; /* LED off color */
-       right: 5px; /* Positioned on the right side of the switch base */
+       right: 8px;
        top: 50%;
        transform: translateY(-50%);
        transition: background 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -233,33 +241,16 @@ class PromptDjMidi extends LitElement {
  
      #main-audio-button.is-on .toggle-switch-base::after {
        background: #00ff00; /* Bright green for LED on */
-       box-shadow: 0 0 3px #00ff00, 0 0 5px #00ff00; /* Glow effect */
+       box-shadow: 0 0 4px #00ff00, 0 0 7px #00ff00; /* Glow effect */
      }
  
-     /* C.1: Interaction Styling - Hover */
      #main-audio-button:hover .toggle-switch-lever {
-       background-color: #606060; /* Slightly lighten lever */
+       background-color: #606060;
      }
  
-     /* C.2: Interaction Styling - Active/Pressed */
      #main-audio-button:active .toggle-switch-lever {
-       box-shadow: inset 0 1px 2px rgba(0,0,0,0.5); /* Make lever look pressed */
+       box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
      }
- 
-     #main-audio-button .loader { /* If loader is absolutely needed elsewhere, style it here. For now, it's removed from button. */
-       stroke: #ffffff;
-       stroke-width: 3;
-       stroke-linecap: round;
-       animation: spin linear 1s infinite;
-       transform-origin: center;
-       transform-box: fill-box;
-     }
-     @keyframes spin {
-       from { transform: rotate(0deg); }
-       to { transform: rotate(359deg); }
-     }
-     /* subtle-rgb-halo-leak animation removed as LED is used now */
-     /* @keyframes subtle-rgb-halo-leak { ... } */
    `;
  
    private prompts: Map<string, Prompt>;
@@ -293,7 +284,9 @@ class PromptDjMidi extends LitElement {
    @state() private autoDensity = true;
    @state() private lastDefinedBrightness = 0.5;
    @state() private autoBrightness = true;
- 
+   @state() private lastDefinedBpm = 120;
+   @state() private autoBpm = true;
+
    private audioLevelRafId: number | null = null;
    private connectionError = true;
  
@@ -309,16 +302,13 @@ class PromptDjMidi extends LitElement {
      this.updateAudioLevel = this.updateAudioLevel.bind(this);
  
      this.geminiApiKey = localStorage.getItem('geminiApiKey');
-     // If API key is already set, hide the input field by default
  
      if (this.geminiApiKey) {
        this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
-       // Initially hide the API key field if a key is saved, but allow it to reappear on error
      }
    }
  
    override async firstUpdated() {
-     // Ensure toastMessage is ready before connecting to session
      await customElements.whenDefined('toast-message');
    }
  
@@ -349,7 +339,6 @@ class PromptDjMidi extends LitElement {
              if (e.serverContent?.audioChunks !== undefined) {
                if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
                if (!this.audioContext || !this.outputNode) {
-                 // Also show a toast message here if audio context is not initialized.
                  if (this.toastMessage && typeof this.toastMessage.show === 'function') {
                    this.toastMessage.show('Audio context not initialized. Please refresh.');
                  }
@@ -424,12 +413,12 @@ class PromptDjMidi extends LitElement {
        return;
      }
      try {
-       if (this.session) { // Add null check for this.session
+       if (this.session) {
          await this.session.setWeightedPrompts({
            weightedPrompts: promptsToSend,
          });
        }
-     } catch (e: unknown) { // Explicitly type e as unknown
+     } catch (e: unknown) {
        if (e instanceof Error) {
          if (this.toastMessage && typeof this.toastMessage.show === 'function') {
            this.toastMessage.show(e.message)
@@ -482,7 +471,6 @@ class PromptDjMidi extends LitElement {
      this.dispatchPromptsChange();
    }
  
-   /** Generates radial gradients for each prompt based on weight and color. */
    private readonly makeBackground = throttle(
      () => {
        const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
@@ -508,11 +496,11 @@ class PromptDjMidi extends LitElement {
  
        return bg.join(', ');
      },
-     30, // don't re-render more than once every XXms
+     30,
    );
  
    private pause() {
-     if (this.session) { // Add null check for this.session
+     if (this.session) {
        this.session.pause();
      }
      this.playbackState = 'paused';
@@ -546,12 +534,12 @@ class PromptDjMidi extends LitElement {
        this.audioAnalyser.node.connect(this.audioContext.destination);
        this.outputNode = this.audioContext.createGain();
        this.outputNode.connect(this.audioAnalyser.node);
-       this.updateAudioLevel(); // Start updating audio level once context is created
+       this.updateAudioLevel();
      }
  
      this.audioContext.resume();
-     this.audioReady = true; // Set audioReady to true after context resumes
-     if (this.session) { // Add null check for this.session
+     this.audioReady = true;
+     if (this.session) {
        this.session.play();
      }
      this.playbackState = 'loading';
@@ -562,7 +550,7 @@ class PromptDjMidi extends LitElement {
    }
  
    private stop() {
-     if (this.session) { // Add null check for this.session
+     if (this.session) {
        this.session.stop();
      }
      this.playbackState = 'stopped';
@@ -573,20 +561,18 @@ class PromptDjMidi extends LitElement {
      this.nextStartTime = 0;
    }
  
-   private async handleMainAudioButton() { // Renamed from handleTurnOnAudio / handlePlayPause
+   private async handleMainAudioButton() {
      if (!this.audioReady) {
-       // First click: initialize audio context and start playback
        await this.connectToSession();
        await this.setSessionPrompts();
        this.play();
      } else {
-       // Subsequent clicks: toggle play/pause
        if (this.playbackState === 'playing') {
          this.pause();
        } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
          if (this.connectionError) {
-           await this.connectToSession(); // Reconnect if there was an error
-           if (this.connectionError) { // If still error after reconnect, don't proceed to set prompts
+           await this.connectToSession();
+           if (this.connectionError) {
              return;
            }
          }
@@ -601,8 +587,6 @@ class PromptDjMidi extends LitElement {
    private get isButtonOn() {
      return this.playbackState === 'playing' || this.playbackState === 'loading';
    }
- 
-   // renderAudioButtonContent() is no longer needed and will be removed.
  
    private async toggleShowMidi() {
      this.showMidi = !this.showMidi;
@@ -619,18 +603,14 @@ class PromptDjMidi extends LitElement {
      this.midiDispatcher.activeMidiInputId = newMidiId;
    }
  
- 
- 
    private saveApiKeyToLocalStorage() {
      if (this.geminiApiKey) {
        localStorage.setItem('geminiApiKey', this.geminiApiKey);
        this.toastMessage.show('Gemini API key saved to local storage.');
-       // Do not hide the field here. Visibility is managed by connection status.
      } else {
        localStorage.removeItem('geminiApiKey');
        this.toastMessage.show('Gemini API key removed from local storage.');
      }
-     // Trigger the power button as requested
      this.handleMainAudioButton();
    }
  
@@ -647,48 +627,42 @@ class PromptDjMidi extends LitElement {
     }
  
     private handleInputChange(event: Event) {
-     const target = event.target as HTMLInputElement | HTMLSelectElement;
-     const { id, value, type } = target;
+     const target = event.target as HTMLInputElement | HTMLSelectElement | WeightKnob;
+     const id = target.id;
  
-     if (type === 'checkbox') {
-       const checkbox = target as HTMLInputElement;
+     if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+       const isChecked = target.checked;
        if (id === 'auto-density') {
-         this.autoDensity = checkbox.checked;
-         if (checkbox.checked) {
-           this.config = { ...this.config, density: this.lastDefinedDensity };
-         }
+         this.autoDensity = isChecked;
        } else if (id === 'auto-brightness') {
-         this.autoBrightness = checkbox.checked;
-         if (checkbox.checked) {
-           this.config = { ...this.config, brightness: this.lastDefinedBrightness };
-         }
+         this.autoBrightness = isChecked;
+       } else if (id === 'auto-bpm') {
+         this.autoBpm = isChecked;
        } else {
-         this.config = { ...this.config, [id]: checkbox.checked };
+         this.config = { ...this.config, [id]: isChecked };
        }
-     } else if (target instanceof HTMLInputElement && target.type === 'range') {
-       const numValue = parseFloat(value);
-       if (id === 'density') {
-         this.lastDefinedDensity = numValue;
-         this.autoDensity = false;
-       } else if (id === 'brightness') {
-         this.lastDefinedBrightness = numValue;
-         this.autoBrightness = false;
-       }
-       this.config = { ...this.config, [id]: numValue };
      } else if (target.tagName === 'WEIGHT-KNOB') {
-       const numValue = parseFloat(value) / 2; // Divide by 2 to map 0-2 to 0-1
-       if (id === 'density') {
-         this.lastDefinedDensity = numValue;
-         this.autoDensity = false;
-       } else if (id === 'brightness') {
-         this.lastDefinedBrightness = numValue;
-         this.autoBrightness = false;
-       }
-       this.config = { ...this.config, [id]: numValue };
-     } else if (type === 'number') {
-       this.config = { ...this.config, [id]: value === '' ? null : parseFloat(value) };
+        const knob = target as WeightKnob;
+        const knobValue = knob.value; // This is the 0-2 value
+        if (id === 'density') {
+            this.lastDefinedDensity = knobValue / 2;
+            this.autoDensity = false;
+            this.config = { ...this.config, density: this.lastDefinedDensity };
+        } else if (id === 'brightness') {
+            this.lastDefinedBrightness = knobValue / 2;
+            this.autoBrightness = false;
+            this.config = { ...this.config, brightness: this.lastDefinedBrightness };
+        } else if (id === 'bpm') {
+            this.lastDefinedBpm = Math.round((knobValue / 2) * (180 - 60) + 60);
+            this.autoBpm = false;
+            this.config = { ...this.config, bpm: this.lastDefinedBpm };
+        }
+     } else if (target instanceof HTMLInputElement && target.type === 'number') {
+        const value = (target as HTMLInputElement).value;
+        this.config = { ...this.config, [id]: value === '' ? null : parseFloat(value) };
      } else { // For select elements
-       this.config = { ...this.config, [id]: value };
+        const value = (target as HTMLSelectElement).value;
+        this.config = { ...this.config, [id]: value };
      }
      this.requestUpdate();
    }
@@ -700,8 +674,7 @@ class PromptDjMidi extends LitElement {
        });
  
      const advancedClasses = classMap({
-       'advanced-settings-panel': true, // Added for the new panel styling
-       'advanced-settings': true,       // Kept for existing content layout if any
+       'advanced-settings-panel': true,
      });
  
      const scaleMap = new Map<string, string>([
@@ -721,7 +694,6 @@ class PromptDjMidi extends LitElement {
      ]);
  
      const cfg = this.config;
- 
  
       return html`
         <div id="background" style=${bg}></div>
@@ -746,7 +718,7 @@ class PromptDjMidi extends LitElement {
             </select>
           ` : ''}
           ${this.connectionError || !this.geminiApiKey ? html`
-            <div style="display: flex; gap: 5px;">
+            <div class="api-controls">
               <input
                 type="password"
                 placeholder="Gemini API Key"
@@ -756,39 +728,47 @@ class PromptDjMidi extends LitElement {
               <button @click=${this.saveApiKeyToLocalStorage}>Save</button>
               <button @click=${this.getApiKey}>Get API Key</button>
             </div>
+            <div class="seed-controls">
+                <label for="seed">Seed</label>
+                <input
+                    type="number"
+                    id="seed"
+                    .value=${cfg.seed ?? ''}
+                    @input=${this.handleInputChange}
+                    placeholder="Auto" />
+            </div>
           ` : ''}
         </div>
         <div id="main-content-area">
          <div id="grid">${this.renderPrompts()}</div>
            <div class=${advancedClasses}>
-             <div class="setting">
-               <label for="seed">Seed</label>
-               <input
-               type="number"
-               id="seed"
-               .value=${cfg.seed ?? ''}
-               @input=${this.handleInputChange}
-               placeholder="Auto" />
-           </div>
-           <div class="setting">
-             <label for="bpm">BPM</label>
-             <input
-               type="number"
-               id="bpm"
-               min="60"
-               max="180"
-               .value=${cfg.bpm ?? ''}
-               @input=${this.handleInputChange}
-               placeholder="Auto" />
-           </div>
+            <button id="main-audio-button" @click=${this.handleMainAudioButton} class="${this.isButtonOn ? 'is-on' : 'is-off'}">
+                <div class="toggle-switch-base">
+                <div class="toggle-switch-lever"></div>
+                </div>
+            </button>
+            <div class="setting" auto=${this.autoBpm}>
+                <label for="bpm">BPM</label>
+                <weight-knob
+                    id="bpm"
+                    .value=${(this.lastDefinedBpm - 60) / 60}
+                    @input=${this.handleInputChange}
+                ></weight-knob>
+                <div class="auto-row">
+                    <input
+                        type="checkbox"
+                        id="auto-bpm"
+                        .checked=${this.autoBpm}
+                        @input=${this.handleInputChange} />
+                    <label for="auto-bpm">Auto</label>
+                    <span>${(this.lastDefinedBpm ?? 120).toFixed(0)}</span>
+                </div>
+            </div>
            <div class="setting" auto=${this.autoDensity}>
              <label for="density">Density</label>
              <weight-knob
                id="density"
-               min="0"
-               max="1"
-               step="0.05"
-               .value=${this.lastDefinedDensity}
+               .value=${this.lastDefinedDensity * 2}
                @input=${this.handleInputChange}
              ></weight-knob>
              <div class="auto-row">
@@ -805,10 +785,7 @@ class PromptDjMidi extends LitElement {
              <label for="brightness">Brightness</label>
              <weight-knob
                id="brightness"
-               min="0"
-               max="1"
-               step="0.05"
-               .value=${this.lastDefinedBrightness}
+               .value=${this.lastDefinedBrightness * 2}
                @input=${this.handleInputChange}
              ></weight-knob>
              <div class="auto-row">
@@ -866,11 +843,6 @@ class PromptDjMidi extends LitElement {
            </div>
          </div>
          </div>
-          <button id="main-audio-button" @click=${this.handleMainAudioButton} class="${this.isButtonOn ? 'is-on' : 'is-off'}">
-            <div class="toggle-switch-base">
-              <div class="toggle-switch-lever"></div>
-            </div>
-          </button>
           <toast-message></toast-message>
         `;
      }
@@ -912,8 +884,6 @@ class PromptDjMidi extends LitElement {
    }
  
    static buildDefaultPrompts() {
-     // Construct default prompts
-     // Pick 3 random prompts to start with weight 1
      const startOn = [...DEFAULT_PROMPTS]
        .sort(() => Math.random() - 0.5)
        .slice(0, 3);
