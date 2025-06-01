@@ -302,87 +302,87 @@ class PromptDjMidi extends LitElement {
      }
  
      try {
-       this.session = await this.ai.live.music.connect({
-         model: this.model,
-         callbacks: {
-           onmessage: async (e: LiveMusicServerMessage) => {
-             if (e.setupComplete) {
-               this.connectionError = false;
-             }
-             if (e.filteredPrompt) {
-               this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
-               if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-                 this.toastMessage.show(e.filteredPrompt.filteredReason as string);
-               }
-             }
-             if (e.serverContent?.audioChunks !== undefined) {
-               if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
-               if (!this.audioContext || !this.outputNode) {
-                 if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-                   this.toastMessage.show('Audio context not initialized. Please refresh.');
-                 }
-                 console.error('AudioContext or outputNode not initialized.');
-                 return;
-               }
-               const audioBuffer = await decodeAudioData(
-                 decode(e.serverContent?.audioChunks[0].data),
-                 this.audioContext,
-                 48000,
-                 2,
-               );
-               const source = this.audioContext.createBufferSource();
-               source.buffer = audioBuffer;
-               source.connect(this.outputNode);
-               if (this.nextStartTime === 0) {
-                 this.nextStartTime = this.audioContext.currentTime + this.bufferTime;
-                 setTimeout(() => {
-                   this.playbackState = 'playing';
-                 }, this.bufferTime * 1000);
-               }
- 
-               if (this.nextStartTime < this.audioContext.currentTime) {
-                 this.playbackState = 'loading';
-                 this.nextStartTime = 0;
-                 return;
-               }
-               source.start(this.nextStartTime);
-               this.nextStartTime += audioBuffer.duration;
-             }
-           },
-           onerror: async (e: ErrorEvent) => {
-             this.connectionError = true;
-             if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-               this.toastMessage.show('Connection lost. Attempting to reconnect...');
-             }
-             this.previousPlaybackStateOnError = this.playbackState;
-             this.playbackState = 'loading';
-             try {
-               await this.connectToSession();
-               // If connectToSession resolves without error, it means reconnection was successful (or handled its own error state)
-               // The playbackState should have been restored or set appropriately within the nested call
-             } catch (error) {
-               // This catch is for errors specifically from the connectToSession attempt during error recovery
-               this.playbackState = 'stopped';
-               this.previousPlaybackStateOnError = null;
-               // Toast/logging for this specific failure scenario might be needed if not handled by connectToSession
-             }
-           },
-           onclose: async (e: CloseEvent) => {
-             this.connectionError = true;
-             if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-               this.toastMessage.show('Connection lost. Attempting to reconnect...');
-             }
-             this.previousPlaybackStateOnError = this.playbackState;
-             this.playbackState = 'loading';
-             try {
-               await this.connectToSession();
-             } catch (error) {
-               this.playbackState = 'stopped';
-               this.previousPlaybackStateOnError = null;
-             }
-           },
-         },
-       });
+      this.session = await this.ai.live.music.connect({
+        model: this.model,
+        callbacks: {
+          onmessage: async (e: LiveMusicServerMessage) => {
+            if (e.setupComplete) {
+              this.connectionError = false;
+            }
+            if (e.filteredPrompt) {
+              this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
+              if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+                this.toastMessage.show(e.filteredPrompt.filteredReason as string);
+              }
+            }
+            if (e.serverContent?.audioChunks !== undefined) {
+              if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
+              if (!this.audioContext || !this.outputNode) {
+                if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+                  this.toastMessage.show('Audio context not initialized. Please refresh.');
+                }
+                console.error('AudioContext or outputNode not initialized.');
+                return;
+              }
+              const audioBuffer = await decodeAudioData(
+                decode(e.serverContent?.audioChunks[0].data),
+                this.audioContext,
+                48000,
+                2,
+              );
+              const source = this.audioContext.createBufferSource();
+              source.buffer = audioBuffer;
+              source.connect(this.outputNode);
+              if (this.nextStartTime === 0) {
+                this.nextStartTime = this.audioContext.currentTime + this.bufferTime;
+                setTimeout(() => {
+                  this.playbackState = 'playing';
+                }, this.bufferTime * 1000);
+              }
+
+              if (this.nextStartTime < this.audioContext.currentTime) {
+                this.playbackState = 'loading';
+                this.nextStartTime = 0;
+                return;
+              }
+              source.start(this.nextStartTime);
+              this.nextStartTime += audioBuffer.duration;
+            }
+          },
+          onerror: async (e: ErrorEvent) => {
+            this.connectionError = true;
+            if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+              this.toastMessage.show('Connection lost. Attempting to reconnect...');
+            }
+            this.previousPlaybackStateOnError = this.playbackState;
+            this.playbackState = 'loading';
+            try {
+              await this.connectToSession();
+              // If connectToSession resolves without error, it means reconnection was successful (or handled its own error state)
+              // The playbackState should have been restored or set appropriately within the nested call
+            } catch (error) {
+              // This catch is for errors specifically from the connectToSession attempt during error recovery
+              this.playbackState = 'stopped';
+              this.previousPlaybackStateOnError = null;
+              // Toast/logging for this specific failure scenario might be needed if not handled by connectToSession
+            }
+          },
+          onclose: async (e: CloseEvent) => {
+            this.connectionError = true;
+            if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+              this.toastMessage.show('Connection lost. Attempting to reconnect...');
+            }
+            this.previousPlaybackStateOnError = this.playbackState;
+            this.playbackState = 'loading';
+            try {
+              await this.connectToSession();
+            } catch (error) {
+              this.playbackState = 'stopped';
+              this.previousPlaybackStateOnError = null;
+            }
+          },
+        },
+      });
        // If connection is successful and it was a reconnection attempt, restore state
        if (this.previousPlaybackStateOnError !== null) {
          this.playbackState = this.previousPlaybackStateOnError;
@@ -682,7 +682,11 @@ class PromptDjMidi extends LitElement {
         }
      } else if (target instanceof HTMLInputElement && target.type === 'number') {
         const value = (target as HTMLInputElement).value;
-        this.config = { ...this.config, [id]: value === '' ? null : parseFloat(value) };
+        if (id === 'seed') {
+          this.config = { ...this.config, seed: value === '' ? undefined : parseFloat(value) };
+        } else { // For other number inputs like bpm (if any are direct number inputs)
+          this.config = { ...this.config, [id]: value === '' ? null : parseFloat(value) };
+        }
      } else if (event instanceof CustomEvent && event.detail !== undefined) { // For DJStyleSelector
         const value = event.detail;
         this.config = { ...this.config, [id]: value };
@@ -692,6 +696,62 @@ class PromptDjMidi extends LitElement {
      }
      this.requestUpdate();
      this.saveSettingsToLocalStorage();
+
+    // Add this block at the end of handleInputChange
+    if (this.session && this.playbackState !== 'stopped' && this.playbackState !== 'loading') {
+      const {
+        seed,
+        bpm,
+        density,
+        brightness,
+        scale,
+        muteBass,
+        muteDrums,
+        onlyBassAndDrums,
+      } = this.config;
+
+      // Prepare the payload for setMusicGenerationConfig
+      // Use a type that allows for undefined properties or be more specific
+      const musicConfigPayload: Record<string, any> = {
+        seed: seed, // Will be number or undefined
+        bpm: bpm,
+        density: density,
+        brightness: brightness,
+        scale: scale,
+        muteBass: muteBass,
+        muteDrums: muteDrums,
+        onlyBassAndDrums: onlyBassAndDrums,
+      };
+
+      // Clean the payload: remove keys if value is undefined or null.
+      // For numeric fields that could be NaN (like seed, bpm after parseFloat), remove if NaN.
+      Object.keys(musicConfigPayload).forEach((key) => {
+        const val = musicConfigPayload[key];
+        if (val === undefined || val === null) {
+          delete musicConfigPayload[key];
+          return; // Skip to next key
+        }
+        // Check for NaN for properties that are expected to be numbers
+        if (key === 'seed' || key === 'bpm' || key === 'density' || key === 'brightness') {
+          if (isNaN(Number(val))) {
+            delete musicConfigPayload[key];
+          }
+        }
+      });
+
+      if (Object.keys(musicConfigPayload).length > 0) {
+        this.session.setMusicGenerationConfig({
+          musicGenerationConfig: musicConfigPayload,
+        }).then(() => {
+          console.log('Music generation config updated via handleInputChange:', musicConfigPayload);
+        }).catch((error) => {
+          console.error('Failed to set music generation config via handleInputChange:', error);
+          if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+            this.toastMessage.show('Error updating music configuration.');
+          }
+        });
+      }
+    }
    }
  
   

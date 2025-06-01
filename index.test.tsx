@@ -105,6 +105,7 @@ describe('PromptDjMidi - PlayPauseButton State During Network Error Recovery', (
       play: mockPlay,
       pause: mockPause,
       stop: mockStopSession,
+      setMusicGenerationConfig: vi.fn(), // Added for handleInputChange tests
       // Mock other session methods if they are called
     };
 
@@ -252,6 +253,195 @@ describe('PromptDjMidi - PlayPauseButton State During Network Error Recovery', (
   });
 });
 
+describe('PromptDjMidi - handleInputChange Logic', () => {
+  let component: ActualPromptDjMidi;
+  let mockSetMusicGenerationConfig: any; // To hold the vi.fn()
+
+  beforeEach(async () => {
+    // Create and append the component
+    component = document.createElement('prompt-dj-midi') as ActualPromptDjMidi;
+    document.body.appendChild(component);
+    await component.updateComplete;
+
+    // Set a default API key and ensure a session object exists with the mock
+    component.geminiApiKey = 'test-key';
+    mockSetMusicGenerationConfig = vi.fn();
+    component.session = { // Simulate an active session
+      setMusicGenerationConfig: mockSetMusicGenerationConfig,
+      // Add other session methods if handleInputChange indirectly calls them
+      // For these tests, only setMusicGenerationConfig is directly called by the new logic
+      setWeightedPrompts: vi.fn(),
+      play: vi.fn(),
+      pause: vi.fn(),
+      stop: vi.fn(),
+    } as any; // Cast to any to simplify mock session typing for tests
+    // Spy on saveSettingsToLocalStorage if not already globally spied
+    // Assuming saveSettingsToLocalStorage is a method on the component instance
+    vi.spyOn(component, 'saveSettingsToLocalStorage').mockImplementation(() => {});
+
+    // Set playback state to something other than 'stopped' or 'loading'
+    // so setMusicGenerationConfig is expected to be called.
+    component.playbackState = 'playing';
+    await component.updateComplete;
+  });
+
+  it('should update config.seed to a number and call setMusicGenerationConfig when a valid seed number is input', async () => {
+    const seedInput = component.shadowRoot!.querySelector('#seed') as HTMLInputElement;
+    // Ensure the input is actually present. The component only renders it when API key is not set and state is stopped.
+    // For this test, we need to ensure the conditions to render the seed input are met, OR manually create it / bypass visibility.
+    // The provided beforeEach sets playbackState to 'playing', so the seed input normally wouldn't be there.
+    // Let's adjust the state for this input to be available, or acknowledge we're testing the method directly.
+    // Forcing the component to a state where #seed is rendered:
+    component.playbackState = 'stopped';
+    component.geminiApiKey = null; // Or connectionError = true
+    await component.updateComplete;
+
+    const actualSeedInput = component.shadowRoot!.querySelector('#seed') as HTMLInputElement;
+    expect(actualSeedInput, "Seed input should be rendered for this test").not.toBeNull();
+
+    actualSeedInput.value = '123';
+    actualSeedInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Restore playbackState for the setMusicGenerationConfig call check
+    component.playbackState = 'playing';
+    await component.updateComplete;
+
+    // Manually call handleInputChange if dispatchEvent doesn't trigger it due to DOM complexities in test
+    // This can happen if the event listener setup is more complex or relies on full browser behavior.
+    // However, direct dispatch should work for simple Lit event handlers.
+    // If issues arise, call: await component.handleInputChange(new Event('input', {target: actualSeedInput} as any));
+
+    expect(component.config.seed).toBe(123);
+    expect(component.saveSettingsToLocalStorage).toHaveBeenCalled();
+    expect(mockSetMusicGenerationConfig).toHaveBeenCalledWith({
+      musicGenerationConfig: expect.objectContaining({ seed: 123 })
+    });
+  });
+
+  it('should update config.seed to undefined and call setMusicGenerationConfig when seed input is empty', async () => {
+    component.config = { ...component.config, seed: 123 };
+    component.playbackState = 'stopped'; // to make seed input available
+    component.geminiApiKey = null;
+    await component.updateComplete;
+
+    const seedInput = component.shadowRoot!.querySelector('#seed') as HTMLInputElement;
+    expect(seedInput, "Seed input should be rendered for this test").not.toBeNull();
+    seedInput.value = '';
+    seedInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    component.playbackState = 'playing'; // restore for setMusicGenerationConfig check
+    await component.updateComplete;
+
+    expect(component.config.seed).toBeUndefined();
+    expect(component.saveSettingsToLocalStorage).toHaveBeenCalled();
+    expect(mockSetMusicGenerationConfig).toHaveBeenCalledWith({
+      musicGenerationConfig: expect.not.objectContaining({ seed: expect.anything() })
+    });
+  });
+
+  it('should update config.seed to NaN and call setMusicGenerationConfig (omitting seed) for non-numeric seed input', async () => {
+    component.playbackState = 'stopped'; // to make seed input available
+    component.geminiApiKey = null;
+    await component.updateComplete;
+
+    const seedInput = component.shadowRoot!.querySelector('#seed') as HTMLInputElement;
+    expect(seedInput, "Seed input should be rendered for this test").not.toBeNull();
+    seedInput.value = 'abc';
+    seedInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    component.playbackState = 'playing'; // restore for setMusicGenerationConfig check
+    await component.updateComplete;
+
+    expect(isNaN(component.config.seed as number)).toBe(true);
+    expect(component.saveSettingsToLocalStorage).toHaveBeenCalled();
+    expect(mockSetMusicGenerationConfig).toHaveBeenCalledWith({
+      musicGenerationConfig: expect.not.objectContaining({ seed: expect.anything() })
+    });
+  });
+
+  it('should update boolean config and call setMusicGenerationConfig when a checkbox like muteBass changes', async () => {
+    // muteBass is always rendered in the advanced settings panel, so no need to change component state for visibility
+    const muteBassCheckbox = component.shadowRoot!.querySelector('#muteBass') as HTMLInputElement;
+    expect(muteBassCheckbox).not.toBeNull();
+
+    muteBassCheckbox.checked = true;
+    muteBassCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+    await component.updateComplete;
+
+    expect(component.config.muteBass).toBe(true);
+    expect(component.saveSettingsToLocalStorage).toHaveBeenCalled();
+    expect(mockSetMusicGenerationConfig).toHaveBeenCalledWith({
+      musicGenerationConfig: expect.objectContaining({ muteBass: true })
+    });
+
+    // Toggle it back
+    mockSetMusicGenerationConfig.mockClear(); // Clear previous calls for the next assertion
+    muteBassCheckbox.checked = false;
+    muteBassCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+    await component.updateComplete;
+
+    expect(component.config.muteBass).toBe(false);
+    expect(mockSetMusicGenerationConfig).toHaveBeenCalledWith({
+      musicGenerationConfig: expect.objectContaining({ muteBass: false })
+    });
+  });
+
+  it('should NOT call setMusicGenerationConfig if session is null', async () => {
+    component.session = null; // No active session
+    // Ensure seed input is available for the interaction part
+    component.playbackState = 'stopped';
+    component.geminiApiKey = null;
+    await component.updateComplete;
+
+    const seedInput = component.shadowRoot!.querySelector('#seed') as HTMLInputElement;
+    expect(seedInput).not.toBeNull();
+    seedInput.value = '456';
+    seedInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Restore playbackState to what it would have been if session wasn't null, for consistency with other tests' setup
+    // although for this specific test, the check is about `session` being null.
+    component.playbackState = 'playing';
+    await component.updateComplete;
+
+    expect(component.config.seed).toBe(456);
+    expect(mockSetMusicGenerationConfig).not.toHaveBeenCalled();
+  });
+
+  it('should NOT call setMusicGenerationConfig if playbackState is stopped', async () => {
+    component.playbackState = 'stopped';
+    // geminiApiKey being null also contributes to #seed visibility, which is fine for this test's setup phase
+    component.geminiApiKey = null;
+    await component.updateComplete;
+
+    const seedInput = component.shadowRoot!.querySelector('#seed') as HTMLInputElement;
+    expect(seedInput).not.toBeNull();
+    seedInput.value = '789';
+    seedInput.dispatchEvent(new Event('input', { bubbles: true }));
+    // No need to change playbackState back here, as the condition being tested is 'stopped'
+
+    await component.updateComplete;
+
+    expect(component.config.seed).toBe(789);
+    expect(mockSetMusicGenerationConfig).not.toHaveBeenCalled();
+  });
+
+  it('should NOT call setMusicGenerationConfig if playbackState is loading', async () => {
+    component.playbackState = 'loading';
+    // geminiApiKey being null also contributes to #seed visibility
+    component.geminiApiKey = null;
+    await component.updateComplete;
+
+    const seedInput = component.shadowRoot!.querySelector('#seed') as HTMLInputElement;
+    expect(seedInput).not.toBeNull();
+    seedInput.value = '101';
+    seedInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await component.updateComplete;
+
+    expect(component.config.seed).toBe(101);
+    expect(mockSetMusicGenerationConfig).not.toHaveBeenCalled();
+  });
+});
 
 // KEEPING THE OLD TEST SUITE FOR NOW - It tests a local mock, not the actual component.
 // It might be useful for reference or could be removed/refactored later.
