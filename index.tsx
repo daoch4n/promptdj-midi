@@ -255,6 +255,20 @@ class PromptDjMidi extends LitElement {
       display: block;
       cursor: pointer;
     }
+   .solo-group-header {
+     font-weight: bold;
+     margin-top: 15px; /* Add some space above the header */
+     margin-bottom: 5px; /* Space between header and buttons */
+     text-align: center; /* Or left, as preferred */
+     color: #fff; /* Ensure visibility */
+   }
+   .solo-button-group .setting {
+     margin-bottom: 8px; /* Adjust spacing between grouped buttons if needed */
+   }
+   #reset-button:hover {
+     box-shadow: 0 0 8px #ff0000, 0 0 12px #ff0000; /* Red glow */
+     border-color: #ff4444; /* Optional: change border color too */
+   }
    `;
  
    private prompts: Map<string, Prompt>;
@@ -961,34 +975,34 @@ ${this.renderPrompts()}
               @input=${this.handleInputChange}
             ></weight-knob>
           </div>
-          <div class="setting">
-            
-            <div
-              id="muteBass"
+          <h4 class="solo-group-header">Solo</h4>
+          <div class="solo-button-group">
+            <div class="setting">
+              <div
+                id="muteBass"
               class="option-button ${this.config.muteBass ? 'selected' : ''}"
               @click=${this.handleToggleClick}
             >
               Mute Bass
             </div>
-          </div>
-          <div class="setting">
-            
-            <div
-              id="muteDrums"
+            </div>
+            <div class="setting">
+              <div
+                id="muteDrums"
               class="option-button ${this.config.muteDrums ? 'selected' : ''}"
               @click=${this.handleToggleClick}
             >
               Mute Drums
             </div>
-          </div>
-          <div class="setting">
-            
-            <div
-              id="onlyBassAndDrums"
-              class="option-button ${this.config.onlyBassAndDrums ? 'selected' : ''}"
-              @click=${this.handleToggleClick}
-            >
-              Only Bass & Drums
+            </div>
+            <div class="setting">
+              <div
+                id="onlyBassAndDrums"
+                class="option-button ${this.config.onlyBassAndDrums ? 'selected' : ''}"
+                @click=${this.handleToggleClick}
+              >
+                Only Bass & Drums
+              </div>
             </div>
           </div>
           <div class="setting">
