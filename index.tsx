@@ -190,7 +190,7 @@ class PromptDjMidi extends LitElement {
         padding: 3px 6px;
     }
     #buttons input[type="text"] {
-        width: 150px;
+        width: 18vmin; /* Approximately matches prompt input width */
     }
     #buttons input[type="number"] {
         width: 80px;
