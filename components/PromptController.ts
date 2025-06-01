@@ -46,6 +46,7 @@ export class PromptController extends LitElement {
       }
     }
     #text {
+      font-family: 'DS-Digital', cursive;
       font-weight: 500;
       font-size: 1.8vmin;
       max-width: 100%;

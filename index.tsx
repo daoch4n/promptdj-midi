@@ -183,6 +183,7 @@ class PromptDjMidi extends LitElement {
         color: #fff;
     }
     #buttons input {
+        font-family: 'DS-Digital', cursive;
         background: #0002;
         border: 1.5px solid #fff;
         color: #fff;
