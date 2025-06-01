@@ -256,33 +256,34 @@ class PromptDjMidi extends LitElement {
      this.midiDispatcher = midiDispatcher;
      this.updateAudioLevel = this.updateAudioLevel.bind(this);
  
-     this.geminiApiKey = localStorage.getItem('geminiApiKey');
-     this.loadConfigFromLocalStorage();
- 
+     this.loadSettingsFromLocalStorage();
+
      if (this.geminiApiKey) {
        this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
      }
    }
- 
-   private loadConfigFromLocalStorage() {
-     const storedConfig = localStorage.getItem('appConfig');
-     if (storedConfig) {
+
+   private loadSettingsFromLocalStorage() {
+     const storedSettings = localStorage.getItem('appSettings');
+     if (storedSettings) {
        try {
-         const parsedConfig = JSON.parse(storedConfig);
-         // Ensure that only valid config properties are loaded
-         // This merges the loaded config with the default config,
-         // ensuring all properties are present and types are correct.
-         this.config = { ...this.config, ...parsedConfig };
-         console.log('Loaded config from local storage:', this.config);
+         const parsedSettings = JSON.parse(storedSettings);
+         this.geminiApiKey = parsedSettings.geminiApiKey || null;
+         this.config = { ...this.config, ...parsedSettings.config };
+         console.log('Loaded settings from local storage:', parsedSettings);
        } catch (e) {
-         console.error('Failed to parse stored config', e);
+         console.error('Failed to parse stored settings', e);
        }
      }
    }
 
-   private saveConfigToLocalStorage() {
-     localStorage.setItem('appConfig', JSON.stringify(this.config));
-     console.log('Saved config to local storage:', this.config);
+   private saveSettingsToLocalStorage() {
+     const settingsToSave = {
+       geminiApiKey: this.geminiApiKey,
+       config: this.config,
+     };
+     localStorage.setItem('appSettings', JSON.stringify(settingsToSave));
+     console.log('Saved settings to local storage:', settingsToSave);
    }
 
    override async firstUpdated() {
@@ -580,14 +581,8 @@ class PromptDjMidi extends LitElement {
      this.midiDispatcher.activeMidiInputId = newMidiId;
    }
  
-   private saveApiKeyToLocalStorage() {
-     if (this.geminiApiKey) {
-       localStorage.setItem('geminiApiKey', this.geminiApiKey);
-       this.toastMessage.show('Gemini API key saved to local storage.');
-     } else {
-       localStorage.removeItem('geminiApiKey');
-       this.toastMessage.show('Gemini API key removed from local storage.');
-     }
+   private saveSettingsAndConnect() {
+     this.saveSettingsToLocalStorage();
      this.handleMainAudioButton();
    }
  
@@ -645,7 +640,7 @@ class PromptDjMidi extends LitElement {
         this.config = { ...this.config, [id]: value };
      }
      this.requestUpdate();
-     this.saveConfigToLocalStorage();
+     this.saveSettingsToLocalStorage();
    }
  
   
@@ -709,7 +704,7 @@ class PromptDjMidi extends LitElement {
                 .value=${this.geminiApiKey || ''}
                 @input=${this.handleApiKeyInputChange}
               />
-              <button @click=${this.saveApiKeyToLocalStorage}>Save</button>
+              <button @click=${this.saveSettingsAndConnect}>Save</button>
             </div>
             <div class="seed-controls">
                 <label for="seed">Seed</label>
