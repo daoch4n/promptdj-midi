@@ -145,5 +145,5 @@ body.dragging * {
 }
 
 #main-content-area {
-  margin-right: 300px; /* Adjust based on fixed panel width */
+  padding-right: 300px; /* Adjust based on fixed panel width */
 }
