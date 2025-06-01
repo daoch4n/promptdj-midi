@@ -77,10 +77,6 @@ class PromptDjMidi extends LitElement {
       background-color: #202020;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-      height: auto;
-      min-height: 80vmin;
-      width: 280px; /* Fixed width for the sidebar */
-      min-width: 280px; /* Ensure it maintains its width */
       color: #fff;
       flex-shrink: 0;
       display: flex;
