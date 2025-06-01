@@ -257,12 +257,34 @@ class PromptDjMidi extends LitElement {
      this.updateAudioLevel = this.updateAudioLevel.bind(this);
  
      this.geminiApiKey = localStorage.getItem('geminiApiKey');
+     this.loadConfigFromLocalStorage();
  
      if (this.geminiApiKey) {
        this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
      }
    }
  
+   private loadConfigFromLocalStorage() {
+     const storedConfig = localStorage.getItem('appConfig');
+     if (storedConfig) {
+       try {
+         const parsedConfig = JSON.parse(storedConfig);
+         // Ensure that only valid config properties are loaded
+         // This merges the loaded config with the default config,
+         // ensuring all properties are present and types are correct.
+         this.config = { ...this.config, ...parsedConfig };
+         console.log('Loaded config from local storage:', this.config);
+       } catch (e) {
+         console.error('Failed to parse stored config', e);
+       }
+     }
+   }
+
+   private saveConfigToLocalStorage() {
+     localStorage.setItem('appConfig', JSON.stringify(this.config));
+     console.log('Saved config to local storage:', this.config);
+   }
+
    override async firstUpdated() {
      await customElements.whenDefined('toast-message');
    }
@@ -623,6 +645,7 @@ class PromptDjMidi extends LitElement {
         this.config = { ...this.config, [id]: value };
      }
      this.requestUpdate();
+     this.saveConfigToLocalStorage();
    }
  
   
