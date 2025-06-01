@@ -45,18 +45,6 @@ export class WeightKnob extends LitElement {
       will-change: transform;
       opacity: 0.5; /* Added for semi-transparency */
     }
-
-    .value-display {
-      position: absolute;
-      bottom: -25px; /* Adjusted to change knob indicator distance */
-      left: 50%;
-      transform: translateX(-50%);
-      color: #FFF;
-      font-size: 0.8em;
-      /* font-family removed to allow inheritance */
-      text-align: center;
-      width: 100%;
-    }
   `;
 
   @property({ type: Number }) value = 0;
@@ -176,9 +164,6 @@ export class WeightKnob extends LitElement {
           stroke-linecap="round"
           opacity="0.8" />
       </svg>
-      <div class="value-display">
-        ${isAutoValue ? 'AUTO' : (this.displayValue || this.value.toFixed(1))}
-      </div>
     `;
   }
   
