@@ -48,7 +48,7 @@ export class WeightKnob extends LitElement {
 
     .value-display {
       position: absolute;
-      bottom: -20px; /* Adjusted to change knob indicator distance */
+      bottom: -25px; /* Adjusted to change knob indicator distance */
       left: 50%;
       transform: translateX(-50%);
       color: #FFF;
