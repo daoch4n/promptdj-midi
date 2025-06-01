@@ -71,9 +71,17 @@ class PromptDjMidi extends LitElement {
       max-width: 1600px;
       height: 100%;
       padding: 8vmin 5vmin;
+      padding-right: 300px; /* Added for fixed panel */
       box-sizing: border-box;
     }
     .advanced-settings-panel {
+      position: fixed;
+      right: 0;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      width: 300px;
+      z-index: 1000;
       background-color: #202020;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);

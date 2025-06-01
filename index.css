@@ -5,18 +5,6 @@ body.dragging * {
   user-select: none;
   pointer-events: none;
 }
-.advanced-settings-panel {
-  position: fixed;
-  right: 0;
-  top: 0;
-  height: 100vh; /* Full viewport height */
-  overflow-y: auto; /* Enable scrolling for content overflow */
-  width: 300px; /* Example width, adjust as needed */
-  background-color: #222; /* Example background, adjust as needed */
-  padding: 20px;
-  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5); /* Subtle shadow for depth */
-  z-index: 1000; /* Ensure it's above other content */
-}
 
 /* Range Input Styles */
 .advanced-settings-panel .setting input[type="range"] {
@@ -144,6 +132,3 @@ body.dragging * {
   content: none;
 }
 
-#main-content-area {
-  padding-right: 300px; /* Adjust based on fixed panel width */
-}
