@@ -65,13 +65,19 @@ class PromptDjMidi extends LitElement {
   private static readonly INITIAL_AUTO_STATES = {
     autoDensity: true,
     autoBrightness: true,
-    autoBpm: true
+    autoBpm: true,
+    autoTemperature: true,
+    autoTopK: true,
+    autoGuidance: true,
   };
 
   private static readonly INITIAL_LAST_DEFINED_STATES = {
     lastDefinedDensity: 0.5,
     lastDefinedBrightness: 0.5,
-    lastDefinedBpm: 120
+    lastDefinedBpm: 120,
+    lastDefinedTemperature: 1.1,
+    lastDefinedTopK: 40,
+    lastDefinedGuidance: 4.0,
   };
 
   static override styles = css`
@@ -315,6 +321,13 @@ class PromptDjMidi extends LitElement {
    @state() private autoBrightness = PromptDjMidi.INITIAL_AUTO_STATES.autoBrightness;
    @state() private lastDefinedBpm = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBpm;
    @state() private autoBpm = PromptDjMidi.INITIAL_AUTO_STATES.autoBpm;
+   @state() private autoTemperature = PromptDjMidi.INITIAL_AUTO_STATES.autoTemperature;
+   @state() private autoTopK = PromptDjMidi.INITIAL_AUTO_STATES.autoTopK;
+   @state() private autoGuidance = PromptDjMidi.INITIAL_AUTO_STATES.autoGuidance;
+
+   @state() private lastDefinedTemperature = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
+   @state() private lastDefinedTopK = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTopK;
+   @state() private lastDefinedGuidance = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedGuidance;
  
    private audioLevelRafId: number | null = null;
    private connectionError = true;
@@ -708,10 +721,13 @@ class PromptDjMidi extends LitElement {
  
     private handleAutoToggleClick(event: Event) {
       const target = event.currentTarget as HTMLElement;
-      const id = target.id as 'auto-density' | 'auto-brightness' | 'auto-bpm';
+      const id = target.id as 'auto-density' | 'auto-brightness' | 'auto-bpm' | 'auto-temperature' | 'auto-topK' | 'auto-guidance';
       let newDensity = this.config.density;
       let newBrightness = this.config.brightness;
       let newBpm = this.config.bpm;
+      let newTemperature = this.config.temperature;
+      let newTopK = this.config.topK;
+      let newGuidance = this.config.guidance;
  
       switch (id) {
         case 'auto-density':
@@ -749,6 +765,39 @@ class PromptDjMidi extends LitElement {
           }
           if (this.config.bpm !== newBpm) {
             this.config = { ...this.config, bpm: newBpm };
+          }
+          break;
+        case 'auto-temperature':
+          this.autoTemperature = !this.autoTemperature;
+          if (this.autoTemperature) {
+            newTemperature = 1.1; // Default auto value
+          } else {
+            newTemperature = this.lastDefinedTemperature;
+          }
+          if (this.config.temperature !== newTemperature) {
+            this.config = { ...this.config, temperature: newTemperature };
+          }
+          break;
+        case 'auto-topK':
+          this.autoTopK = !this.autoTopK;
+          if (this.autoTopK) {
+            newTopK = 40; // Default auto value
+          } else {
+            newTopK = this.lastDefinedTopK;
+          }
+          if (this.config.topK !== newTopK) {
+            this.config = { ...this.config, topK: newTopK };
+          }
+          break;
+        case 'auto-guidance':
+          this.autoGuidance = !this.autoGuidance;
+          if (this.autoGuidance) {
+            newGuidance = 4.0; // Default auto value
+          } else {
+            newGuidance = this.lastDefinedGuidance;
+          }
+          if (this.config.guidance !== newGuidance) {
+            this.config = { ...this.config, guidance: newGuidance };
           }
           break;
       }
@@ -793,16 +842,22 @@ class PromptDjMidi extends LitElement {
             const minTemp = 0;
             const maxTemp = 3;
             const newTemp = parseFloat(((knobValue / 2) * (maxTemp - minTemp) + minTemp).toFixed(1)); // Keep one decimal
+            this.lastDefinedTemperature = newTemp; // Store last defined value
+            this.autoTemperature = false; // Turn off auto mode
             this.config = { ...this.config, temperature: newTemp };
         } else if (id === 'topK') {
             const minTopK = 1;
             const maxTopK = 100;
             const newTopK = Math.round((knobValue / 2) * (maxTopK - minTopK) + minTopK);
+            this.lastDefinedTopK = newTopK; // Store last defined value
+            this.autoTopK = false; // Turn off auto mode
             this.config = { ...this.config, topK: newTopK };
         } else if (id === 'guidance') {
             const minGuidance = 0;
             const maxGuidance = 6;
             const newGuidance = parseFloat(((knobValue / 2) * (maxGuidance - minGuidance) + minGuidance).toFixed(1)); // Keep one decimal
+            this.lastDefinedGuidance = newGuidance; // Store last defined value
+            this.autoGuidance = false; // Turn off auto mode
             this.config = { ...this.config, guidance: newGuidance };
         }
         this._sendPlaybackParametersToSession(); // Add this call
@@ -963,28 +1018,49 @@ ${this.renderPrompts()}
             <label for="temperature">Temperature: <span class="label-value">${(this.config.temperature ?? 1.1).toFixed(1)}</span></label>
             <weight-knob
               id="temperature"
-              .value=${( (this.config.temperature ?? 1.1) - 0) / (3 - 0) * 2 }
+              .value=${this.autoTemperature ? (1.1 - 0) / (3 - 0) * 2 : ( (cfg.temperature ?? 1.1) - 0) / (3 - 0) * 2 }
               .displayValue=${(this.config.temperature ?? 1.1).toFixed(1)}
               @input=${this.handleInputChange}
             ></weight-knob>
+            <div
+              id="auto-temperature"
+              class="option-button ${this.autoTemperature ? 'selected' : ''}"
+              @click=${this.handleAutoToggleClick}
+            >
+              Auto
+            </div>
           </div>
           <div class="setting">
             <label for="topK">Top K: <span class="label-value">${(this.config.topK ?? 40).toFixed(0)}</span></label>
             <weight-knob
               id="topK"
-              .value=${( (this.config.topK ?? 40) - 1) / (100 - 1) * 2 }
+              .value=${this.autoTopK ? (40 - 1) / (100 - 1) * 2 : ( (cfg.topK ?? 40) - 1) / (100 - 1) * 2 }
               .displayValue=${(this.config.topK ?? 40).toFixed(0)}
               @input=${this.handleInputChange}
             ></weight-knob>
+            <div
+              id="auto-topK"
+              class="option-button ${this.autoTopK ? 'selected' : ''}"
+              @click=${this.handleAutoToggleClick}
+            >
+              Auto
+            </div>
           </div>
           <div class="setting">
             <label for="guidance">Guidance: <span class="label-value">${(this.config.guidance ?? 4.0).toFixed(1)}</span></label>
             <weight-knob
               id="guidance"
-              .value=${( (this.config.guidance ?? 4.0) - 0) / (6 - 0) * 2 }
+              .value=${this.autoGuidance ? (4.0 - 0) / (6 - 0) * 2 : ( (cfg.guidance ?? 4.0) - 0) / (6 - 0) * 2 }
               .displayValue=${(this.config.guidance ?? 4.0).toFixed(1)}
               @input=${this.handleInputChange}
             ></weight-knob>
+            <div
+              id="auto-guidance"
+              class="option-button ${this.autoGuidance ? 'selected' : ''}"
+              @click=${this.handleAutoToggleClick}
+            >
+              Auto
+            </div>
           </div>
           <h4 class="solo-group-header">Solo</h4>
           <div class="solo-button-group">
