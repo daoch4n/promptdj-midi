@@ -119,6 +119,10 @@ export class WeightKnob extends LitElement {
       transform: `translate(40px, 40px) rotate(${rot}rad)`,
     });
 
+    const isAutoValue = Math.abs(this.value - 1.0) < 0.001; // Check if value is at the "auto" mark (1.0)
+    const indicatorColor = isAutoValue ? '#00FFFF' : '#FFFFFF'; // Cyan for auto, White otherwise
+    const indicatorStrokeWidth = isAutoValue ? 3.5 : 3; // Thicker for auto
+
     let scale = (this.value / 2) * (MAX_HALO_SCALE - MIN_HALO_SCALE);
     scale += MIN_HALO_SCALE;
     scale += this.audioLevel * HALO_LEVEL_MODIFIER;
@@ -139,25 +143,25 @@ export class WeightKnob extends LitElement {
         @pointerdown=${this.handlePointerDown}
         @wheel=${this.handleWheel}>
         <g style=${dotStyle}>
-          <!-- Changed from circle to a line for the indicator -->
-          <line x1="8" y1="0" x2="23" y2="0" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" />
+          <!-- Indicator line: longer and styled -->
+          <line x1="5" y1="0" x2="25" y2="0" stroke="${indicatorColor}" stroke-width="${indicatorStrokeWidth}" stroke-linecap="round" />
         </g>
-        <!-- The following paths were part of the old knob's value indication, replacing with simpler visual feedback or removing if not needed for DJ aesthetic -->
         <!-- Path for the track -->
         <path
           d=${this.describeArc(40, 40, minRot, maxRot, 34.5)}
           fill="none"
           stroke="#4A4A4A" /* Darker, subtle track for the knob range */
           stroke-opacity="0.7"
-          stroke-width="2.5" /* Slightly thinner */
+          stroke-width="2.5"
           stroke-linecap="round" />
-        <!-- Path for the value fill - might be kept or altered if DJ knobs sometimes have this kind of value ring -->
+        <!-- Path for the value fill - styled with this.color -->
         <path
           d=${this.describeArc(40, 40, minRot, rot, 34.5)}
           fill="none"
-          stroke="#707070" /* Lighter grey for the value arc, but still subtle */
-          stroke-width="2.5" /* Slightly thinner */
-          stroke-linecap="round" />
+          stroke=${this.color || '#707070'} /* Use halo color or default grey */
+          stroke-width="3" /* Slightly thicker value arc */
+          stroke-linecap="round"
+          opacity="0.8" />
       </svg>
     `;
   }
@@ -168,6 +172,24 @@ export class WeightKnob extends LitElement {
     const knobBodyColor = "#282828"; // Dark grey for knob "side"
     const knobTopColorBase = "#303030"; // Base color for the knob top
     const knobTopHighlight = "#383838"; // Subtle highlight for the center of the knob top
+    const tickColor = "#666"; // Color for tick marks
+    const numTicks = 5;
+    const tickLength = 3; // Length of the tick mark
+    const tickRadius = 28; // Radius at which ticks are placed (center of tick)
+
+    const rotationRange = Math.PI * 2 * 0.75;
+    const minRot = -rotationRange / 2 - Math.PI / 2; // Start angle for ticks
+    // const maxRot = rotationRange / 2 - Math.PI / 2; // End angle for ticks (not strictly needed for loop)
+
+    let ticksHtml = '';
+    for (let i = 0; i < numTicks; i++) {
+      const tickAngle = minRot + (i / (numTicks - 1)) * rotationRange;
+      const x1 = 40 + (tickRadius - tickLength / 2) * Math.cos(tickAngle);
+      const y1 = 40 + (tickRadius - tickLength / 2) * Math.sin(tickAngle);
+      const x2 = 40 + (tickRadius + tickLength / 2) * Math.cos(tickAngle);
+      const y2 = 40 + (tickRadius + tickLength / 2) * Math.sin(tickAngle);
+      ticksHtml += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${tickColor}" stroke-width="1.5" stroke-linecap="round" />`;
+    }
 
     return html`<svg viewBox="0 0 80 80">
         <defs>
@@ -188,6 +210,8 @@ export class WeightKnob extends LitElement {
         <!-- Knob top surface -->
         <circle cx="40" cy="40" r="25" fill="url(#knobTopGradient)" />
 
+        <!-- Static Tick Marks -->
+        ${svg`${ticksHtml}`}
       </svg>`
   }
 

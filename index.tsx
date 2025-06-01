@@ -18,6 +18,8 @@ import './components/WeightKnob';
 import './components/PromptController';
 import { ToastMessage } from './components/ToastMessage';
 import type { WeightKnob } from './components/WeightKnob';
+import './components/DJStyleSelector';
+import type { DJStyleSelectorOption } from './components/DJStyleSelector';
 
 import type { Prompt, PlaybackState } from './types';
 
@@ -71,7 +73,7 @@ class PromptDjMidi extends LitElement {
       max-width: 1600px;
       height: 100%;
       padding: 8vmin 5vmin;
-      padding-right: 300px; /* Added for fixed panel */
+      padding-right: 240px; /* Added for fixed panel */
       box-sizing: border-box;
     }
     .advanced-settings-panel {
@@ -80,7 +82,7 @@ class PromptDjMidi extends LitElement {
       top: 0;
       height: 100vh;
       overflow-y: auto;
-      width: 300px;
+      width: 240px;
       z-index: 1000;
       background-color: #202020;
       border-radius: 8px;
@@ -103,6 +105,11 @@ class PromptDjMidi extends LitElement {
         font-weight: bold;
         text-align: center;
         color: #fff; /* Ensure labels are white */
+    }
+
+    .advanced-settings-panel .setting weight-knob {
+      width: 100px;
+      margin: 0 auto; /* Center the knob if its container is wider */
     }
  
    .advanced-settings-panel .setting .auto-row,
@@ -189,8 +196,7 @@ class PromptDjMidi extends LitElement {
     }
 
      #main-audio-button {
-       width: 80%;
-       max-width: 150px;
+       width: calc(100% - 40px); /* Adjusts for panel padding */
        height: 40px;
        border-radius: 6px;
        display: flex;
@@ -664,7 +670,10 @@ class PromptDjMidi extends LitElement {
      } else if (target instanceof HTMLInputElement && target.type === 'number') {
         const value = (target as HTMLInputElement).value;
         this.config = { ...this.config, [id]: value === '' ? null : parseFloat(value) };
-     } else { // For select elements
+     } else if (event instanceof CustomEvent && event.detail !== undefined) { // For DJStyleSelector
+        const value = event.detail;
+        this.config = { ...this.config, [id]: value };
+     } else { // For standard HTMLSelectElement
         const value = (target as HTMLSelectElement).value;
         this.config = { ...this.config, [id]: value };
      }
@@ -699,6 +708,8 @@ class PromptDjMidi extends LitElement {
  
      const cfg = this.config;
  
+     const djStyleSelectorOptions = Array.from(scaleMap, ([label, value]) => ({ label, value } as DJStyleSelectorOption));
+
       return html`
         <div id="background" style=${bg}></div>
         <div id="buttons">
@@ -809,11 +820,12 @@ ${this.renderPrompts()}
           </div>
           <div class="setting">
             <label for="scale">Scale</label>
-            <select id="scale" .value=${cfg.scale} @change=${this.handleInputChange}>
-              ${Array.from(scaleMap.entries()).map(([key, value]) => html`
-                <option value=${value}>${key}</option>
-              `)}
-            </select>
+            <dj-style-selector
+              id="scale"
+              .options=${djStyleSelectorOptions}
+              .value=${cfg.scale}
+              @change=${this.handleInputChange}
+            ></dj-style-selector>
           </div>
           <div class="setting checkbox-setting">
             <input
