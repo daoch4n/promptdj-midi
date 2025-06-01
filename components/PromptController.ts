@@ -63,7 +63,7 @@ export class PromptController extends LitElement {
       border: none;
       outline: none;
       -webkit-font-smoothing: antialiased;
-      background: #000;
+      background: rgba(0, 0, 0, 0.1);
       color: #fff;
       cursor: text; /* Indicate text input */
       transition: background 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth transitions */
