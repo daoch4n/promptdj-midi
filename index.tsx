@@ -824,18 +824,18 @@ class PromptDjMidi extends LitElement {
  
      const scaleMap = new Map<string, { value: string, color: string }>([
        ['Auto', { value: 'SCALE_UNSPECIFIED', color: '#888888' }],
-       ['C Major / A Minor', { value: 'C_MAJOR_A_MINOR', color: '#FF6F61' }], // Coral
-       ['C# Major / A# Minor', { value: 'D_FLAT_MAJOR_B_FLAT_MINOR', color: '#6B5B95' }], // Amethyst
-       ['D Major / B Minor', { value: 'D_MAJOR_B_MINOR', color: '#88B04B' }], // Pistachio
-       ['D# Major / C Minor', { value: 'E_FLAT_MAJOR_C_MINOR', color: '#F7CAC9' }], // Rose Quartz
-       ['E Major / C# Minor', { value: 'E_MAJOR_D_FLAT_MINOR', color: '#92A8CD' }], // Periwinkle
-       ['F Major / D Minor', { value: 'F_MAJOR_D_MINOR', color: '#F4B393' }], // Peach
-       ['F# Major / D# Minor', { value: 'G_FLAT_MAJOR_E_FLAT_MINOR', color: '#CCEEFF' }], // Sky Blue
-       ['G Major / E Minor', { value: 'G_MAJOR_E_MINOR', color: '#DA2C38' }], // Crimson
-       ['G# Major / F Minor', { value: 'A_FLAT_MAJOR_F_MINOR', color: '#FFD700' }], // Gold
-       ['A Major / F# Minor', { value: 'A_MAJOR_G_FLAT_MINOR', color: '#40E0D0' }], // Turquoise
-       ['A# Major / G Minor', { value: 'B_FLAT_MAJOR_G_MINOR', color: '#9966CC' }], // Lavender
-       ['B Major / G# Minor', { value: 'B_MAJOR_A_FLAT_MINOR', color: '#FFBF00' }], // Amber
+       ['C Major / A Minor', { value: 'C_MAJOR_A_MINOR', color: 'hsl(0, 100%, 60%)' }],
+       ['C# Major / A# Minor', { value: 'D_FLAT_MAJOR_B_FLAT_MINOR', color: 'hsl(30, 100%, 60%)' }],
+       ['D Major / B Minor', { value: 'D_MAJOR_B_MINOR', color: 'hsl(60, 100%, 60%)' }],
+       ['D# Major / C Minor', { value: 'E_FLAT_MAJOR_C_MINOR', color: 'hsl(90, 100%, 60%)' }],
+       ['E Major / C# Minor', { value: 'E_MAJOR_D_FLAT_MINOR', color: 'hsl(120, 100%, 60%)' }],
+       ['F Major / D Minor', { value: 'F_MAJOR_D_MINOR', color: 'hsl(150, 100%, 60%)' }],
+       ['F# Major / D# Minor', { value: 'G_FLAT_MAJOR_E_FLAT_MINOR', color: 'hsl(180, 100%, 60%)' }],
+       ['G Major / E Minor', { value: 'G_MAJOR_E_MINOR', color: 'hsl(210, 100%, 60%)' }],
+       ['G# Major / F Minor', { value: 'A_FLAT_MAJOR_F_MINOR', color: 'hsl(240, 100%, 60%)' }],
+       ['A Major / F# Minor', { value: 'A_MAJOR_G_FLAT_MINOR', color: 'hsl(270, 100%, 60%)' }],
+       ['A# Major / G Minor', { value: 'B_FLAT_MAJOR_G_MINOR', color: 'hsl(300, 100%, 60%)' }],
+       ['B Major / G# Minor', { value: 'B_MAJOR_A_FLAT_MINOR', color: 'hsl(330, 100%, 60%)' }],
      ]);
  
      const cfg = this.config;
@@ -1011,7 +1011,7 @@ ${this.renderPrompts()}
               class="option-button"
               @click=${this.resetAll}
             >
-              Reset
+              Reset all
             </div>
           </div>
         </div>

@@ -29,11 +29,13 @@ export class DJStyleSelector extends LitElement {
       font-size: 0.9em;
     }
     .option:hover {
-      background-color: #444;
+      background-color: #444; /* Keep or slightly adjust for hover indication */
+      /* Add a very subtle shadow using the option's color */
+      box-shadow: 0 0 4px -1px var(--glow-color, #007bff);
     }
     .option.selected {
-      background-color: var(--glow-color, #007bff); /* Use variable, fallback to blue */
-      box-shadow: 0 0 4px var(--glow-color, #007bff), 0 0 6px var(--glow-color, #007bff); /* More subtle glow */
+      background-color: #555; /* More neutral background */
+      box-shadow: 0 0 7px var(--glow-color, #007bff); /* Subtle glow */
       color: #fff;
       font-weight: bold;
     }
