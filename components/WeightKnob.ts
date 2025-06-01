@@ -53,7 +53,7 @@ export class WeightKnob extends LitElement {
       transform: translateX(-50%);
       color: #FFF;
       font-size: 0.8em;
-      font-family: 'Arial', sans-serif; /* Or a more suitable font */
+      /* font-family removed to allow inheritance */
       text-align: center;
       width: 100%;
     }
