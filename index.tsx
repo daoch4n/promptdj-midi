@@ -645,7 +645,7 @@ class PromptDjMidi extends LitElement {
        if (this.connectionError || this.apiKeyInvalid) { // Check status after connectToSession (and its retries) are done
          this.playbackState = 'stopped';
          // Toast message is handled by connectToSession or handleConnectionIssue if max retries are hit
-         if (!this.toastMessage.active) { // Show a generic message if no specific one from retries is up
+         if (!this.toastMessage.showing) { // Show a generic message if no specific one from retries is up
             this.toastMessage.show('Failed to connect. Please check your API key and connection.');
          }
          return;
@@ -661,7 +661,7 @@ class PromptDjMidi extends LitElement {
            await this.connectToSession(); // connectToSession will handle its own retries
            if (this.connectionError || this.apiKeyInvalid) { // Check status after attempts
              this.playbackState = (this.playbackState === 'loading' || this.playbackState === 'playing') ? 'stopped' : this.playbackState;
-             if (!this.toastMessage.active) {
+             if (!this.toastMessage.showing) {
                 this.toastMessage.show('Failed to reconnect. Please check your connection or API key.');
              }
              return;
