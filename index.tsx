@@ -79,7 +79,7 @@ class PromptDjMidi extends LitElement {
     .advanced-settings-panel {
       position: fixed;
       right: 0;
-      top: 20px;
+      top: 0;
       height: 100vh;
       overflow-y: auto;
       width: 240px;
