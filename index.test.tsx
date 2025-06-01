@@ -1,24 +1,242 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-// import { LitElement } from 'lit'; // No longer needed for the mock
-import { MidiDispatcher } from './utils/MidiDispatcher'; // Adjust path as needed
-import { ToastMessage } from './components/ToastMessage'; // Adjust path as needed
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { LitElement } from 'lit'; // Needed for type casting if we import the real component
+import { MidiDispatcher } from './utils/MidiDispatcher';
+// Attempt to import the actual component.
+// This might be problematic if main() in index.tsx runs immediately.
+// We'll need to see if the test environment handles this or if we need a workaround.
+import './index'; // This will register the custom element <prompt-dj-midi>
+import type { PromptDjMidi as ActualPromptDjMidi } from './index'; // type import
+import type { PlaybackState } from './types';
 
+// Mock GoogleGenAI
+const mockConnect = vi.fn();
+const mockSetWeightedPrompts = vi.fn();
+const mockPlay = vi.fn();
+const mockPause = vi.fn();
+const mockStopSession = vi.fn();
+
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: vi.fn(() => ({
+    live: {
+      music: {
+        connect: mockConnect,
+      },
+    },
+    // Mock other methods if necessary for broader component testing
+  })),
+}));
+
+
+// Mock MidiDispatcher and initial prompts for constructor
+vi.mock('./utils/MidiDispatcher');
+const mockMidiDispatcherInstance = new MidiDispatcher(); // Instance for the component
+const mockInitialPrompts = new Map(); // Default empty map
+
+// Helper to create and append the component
+async function createComponent(): Promise<ActualPromptDjMidi> {
+  const element = document.createElement('prompt-dj-midi') as ActualPromptDjMidi;
+  document.body.appendChild(element);
+  await element.updateComplete; // Wait for LitElement to render
+  return element;
+}
+
+// Cleanup after each test
+afterEach(() => {
+  const component = document.querySelector('prompt-dj-midi');
+  if (component) {
+    component.remove();
+  }
+  vi.clearAllMocks();
+});
+
+
+describe('PromptDjMidi - API Key and Seed Block Display Logic', () => {
+  let component: ActualPromptDjMidi;
+
+  beforeEach(async () => {
+    component = await createComponent();
+    // Ensure default state for these properties before each test in this block
+    component.geminiApiKey = null;
+    component.connectionError = false;
+    component.playbackState = 'stopped'; // Default to stopped for this test suite
+    await component.updateComplete;
+  });
+
+  // Test scenarios for visibility
+  it.each([
+    // playbackState, connectionError, geminiApiKey, expectedVisible
+    ['stopped', true, null, true, 'API key and seed should be visible when stopped, connection error, no API key'],
+    ['stopped', false, null, true, 'API key and seed should be visible when stopped, no connection error, no API key'],
+    ['stopped', true, 'key', true, 'API key and seed should be visible when stopped, connection error, with API key'],
+    ['stopped', false, 'key', false, 'API key and seed should be hidden when stopped, no error, with API key'],
+    ['playing', true, null, false, 'API key and seed should be hidden when playing, connection error, no API key'],
+    ['loading', false, null, false, 'API key and seed should be hidden when loading, no error, no API key'],
+    ['paused', true, null, false, 'API key and seed should be hidden when paused, connection error, no API key'],
+  ])(
+    'when playbackState is %s, connectionError is %s, geminiApiKey is %s -> inputs visible: %s',
+    async (playbackState, connectionError, geminiApiKey, expectedVisible, description) => {
+      component.playbackState = playbackState as PlaybackState;
+      component.connectionError = connectionError;
+      component.geminiApiKey = geminiApiKey;
+      await component.updateComplete;
+
+      const apiKeyInput = component.shadowRoot?.querySelector('input[type="text"][placeholder="Gemini API Key"]');
+      const seedInput = component.shadowRoot?.querySelector('input[type="number"]#seed');
+
+      if (expectedVisible) {
+        expect(apiKeyInput, `${description} - API key input`).not.toBeNull();
+        expect(seedInput, `${description} - Seed input`).not.toBeNull();
+      } else {
+        expect(apiKeyInput, `${description} - API key input`).toBeNull();
+        expect(seedInput, `${description} - Seed input`).toBeNull();
+      }
+    }
+  );
+});
+
+describe('PromptDjMidi - PlayPauseButton State During Network Error Recovery', () => {
+  let component: ActualPromptDjMidi;
+  let mockSession: any;
+
+  beforeEach(async () => {
+    // Mock the session object that `connect` would return
+    mockSession = {
+      setWeightedPrompts: mockSetWeightedPrompts,
+      play: mockPlay,
+      pause: mockPause,
+      stop: mockStopSession,
+      // Mock other session methods if they are called
+    };
+
+    component = await createComponent();
+    component.geminiApiKey = 'fake-key'; // Assume API key is set for these tests
+    await component.updateComplete;
+  });
+
+  it('should transition playbackState: initial -> loading -> stopped on initial connection failure', async () => {
+    // Arrange: Mock connect to simulate failure
+    mockConnect.mockRejectedValue(new Error('Simulated connection failure'));
+
+    // Act: Trigger connection attempt
+    // We expect connectToSession to be called internally by handleMainAudioButton
+    // and to manage playbackState changes.
+
+    // Set a spy on connectToSession to know when it's called and finished
+    const connectToSessionSpy = vi.spyOn(component, 'connectToSession');
+
+    // Call handleMainAudioButton, but don't wait for it fully if we want to check intermediate state.
+    // However, testing intermediate 'loading' state for a failing promise is hard without more complex async control.
+    // The logic sets 'loading' right before the actual async call that might fail.
+    // Let's assume for now the state changes are rapid and focus on the final 'stopped' state.
+    await component.handleMainAudioButton();
+
+    // Assertions
+    expect(connectToSessionSpy).toHaveBeenCalled();
+
+    // Check final state
+    expect(component.playbackState).toBe('stopped');
+    // Ensure previousPlaybackStateOnError is null after a failed initial connection
+    expect(component.previousPlaybackStateOnError).toBeNull();
+    expect(mockConnect).toHaveBeenCalledTimes(1); // Ensure connection was attempted
+    // Check if toast message for failure was shown (optional, but good for UX)
+    expect(component.toastMessage.show).toHaveBeenCalledWith('Failed to connect to session. Check your API key.');
+  });
+
+  it('should transition playbackState: playing -> loading -> playing on successful reconnection after an error', async () => {
+    let capturedCallbacks: any = {};
+    // Stage 1: Initial successful connection
+    mockConnect.mockImplementationOnce(({ callbacks }) => {
+      capturedCallbacks = callbacks; // Capture callbacks
+      return Promise.resolve(mockSession); // Simulate successful connection
+    });
+
+    await component.handleMainAudioButton(); // This should call connect, set up session, and play
+    expect(component.playbackState).toBe('playing'); // Should be playing after initial success (or loading then playing)
+
+    // Stage 2: Simulate an error
+    mockConnect.mockImplementationOnce(({ callbacks }) => { // For the reconnection attempt
+        capturedCallbacks = callbacks; // Potentially re-capture if needed, or ensure old ones are used
+        return Promise.resolve(mockSession); // Simulate successful reconnection
+    });
+
+    expect(capturedCallbacks.onerror).toBeDefined();
+    if (capturedCallbacks.onerror) {
+        // Trigger the error
+        // Need to ensure `this.previousPlaybackStateOnError` is set correctly BEFORE connectToSession is called by onerror
+        const originalState = component.playbackState; // Should be 'playing'
+        capturedCallbacks.onerror(new ErrorEvent('error', { error: new Error('Simulated network error') }));
+
+        // Check intermediate state if possible/reliable, or await the reconnection logic
+        expect(component.playbackState).toBe('loading'); // Should be loading during reconnection
+        expect(component.previousPlaybackStateOnError).toBe(originalState);
+    }
+
+    // Wait for LitElement to update if any state changes cause re-renders
+    await component.updateComplete;
+    // Wait for the mocked connectToSession to complete its second run
+    // This requires ensuring the test waits for the async operations within onerror to settle.
+    // Vitest handles promises automatically in expects, but control flow needs care.
+    // A short delay or a more robust mechanism might be needed if tests are flaky.
+    await new Promise(resolve => setTimeout(resolve, 0)); // Allow microtasks to flush
+
+    // Assertions after reconnection
+    expect(mockConnect).toHaveBeenCalledTimes(2); // Initial + reconnection
+    expect(component.playbackState).toBe('playing'); // Restored to previous state
+    expect(component.previousPlaybackStateOnError).toBeNull(); // Should be cleared after successful reconnect
+  });
+
+  it('should transition playbackState: playing -> loading -> stopped on failed reconnection after an error', async () => {
+    let capturedCallbacks: any = {};
+    // Stage 1: Initial successful connection
+    mockConnect.mockImplementationOnce(({ callbacks }) => {
+      capturedCallbacks = callbacks;
+      return Promise.resolve(mockSession);
+    });
+
+    await component.handleMainAudioButton();
+    expect(component.playbackState).toBe('playing'); // Or loading then playing
+
+    // Stage 2: Simulate an error, then a failed reconnection
+    mockConnect.mockRejectedValueOnce(new Error('Simulated reconnection failure')); // Fails on the second call
+
+    expect(capturedCallbacks.onerror).toBeDefined();
+    if (capturedCallbacks.onerror) {
+      const originalState = component.playbackState;
+      capturedCallbacks.onerror(new ErrorEvent('error', { error: new Error('Simulated network error') }));
+      expect(component.playbackState).toBe('loading');
+      expect(component.previousPlaybackStateOnError).toBe(originalState);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 0)); // Allow microtasks
+
+    // Assertions after failed reconnection
+    expect(mockConnect).toHaveBeenCalledTimes(2);
+    expect(component.playbackState).toBe('stopped');
+    expect(component.previousPlaybackStateOnError).toBeNull(); // Should be cleared even on failed reconnect attempt
+    expect(component.toastMessage.show).toHaveBeenCalledWith('Connection lost. Attempting to reconnect...');
+    // The second call to connectToSession (the retry) will fail and its catch block should show this:
+    expect(component.toastMessage.show).toHaveBeenCalledWith('Failed to connect to session. Check your API key.');
+  });
+
+});
+
+
+// KEEPING THE OLD TEST SUITE FOR NOW - It tests a local mock, not the actual component.
+// It might be useful for reference or could be removed/refactored later.
 // Mock an incomplete definition of PromptDjMidi for testing purposes
 // We are primarily interested in the connectToSession logic
-class PromptDjMidi { // No longer extends LitElement
+class MockPromptDjMidi { // No longer extends LitElement
   session: any;
   ai: any;
-  toastMessage!: ToastMessage;
+  toastMessage!: any; // Use 'any' for simplicity with vi.fn()
   connectionError = false;
   geminiApiKey = 'test-api-key'; // Assume API key is set for tests
 
   constructor() {
-    // super(); // No longer needed
-    // Mock the toast message component
     this.toastMessage = {
       show: vi.fn(),
       hide: vi.fn(),
-    } as any;
+    };
   }
 
   // Simplified connectToSession for testing
@@ -28,88 +246,34 @@ class PromptDjMidi { // No longer extends LitElement
 
   // Minimal methods needed for the test
   stop() {
-    // Mock if needed, but for these tests, it's not directly involved in reconnection
-  }
-
-  // Add a helper to manually trigger the error/close callbacks
-  async _simulateConnectionIssue(type: 'error' | 'close') {
-    if (!this.ai) {
-        this.ai = {
-            live: {
-                music: {
-                    connect: vi.fn()
-                }
-            }
-        };
-    }
-
-    let errorHandler: ((e: ErrorEvent) => void) | undefined;
-    let closeHandler: ((e: CloseEvent) => void) | undefined;
-
-    this.ai.live.music.connect = vi.fn().mockImplementation(({ model, callbacks }) => {
-      errorHandler = callbacks.onerror;
-      closeHandler = callbacks.onclose;
-      // Simulate a successful initial connection that then fails
-      return Promise.resolve({
-        // Mock session object
-        pause: vi.fn(),
-        play: vi.fn(),
-        stop: vi.fn(),
-        setWeightedPrompts: vi.fn(),
-      });
-    });
-
-    // Initial connection attempt
-    await this.connectToSession();
-
-    // Now trigger the failure
-    if (type === 'error' && errorHandler) {
-      errorHandler(new ErrorEvent('error', { error: new Error('Simulated connection error') }));
-    } else if (type === 'close' && closeHandler) {
-      closeHandler(new CloseEvent('close'));
-    }
+    // Mock if needed
   }
 }
 
-// Mock MidiDispatcher and initial prompts for constructor
-vi.mock('./utils/MidiDispatcher');
-const mockMidiDispatcher = new MidiDispatcher();
-const mockInitialPrompts = new Map();
 
-describe('PromptDjMidi - Autorestart on Connection Failure', () => {
-  let component: PromptDjMidi;
+describe('PromptDjMidi (Mocked) - Autorestart on Connection Failure', () => {
+  let component: MockPromptDjMidi;
+
 
   beforeEach(async () => {
-    // Dynamically import the actual PromptDjMidi class from index.tsx
-    // This is a bit tricky because index.tsx runs main() automatically.
-    // For focused unit testing of the class, we'd ideally refactor main()
-    // or use more advanced mocking.
-    // For now, we'll use our simplified local mock and spy on its methods.
-    // This means we are testing the *intended logic* of connectToSession's callbacks.
-
-    // Reset mocks for ai.live.music.connect before each test
     const mockAiInstance = {
         live: {
             music: {
-                connect: vi.fn()
+                connect: vi.fn() // This will be the mockConnect from @google/genai if not overridden
             }
         }
     };
 
-    component = new PromptDjMidi(); // Using our simplified mock
-    component.ai = mockAiInstance; // Assign the mocked AI instance
+    component = new MockPromptDjMidi();
+    component.ai = mockAiInstance;
 
     // Spy on the component's connectToSession method
-    vi.spyOn(component, 'connectToSession').mockImplementation(async function(this: PromptDjMidi) {
-        // @ts-ignore
-        // Call the original connect method of the class, but we need to ensure 'this' is correctly bound
-        // and that we are actually testing the modified logic from the previous step.
-
-        // This is where the actual implementation from index.tsx's PromptDjMidi would be.
-        // We are mocking its behavior here based on the changes made.
+    // IMPORTANT: This spy is on the MOCK version of PromptDjMidi
+    vi.spyOn(component, 'connectToSession').mockImplementation(async function(this: MockPromptDjMidi) {
         try {
+            // @ts-ignore
             this.session = await this.ai.live.music.connect({
-                model: 'lyria-realtime-exp', // Or some mock model
+                model: 'lyria-realtime-exp',
                 callbacks: {
                     onmessage: async (e: any) => {},
                     onerror: (e: ErrorEvent) => {
@@ -117,22 +281,19 @@ describe('PromptDjMidi - Autorestart on Connection Failure', () => {
                         if (this.toastMessage && typeof this.toastMessage.show === 'function') {
                             this.toastMessage.show('Connection lost. Attempting to reconnect...');
                         }
-                        // Attempt to reconnect
-                        this.connectToSession();
+                        this.connectToSession(); // Recursive call for retry
                     },
                     onclose: (e: CloseEvent) => {
                         this.connectionError = true;
                         if (this.toastMessage && typeof this.toastMessage.show === 'function') {
                             this.toastMessage.show('Connection lost. Attempting to reconnect...');
                         }
-                        // Attempt to reconnect
-                        this.connectToSession();
+                        this.connectToSession(); // Recursive call for retry
                     },
                 },
             });
         } catch (error) {
             this.connectionError = true;
-            // This part of the original code also calls stop(), but per instructions, we removed it from onerror/onclose
             if (this.toastMessage && typeof this.toastMessage.show === 'function') {
                 this.toastMessage.show('Failed to connect to session. Check your API key.');
             }
