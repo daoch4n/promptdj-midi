@@ -200,8 +200,9 @@ class PromptDjMidi extends LitElement {
     }
 
     play-pause-button {
-      width: calc(100% - 40px);
-      height: 40px;
+      width: 100px;
+      height: 100px;
+      
       margin: 0 auto 40px auto; /* top right&left bottom */
       display: block;
       cursor: pointer;
