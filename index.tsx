@@ -206,17 +206,10 @@ class PromptDjMidi extends LitElement {
 
     @media (max-width: 767px) {
       #grid {
-        grid-template-columns: repeat(2, 1fr);
-        width: 90vmin; /* Adjust width if necessary for better fit */
+        grid-template-columns: 1fr; /* Ensures 1 knob per row */
+        width: 50vw; /* Set width to half viewport width */
         height: auto; /* Adjust height to content if necessary */
-      }
-    }
-
-    @media (max-width: 479px) {
-      #grid {
-        grid-template-columns: repeat(1, 1fr);
-        width: 90vmin; /* Or even 95vmin if 1 column feels too narrow */
-        /* Height remains auto or adjust as needed */
+        margin: 0 auto; /* Center the grid */
       }
     }
  
