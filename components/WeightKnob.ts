@@ -62,6 +62,7 @@ export class WeightKnob extends LitElement {
   @property({ type: Number }) value = 0;
   @property({ type: String }) color = '#000'; // Color for halo
   @property({ type: Number }) audioLevel = 0; // Used for halo effect
+  @property({ type: String }) displayValue = ''; // Optional value to display instead of this.value
 
   private dragStartPos = 0;
   private dragStartValue = 0;
@@ -176,7 +177,7 @@ export class WeightKnob extends LitElement {
           opacity="0.8" />
       </svg>
       <div class="value-display">
-        ${isAutoValue ? 'AUTO' : this.value.toFixed(1)}
+        ${isAutoValue ? 'AUTO' : (this.displayValue || this.value.toFixed(1))}
       </div>
     `;
   }
