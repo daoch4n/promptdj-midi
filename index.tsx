@@ -148,7 +148,6 @@ class PromptDjMidi extends LitElement {
      align-items: center;
    }
    #buttons button {
-       font: inherit;
        font-weight: 600;
        cursor: pointer;
        color: #fff;
@@ -157,7 +156,8 @@ class PromptDjMidi extends LitElement {
        border: 1.5px solid #fff;
        border-radius: 4px;
        user-select: none;
-       padding: 3px 6px;
+       font-size: 2.2vmin;
+       padding: 0.4vmin 0.75vmin;
    }
     #buttons button.active {
         background-color: #fff;
@@ -188,7 +188,8 @@ class PromptDjMidi extends LitElement {
         border: 1.5px solid #fff;
         color: #fff;
         border-radius: 4px;
-        padding: 3px 6px;
+        font-size: 2.2vmin;
+        padding: 0.4vmin 0.75vmin;
     }
     #buttons input[type="text"] {
         width: 18vmin; /* Approximately matches prompt input width */
