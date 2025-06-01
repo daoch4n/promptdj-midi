@@ -197,16 +197,24 @@ this.textInput.addEventListener('paste', (e: ClipboardEvent) => {
     range.selectNodeContents(this.textInput);
     selection.removeAllRanges();
     selection.addRange(range);
-  }
+}
 
-  private updateWeight() {
-    this.weight = this.weightInput.value;
-    this.dispatchPromptChange();
+private handleKeyDown(event: KeyboardEvent) {
+  if (event.key === 'Enter') {
+    event.preventDefault(); // Prevent newline
+    this.updateText(); // Save text
+    this.textInput.blur(); // Remove focus
   }
+}
 
-  private toggleLearnMode() {
-    this.learnMode = !this.learnMode;
-  }
+private updateWeight() {
+  this.weight = this.weightInput.value;
+  this.dispatchPromptChange();
+}
+
+private toggleLearnMode() {
+this.learnMode = !this.learnMode;
+}
 
   override render() {
     const classes = classMap({
@@ -225,7 +233,8 @@ this.textInput.addEventListener('paste', (e: ClipboardEvent) => {
         id="text"
         spellcheck="false"
         @focus=${this.onFocus}
-        @blur=${this.updateText}></span>
+        @blur=${this.updateText}
+        @keydown=${this.handleKeyDown}></span>
       <div id="midi" @click=${this.toggleLearnMode}>
         ${this.learnMode ? 'Learn' : `CC:${this.cc}`}
       </div>
