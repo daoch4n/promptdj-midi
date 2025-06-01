@@ -119,6 +119,27 @@ class PromptDjMidi extends LitElement {
      display: flex; align-items: center; justify-content: flex-start;
      margin-top: 8px; padding: 0 5%;
    }
+    .advanced-settings-panel .setting .option-button {
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 8px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.2s, box-shadow 0.2s;
+      font-size: 0.9em;
+      margin-top: 5px; /* Added to provide some space from the label */
+    }
+    .advanced-settings-panel .setting .option-button:hover {
+      background-color: #444;
+    }
+    .advanced-settings-panel .setting .option-button.selected {
+      background-color: #007bff; /* Default blue, similar to DJStyleSelector fallback */
+      box-shadow: 0 0 4px #007bff, 0 0 6px #007bff;
+      color: #fff;
+      font-weight: bold;
+    }
    #grid {
      width: 80vmin;
      height: 80vmin;
@@ -580,6 +601,26 @@ class PromptDjMidi extends LitElement {
     private resetAll() {
       this.setPrompts(PromptDjMidi.buildDefaultPrompts());
     }
+
+    private handleToggleClick(event: Event) {
+      const target = event.currentTarget as HTMLElement;
+      const id = target.id as 'muteBass' | 'muteDrums' | 'onlyBassAndDrums';
+
+      if (id === 'muteBass' || id === 'muteDrums' || id === 'onlyBassAndDrums') {
+        this.config = { ...this.config, [id]: !this.config[id] };
+        this.requestUpdate();
+        // Also call a method to update the session parameters if it exists
+        // For example, if there's a method like this.updatePlaybackParameters()
+        // that sends the config to the backend.
+        if (this.session) {
+            this.session.updatePlaybackParameters({
+                muteBass: this.config.muteBass,
+                muteDrums: this.config.muteDrums,
+                onlyBassAndDrums: this.config.onlyBassAndDrums,
+            });
+        }
+      }
+    }
  
     private handleInputChange(event: Event) {
      const target = event.target as HTMLInputElement | HTMLSelectElement | WeightKnob;
@@ -768,32 +809,35 @@ ${this.renderPrompts()}
               @change=${this.handleInputChange}
             ></dj-style-selector>
           </div>
-          <div class="setting checkbox-setting">
-            <input
-              type="checkbox"
+          <div class="setting">
+            <label>Mute Bass</label>
+            <div
               id="muteBass"
-              .checked=${cfg.muteBass}
-              @change=${this.handleInputChange}
-            />
-            <label for="muteBass">Mute Bass</label>
+              class="option-button ${this.config.muteBass ? 'selected' : ''}"
+              @click=${this.handleToggleClick}
+            >
+              Mute Bass
+            </div>
           </div>
-          <div class="setting checkbox-setting">
-            <input
-              type="checkbox"
+          <div class="setting">
+            <label>Mute Drums</label>
+            <div
               id="muteDrums"
-              .checked=${cfg.muteDrums}
-              @change=${this.handleInputChange}
-            />
-            <label for="muteDrums">Mute Drums</label>
+              class="option-button ${this.config.muteDrums ? 'selected' : ''}"
+              @click=${this.handleToggleClick}
+            >
+              Mute Drums
+            </div>
           </div>
-          <div class="setting checkbox-setting">
-            <input
-              type="checkbox"
+          <div class="setting">
+            <label>Only Bass & Drums</label>
+            <div
               id="onlyBassAndDrums"
-              .checked=${cfg.onlyBassAndDrums}
-              @change=${this.handleInputChange}
-            />
-            <label for="onlyBassAndDrums">Only Bass & Drums</label>
+              class="option-button ${this.config.onlyBassAndDrums ? 'selected' : ''}"
+              @click=${this.handleToggleClick}
+            >
+              Only Bass & Drums
+            </div>
           </div>
           <button @click=${this.resetAll}>Reset All Prompts</button>
         </div>
