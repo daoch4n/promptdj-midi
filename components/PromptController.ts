@@ -66,12 +66,18 @@ export class PromptController extends LitElement {
       background: #000;
       color: #fff;
       cursor: text; /* Indicate text input */
+      transition: background 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth transitions */
       &:not(:focus) {
         text-overflow: ellipsis;
       }
       &:focus {
         background: #333; /* Darker background on focus */
         border: 0.1vmin solid #fff; /* Subtle white border on focus */
+      }
+      &:hover:not(:focus) { /* Hover effect when not focused */
+        background: #1a1a1a; /* Slightly lighter background on hover */
+        color: #eee; /* Slightly darker text on hover */
+        box-shadow: 0 0 0.5vmin rgba(255, 255, 255, 0.2); /* Subtle glow on hover */
       }
     }
     :host([filtered=true]) #text {
