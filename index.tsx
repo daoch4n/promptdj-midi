@@ -691,25 +691,25 @@ class PromptDjMidi extends LitElement {
        'advanced-settings-panel': true,
      });
  
-     const scaleMap = new Map<string, string>([
-       ['Auto', 'SCALE_UNSPECIFIED'],
-       ['C Major / A Minor', 'C_MAJOR_A_MINOR'],
-       ['C# Major / A# Minor', 'D_FLAT_MAJOR_B_FLAT_MINOR'],
-       ['D Major / B Minor', 'D_MAJOR_B_MINOR'],
-       ['D# Major / C Minor', 'E_FLAT_MAJOR_C_MINOR'],
-       ['E Major / C# Minor', 'E_MAJOR_D_FLAT_MINOR'],
-       ['F Major / D Minor', 'F_MAJOR_D_MINOR'],
-       ['F# Major / D# Minor', 'G_FLAT_MAJOR_E_FLAT_MINOR'],
-       ['G Major / E Minor', 'G_MAJOR_E_MINOR'],
-       ['G# Major / F Minor', 'A_FLAT_MAJOR_F_MINOR'],
-       ['A Major / F# Minor', 'A_MAJOR_G_FLAT_MINOR'],
-       ['A# Major / G Minor', 'B_FLAT_MAJOR_G_MINOR'],
-       ['B Major / G# Minor', 'B_MAJOR_A_FLAT_MINOR'],
+     const scaleMap = new Map<string, { value: string, color: string }>([
+       ['Auto', { value: 'SCALE_UNSPECIFIED', color: '#888888' }],
+       ['C Major / A Minor', { value: 'C_MAJOR_A_MINOR', color: '#FF6F61' }], // Coral
+       ['C# Major / A# Minor', { value: 'D_FLAT_MAJOR_B_FLAT_MINOR', color: '#6B5B95' }], // Amethyst
+       ['D Major / B Minor', { value: 'D_MAJOR_B_MINOR', color: '#88B04B' }], // Pistachio
+       ['D# Major / C Minor', { value: 'E_FLAT_MAJOR_C_MINOR', color: '#F7CAC9' }], // Rose Quartz
+       ['E Major / C# Minor', { value: 'E_MAJOR_D_FLAT_MINOR', color: '#92A8CD' }], // Periwinkle
+       ['F Major / D Minor', { value: 'F_MAJOR_D_MINOR', color: '#F4B393' }], // Peach
+       ['F# Major / D# Minor', { value: 'G_FLAT_MAJOR_E_FLAT_MINOR', color: '#CCEEFF' }], // Sky Blue
+       ['G Major / E Minor', { value: 'G_MAJOR_E_MINOR', color: '#DA2C38' }], // Crimson
+       ['G# Major / F Minor', { value: 'A_FLAT_MAJOR_F_MINOR', color: '#FFD700' }], // Gold
+       ['A Major / F# Minor', { value: 'A_MAJOR_G_FLAT_MINOR', color: '#40E0D0' }], // Turquoise
+       ['A# Major / G Minor', { value: 'B_FLAT_MAJOR_G_MINOR', color: '#9966CC' }], // Lavender
+       ['B Major / G# Minor', { value: 'B_MAJOR_A_FLAT_MINOR', color: '#FFBF00' }], // Amber
      ]);
  
      const cfg = this.config;
  
-     const djStyleSelectorOptions = Array.from(scaleMap, ([label, value]) => ({ label, value } as DJStyleSelectorOption));
+     const djStyleSelectorOptions = Array.from(scaleMap, ([label, { value, color }]) => ({ label, value, color } as DJStyleSelectorOption));
 
       return html`
         <div id="background" style=${bg}></div>

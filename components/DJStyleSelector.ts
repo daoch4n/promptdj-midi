@@ -5,6 +5,7 @@ import { map } from 'lit/directives/map.js';
 export interface DJStyleSelectorOption {
   value: string;
   label: string;
+color?: string;
 }
 
 @customElement('dj-style-selector')
@@ -32,8 +33,8 @@ export class DJStyleSelector extends LitElement {
       background-color: #444;
     }
     .option.selected {
-      background-color: #007bff; /* Bright blue for selected */
-      box-shadow: 0 0 8px #007bff, 0 0 10px #007bff;
+      background-color: var(--glow-color, #007bff); /* Use variable, fallback to blue */
+      box-shadow: 0 0 4px var(--glow-color, #007bff), 0 0 6px var(--glow-color, #007bff); /* More subtle glow */
       color: #fff;
       font-weight: bold;
     }
@@ -63,6 +64,7 @@ export class DJStyleSelector extends LitElement {
         (option) => html`
           <div
             class="option ${option.value === this.value ? 'selected' : ''}"
+            style="--glow-color: ${option.color || '#007bff'};"
             @click=${() => this._handleOptionClick(option.value)}
           >
             ${option.label}
