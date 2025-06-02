@@ -338,14 +338,14 @@ class PromptDjMidi extends LitElement {
       color: #000;
     }
 
-    #buttons .seed-controls label[for="flowSpeed"] {
+    #buttons .seed-controls label[for="flowFrequency"] {
       /* Match other labels in .seed-controls */
       font-weight: 600;
       color: #fff;
       margin-left: 5px; /* Add some spacing if needed */
     }
 
-    #buttons .seed-controls input#flowSpeed {
+    #buttons .seed-controls input#flowFrequency {
       /* Match other number inputs in #buttons */
       font-family: 'DS-Digital', cursive;
       background: #0002;
@@ -355,6 +355,25 @@ class PromptDjMidi extends LitElement {
       font-size: 1rem;
       padding: 3px 6px;
       width: 10vmin; /* Adjust width as needed, less than seed input */
+    }
+
+    #buttons .seed-controls label[for="flowSpeedMultiplier"] {
+      /* Match other labels in .seed-controls */
+      font-weight: 600;
+      color: #fff;
+      margin-left: 5px; /* Add some spacing if needed */
+    }
+
+    #buttons .seed-controls input#flowSpeedMultiplier {
+      /* Match other number inputs in #buttons */
+      font-family: 'DS-Digital', cursive;
+      background: #0002;
+      border: 1.5px solid #fff;
+      color: #fff;
+      border-radius: 4px;
+      font-size: 1rem;
+      padding: 3px 6px;
+      width: 10vmin;
     }
 
     play-pause-button {
@@ -418,7 +437,8 @@ class PromptDjMidi extends LitElement {
    @state() private autoGuidance = PromptDjMidi.INITIAL_AUTO_STATES.autoGuidance;
    @state() private showSeedInputHoverEffect = false;
    @state() private isSeedFlowing = false;
-   @state() private flowSpeed = 1000;
+   @state() private flowFrequency = 1000;
+   @state() private flowSpeedMultiplier = 5;
 
    @state() private apiKeyInvalid = false;
    @state() private lastDefinedTemperature = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
@@ -442,7 +462,8 @@ class PromptDjMidi extends LitElement {
      this.config.seed = Math.floor(Math.random() * 1000000) + 1;
      this.updateAudioLevel = this.updateAudioLevel.bind(this);
      this.toggleSeedFlow = this.toggleSeedFlow.bind(this);
-     this.handleFlowSpeedChange = this.handleFlowSpeedChange.bind(this);
+     this.handleFlowFrequencyChange = this.handleFlowFrequencyChange.bind(this);
+     this.handleFlowSpeedMultiplierChange = this.handleFlowSpeedMultiplierChange.bind(this);
  
      this.geminiApiKey = localStorage.getItem('geminiApiKey');
  
@@ -451,6 +472,15 @@ class PromptDjMidi extends LitElement {
      }
    }
  
+   private handleFlowSpeedMultiplierChange(event: Event) {
+     const inputElement = event.target as HTMLInputElement;
+     this.flowSpeedMultiplier = parseInt(inputElement.value, 10);
+     if (this.isSeedFlowing) {
+       this.stopSeedFlow();
+       this.startSeedFlow();
+     }
+   }
+
    override async firstUpdated() {
      await customElements.whenDefined('toast-message');
    }
@@ -793,9 +823,9 @@ class PromptDjMidi extends LitElement {
      }
    }
 
-   private handleFlowSpeedChange(event: Event) {
+   private handleFlowFrequencyChange(event: Event) {
      const inputElement = event.target as HTMLInputElement;
-     this.flowSpeed = parseInt(inputElement.value, 10);
+     this.flowFrequency = parseInt(inputElement.value, 10);
      if (this.isSeedFlowing) {
        this.stopSeedFlow();
        this.startSeedFlow();
@@ -812,9 +842,10 @@ class PromptDjMidi extends LitElement {
          currentSeed = Math.floor(Math.random() * 1000000) + 1;
        }
 
-       const MIN_SEED_CHANGE = -10;
-       const MAX_SEED_CHANGE = 10;
-       const seedChange = Math.floor(Math.random() * (MAX_SEED_CHANGE - MIN_SEED_CHANGE + 1)) + MIN_SEED_CHANGE;
+       const baseChange = 10;
+       const minSeedChange = -baseChange * this.flowSpeedMultiplier;
+       const maxSeedChange = baseChange * this.flowSpeedMultiplier;
+       const seedChange = Math.floor(Math.random() * (maxSeedChange - minSeedChange + 1)) + minSeedChange;
 
        let newSeed = currentSeed + seedChange;
 
@@ -824,7 +855,7 @@ class PromptDjMidi extends LitElement {
 
        this.config = { ...this.config, seed: newSeed };
        this._sendPlaybackParametersToSession();
-     }, this.flowSpeed);
+     }, this.flowFrequency);
    }
 
    private stopSeedFlow() {
@@ -1144,13 +1175,21 @@ class PromptDjMidi extends LitElement {
                   .disabled=${this.isSeedFlowing} />
               <button @click=${this.toggleSeedFlow} class=${this.isSeedFlowing ? 'active' : ''}>Flow</button>
               ${this.isSeedFlowing ? html`
-                <label for="flowSpeed">Flow Speed (ms)</label>
+                <label for="flowFrequency">Flow Frequency (ms)</label>
                 <input
                   type="number"
-                  id="flowSpeed"
-                  .value=${this.flowSpeed.toString()}
-                  @input=${this.handleFlowSpeedChange}
+                  id="flowFrequency"
+                  .value=${this.flowFrequency.toString()}
+                  @input=${this.handleFlowFrequencyChange}
                   min="100"
+                />
+                <label for="flowSpeedMultiplier">Flow Speed</label>
+                <input
+                  type="number"
+                  id="flowSpeedMultiplier"
+                  .value=${this.flowSpeedMultiplier.toString()}
+                  @input=${this.handleFlowSpeedMultiplierChange}
+                  min="1"
                 />
               ` : ''}
           </div>
