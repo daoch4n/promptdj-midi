@@ -449,6 +449,9 @@ class PromptDjMidi extends LitElement {
        if (prompt.isAutoFlowing === undefined) {
          prompt.isAutoFlowing = false;
        }
+       if (prompt.activatedFromZero === undefined) { // Added this check
+         prompt.activatedFromZero = false;
+       }
      });
      this.prompts = prompts;
      this.midiDispatcher = midiDispatcher;
@@ -632,6 +635,7 @@ class PromptDjMidi extends LitElement {
  
      if (prompt.isAutoFlowing) {
        prompt.isAutoFlowing = false;
+       prompt.activatedFromZero = false; // Manual change overrides this state
      }
  
      prompt.text = text;
@@ -919,7 +923,7 @@ class PromptDjMidi extends LitElement {
        this.prompts.set(promptId, prompt);
        this.requestUpdate(); 
  
-       if (this.isAnyFlowActive) {
+       if (this.isAnyFlowActive) { 
          this.startGlobalFlowInterval();
        } else {
          this.stopGlobalFlowInterval();
@@ -1511,3 +1515,5 @@ ${this.renderPrompts()}
   }
  
   main(document.body);
+
+[end of index.tsx]
