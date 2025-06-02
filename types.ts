@@ -9,6 +9,7 @@ export interface Prompt {
   cc: number;
   color: string;
   isAutoFlowing?: boolean;
+  activatedFromZero?: boolean;
 }
 
 export interface ControlChange {
