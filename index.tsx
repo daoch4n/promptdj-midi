@@ -217,8 +217,12 @@ class PromptDjMidi extends LitElement {
       font-weight: bold; /* Keep font weight */
       text-shadow: 0px 0px 4px rgba(0,0,0,0.7), 0px 0px 1px rgba(0,0,0,0.9); /* Preserve text shadow for readability */
       border: 1px solid transparent; /* Maintain layout consistency */
+
+      /* Add these to override component's fallback blue from var(--glow-color, #007bff) */
+      background-color: initial !important;
+      box-shadow: none !important;
+
       animation: rgb-glow 40s linear infinite; /* Apply the RGB glow animation */
-      /* No need for !important on background-color or box-shadow if component isn't setting them for this specific class */
     }
 
     /* Add these rules within the static styles */
