@@ -281,9 +281,6 @@ private toggleAutoFlow() {
         @focus=${this.onFocus}
         @blur=${this.updateText}
         @keydown=${this.handleKeyDown}></span>
-      <div id="midi" @click=${this.toggleLearnMode}>
-        ${this.learnMode ? 'Learn' : `CC:${this.cc}`}
-      </div>
       <div class="auto-controls">
         <button
           id="autoButton"
@@ -292,6 +289,9 @@ private toggleAutoFlow() {
         <div id="autoValueDisplay" class="auto-value-display">
           ${this.weight.toFixed(2)}
         </div>
+      </div>
+      <div id="midi" @click=${this.toggleLearnMode}>
+        ${this.learnMode ? 'Learn' : `CC:${this.cc}`}
       </div>
     </div>`;
   }
