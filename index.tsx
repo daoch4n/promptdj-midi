@@ -357,14 +357,14 @@ class PromptDjMidi extends LitElement {
       width: 10vmin; /* Adjust width as needed, less than seed input */
     }
 
-    #buttons .seed-controls label[for="flowSpeedMultiplier"] {
+    #buttons .seed-controls label[for="flowAmplitude"] {
       /* Match other labels in .seed-controls */
       font-weight: 600;
       color: #fff;
       margin-left: 5px; /* Add some spacing if needed */
     }
 
-    #buttons .seed-controls input#flowSpeedMultiplier {
+    #buttons .seed-controls input#flowAmplitude {
       /* Match other number inputs in #buttons */
       font-family: 'DS-Digital', cursive;
       background: #0002;
@@ -374,6 +374,27 @@ class PromptDjMidi extends LitElement {
       font-size: 1rem;
       padding: 3px 6px;
       width: 10vmin;
+    }
+
+    .flow-direction-button {
+      /* Match general button style in #buttons .seed-controls button */
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+      background: #0002;
+      -webkit-font-smoothing: antialiased;
+      border: 1.5px solid #fff;
+      border-radius: 4px;
+      user-select: none;
+      padding: 3px 6px;
+      margin-left: 5px;
+    }
+
+    .flow-direction-button.active {
+      /* Match active button style in #buttons .seed-controls button.active */
+      background-color: #fff;
+      color: #000;
     }
 
     play-pause-button {
@@ -438,7 +459,9 @@ class PromptDjMidi extends LitElement {
    @state() private showSeedInputHoverEffect = false;
    @state() private isSeedFlowing = false;
    @state() private flowFrequency = 1000;
-   @state() private flowSpeedMultiplier = 5;
+   @state() private flowAmplitude = 5;
+   @state() private flowDirectionUp = true;
+   @state() private flowDirectionDown = true;
 
    @state() private apiKeyInvalid = false;
    @state() private lastDefinedTemperature = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
@@ -463,7 +486,8 @@ class PromptDjMidi extends LitElement {
      this.updateAudioLevel = this.updateAudioLevel.bind(this);
      this.toggleSeedFlow = this.toggleSeedFlow.bind(this);
      this.handleFlowFrequencyChange = this.handleFlowFrequencyChange.bind(this);
-     this.handleFlowSpeedMultiplierChange = this.handleFlowSpeedMultiplierChange.bind(this);
+     this.handleFlowAmplitudeChange = this.handleFlowAmplitudeChange.bind(this);
+     this.toggleFlowDirection = this.toggleFlowDirection.bind(this);
  
      this.geminiApiKey = localStorage.getItem('geminiApiKey');
  
@@ -472,9 +496,23 @@ class PromptDjMidi extends LitElement {
      }
    }
  
-   private handleFlowSpeedMultiplierChange(event: Event) {
+   private handleFlowAmplitudeChange(event: Event) {
      const inputElement = event.target as HTMLInputElement;
-     this.flowSpeedMultiplier = parseInt(inputElement.value, 10);
+     this.flowAmplitude = parseInt(inputElement.value, 10);
+     if (this.isSeedFlowing) {
+       this.stopSeedFlow();
+       this.startSeedFlow();
+     }
+   }
+
+   private toggleFlowDirection(direction: 'up' | 'down') {
+     // Basic stub for now, full implementation in next step
+     if (direction === 'up') {
+       this.flowDirectionUp = !this.flowDirectionUp;
+     } else if (direction === 'down') {
+       this.flowDirectionDown = !this.flowDirectionDown;
+     }
+     this.requestUpdate();
      if (this.isSeedFlowing) {
        this.stopSeedFlow();
        this.startSeedFlow();
@@ -842,10 +880,20 @@ class PromptDjMidi extends LitElement {
          currentSeed = Math.floor(Math.random() * 1000000) + 1;
        }
 
-       const baseChange = 10;
-       const minSeedChange = -baseChange * this.flowSpeedMultiplier;
-       const maxSeedChange = baseChange * this.flowSpeedMultiplier;
-       const seedChange = Math.floor(Math.random() * (maxSeedChange - minSeedChange + 1)) + minSeedChange;
+       const baseMagnitude = Math.floor(Math.random() * 10) + 1; // Random int from 1 to 10
+       let seedChange = 0;
+
+       if (this.flowDirectionUp && this.flowDirectionDown) {
+         const direction = Math.random() < 0.5 ? 1 : -1;
+         seedChange = baseMagnitude * direction * this.flowAmplitude;
+       } else if (this.flowDirectionUp) {
+         seedChange = baseMagnitude * this.flowAmplitude;
+       } else if (this.flowDirectionDown) {
+         seedChange = baseMagnitude * -1 * this.flowAmplitude;
+       } else {
+         // Both are false, seedChange remains 0, so seed stays still.
+         seedChange = 0;
+       }
 
        let newSeed = currentSeed + seedChange;
 
@@ -1175,7 +1223,7 @@ class PromptDjMidi extends LitElement {
                   .disabled=${this.isSeedFlowing} />
               <button @click=${this.toggleSeedFlow} class=${this.isSeedFlowing ? 'active' : ''}>Flow</button>
               ${this.isSeedFlowing ? html`
-                <label for="flowFrequency">Flow Frequency (ms)</label>
+                <label for="flowFrequency">Frequency</label>
                 <input
                   type="number"
                   id="flowFrequency"
@@ -1183,14 +1231,22 @@ class PromptDjMidi extends LitElement {
                   @input=${this.handleFlowFrequencyChange}
                   min="100"
                 />
-                <label for="flowSpeedMultiplier">Flow Speed</label>
+                <label for="flowAmplitude">Amplitude</label>
                 <input
                   type="number"
-                  id="flowSpeedMultiplier"
-                  .value=${this.flowSpeedMultiplier.toString()}
-                  @input=${this.handleFlowSpeedMultiplierChange}
+                  id="flowAmplitude"
+                  .value=${this.flowAmplitude.toString()}
+                  @input=${this.handleFlowAmplitudeChange}
                   min="1"
                 />
+                <button
+                  id="flowUpButton"
+                  class="flow-direction-button ${this.flowDirectionUp ? 'active' : ''}"
+                  @click=${() => this.toggleFlowDirection('up')}>Up</button>
+                <button
+                  id="flowDownButton"
+                  class="flow-direction-button ${this.flowDirectionDown ? 'active' : ''}"
+                  @click=${() => this.toggleFlowDirection('down')}>Down</button>
               ` : ''}
           </div>
           ${!this.geminiApiKey || this.apiKeyInvalid ? html`
