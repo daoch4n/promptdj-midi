@@ -490,6 +490,7 @@ class PromptDjMidi extends LitElement {
    }
  
    private async connectToSession() {
+    await this.updateComplete;
      if (!this.geminiApiKey) {
       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
         this.toastMessage.show('Please enter your Gemini API key to connect to the session.');
@@ -579,7 +580,8 @@ class PromptDjMidi extends LitElement {
      }
    }
 
-  private handleConnectionIssue(messagePrefix: string) {
+  private async handleConnectionIssue(messagePrefix: string) {
+    await this.updateComplete;
     this.connectionError = true;
     this.currentRetryAttempt++;
 
@@ -612,6 +614,7 @@ class PromptDjMidi extends LitElement {
    }
  
    private setSessionPrompts = throttle(async () => {
+    await this.updateComplete;
      const promptsToSend = this.getPromptsToSend();
      if (promptsToSend.length === 0) {
       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
@@ -709,7 +712,8 @@ class PromptDjMidi extends LitElement {
      this.checkAndTriggerOverloadReset();
    }
  
-   private calculateKnobAverageExtremeness(): void {
+   private async calculateKnobAverageExtremeness(): Promise<void> {
+    await this.updateComplete;
      const extremenessValues: number[] = [];
      const knobKeys = Object.keys(PromptDjMidi.KNOB_CONFIGS) as Array<keyof typeof PromptDjMidi.KNOB_CONFIGS>;
  
@@ -757,7 +761,8 @@ class PromptDjMidi extends LitElement {
      this.checkAndTriggerOverloadReset();
    }
  
-   private checkAndTriggerOverloadReset(): void {
+   private async checkAndTriggerOverloadReset(): Promise<void> {
+    await this.updateComplete;
      const promptAverageCritical = 1.95;
      const knobExtremenessCritical = 0.95;
      const combinedFactorThreshold = 1.8; // (e.g. prompt avg 1.6 -> 0.8, knob avg 1.0 -> 1.0 => 1.8)
@@ -911,6 +916,7 @@ class PromptDjMidi extends LitElement {
        this.pause();
        return;
      }
+    await this.updateComplete;
  
      if (!this.audioContext) {
        this.audioContext = new AudioContext({ sampleRate: 48000 });
@@ -946,6 +952,7 @@ class PromptDjMidi extends LitElement {
    }
  
    private async handleMainAudioButton() {
+    await this.updateComplete;
      this.currentRetryAttempt = 0;
 
      if (!this.audioReady) {
@@ -1070,7 +1077,8 @@ class PromptDjMidi extends LitElement {
      this.midiDispatcher.activeMidiInputId = newMidiId;
    }
  
-   private saveApiKeyToLocalStorage() {
+   private async saveApiKeyToLocalStorage() {
+    await this.updateComplete;
     if (this.geminiApiKey) {
       localStorage.setItem('geminiApiKey', this.geminiApiKey);
       this.apiKeyInvalid = false;
