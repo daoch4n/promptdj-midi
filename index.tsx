@@ -83,31 +83,31 @@ class PromptDjMidi extends LitElement {
   static override styles = css`
     @keyframes rgb-glow {
       0% {
-        box-shadow: 0 0 7px #ff0000, 0 0 12px #ff0000;
+        box-shadow: 0 0 4px #ff0000, 0 0 8px #ff0000;
         background-color: #4d0000; /* Darker Red */
       }
       17% {
-        box-shadow: 0 0 7px #ff00ff, 0 0 12px #ff00ff;
+        box-shadow: 0 0 4px #ff00ff, 0 0 8px #ff00ff;
         background-color: #4d004d; /* Darker Magenta */
       }
       33% {
-        box-shadow: 0 0 7px #0000ff, 0 0 12px #0000ff;
+        box-shadow: 0 0 4px #0000ff, 0 0 8px #0000ff;
         background-color: #00004d; /* Darker Blue */
       }
       50% {
-        box-shadow: 0 0 7px #00ffff, 0 0 12px #00ffff;
+        box-shadow: 0 0 4px #00ffff, 0 0 8px #00ffff;
         background-color: #004d4d; /* Darker Cyan */
       }
       67% {
-        box-shadow: 0 0 7px #00ff00, 0 0 12px #00ff00;
+        box-shadow: 0 0 4px #00ff00, 0 0 8px #00ff00;
         background-color: #004d00; /* Darker Green */
       }
       83% {
-        box-shadow: 0 0 7px #ffff00, 0 0 12px #ffff00;
+        box-shadow: 0 0 4px #ffff00, 0 0 8px #ffff00;
         background-color: #4d4d00; /* Darker Yellow */
       }
       100% {
-        box-shadow: 0 0 7px #ff0000, 0 0 12px #ff0000;
+        box-shadow: 0 0 4px #ff0000, 0 0 8px #ff0000;
         background-color: #4d0000; /* Darker Red */
       }
     }
@@ -213,15 +213,22 @@ class PromptDjMidi extends LitElement {
     }
 
     dj-style-selector#scale .option.selected[style*="--glow-color: #888888"] {
-      /* Remove static background and shadow to allow animation to take over */
-      background-color: transparent !important; /* Important to override inline style from component if necessary */
-      box-shadow: none !important; /* Important to override inline style from component if necessary */
+      color: #fff !important; /* Ensure text color is not affected by background changes */
+      font-weight: bold !important; /* Ensure font weight is not affected */
+      text-shadow: 0px 0px 4px rgba(0,0,0,0.7), 0px 0px 1px rgba(0,0,0,0.9) !important; /* Ensure text shadow is not affected */
 
-      color: #fff; /* Keep text color */
-      font-weight: bold; /* Keep font weight */
-      text-shadow: 0px 0px 4px rgba(0,0,0,0.7), 0px 0px 1px rgba(0,0,0,0.9); /* Keep text shadow for readability */
-      animation: rgb-glow 40s linear infinite; /* Apply the RGB glow animation */
-      border: 1px solid transparent; /* Maintain layout consistency */
+      /* Force reset of background and shadow properties before animation */
+      background-color: initial !important;
+      background-image: none !important; /* In case any gradient was applied */
+      box-shadow: none !important;
+      border: 1px solid transparent !important; /* Maintain layout consistency and override other borders */
+
+      /* Explicitly apply animation and ensure it fills */
+      animation-name: rgb-glow !important;
+      animation-duration: 40s !important;
+      animation-timing-function: linear !important;
+      animation-iteration-count: infinite !important;
+      animation-fill-mode: forwards !important; /* Ensure styles from animation persist */
     }
 
     /* Add these rules within the static styles */
