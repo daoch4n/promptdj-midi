@@ -1321,6 +1321,7 @@ class PromptDjMidi extends LitElement {
      const djStyleSelectorOptions = Array.from(scaleMap, ([label, { value, color }]) => ({ label, value, color } as DJStyleSelectorOption));
  
       return html`
+        <toast-message></toast-message>
         <dsp-overload-indicator
           .currentPromptAverage=${this.promptWeightedAverage}
           .currentKnobAverageExtremeness=${this.knobAverageExtremeness}
