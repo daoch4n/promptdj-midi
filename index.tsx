@@ -907,7 +907,7 @@ class PromptDjMidi extends LitElement {
      }
    }
  
-   private play() {
+   private async play() {
      const promptsToSend = this.getPromptsToSend();
      if (promptsToSend.length === 0) {
        if (this.toastMessage && typeof this.toastMessage.show === 'function') {
@@ -916,7 +916,8 @@ class PromptDjMidi extends LitElement {
        this.pause();
        return;
      }
-    await this.updateComplete;
+    // No change here, await this.updateComplete was already in the correct place
+    // The issue is the method signature itself.
  
      if (!this.audioContext) {
        this.audioContext = new AudioContext({ sampleRate: 48000 });
