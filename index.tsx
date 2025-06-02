@@ -311,6 +311,46 @@ class PromptDjMidi extends LitElement {
         width: 18vmin;
     }
 
+    /* Styles for Flow button and Flow Speed input */
+    #buttons .seed-controls button {
+      /* Match general button style in #buttons */
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+      background: #0002;
+      -webkit-font-smoothing: antialiased;
+      border: 1.5px solid #fff;
+      border-radius: 4px;
+      user-select: none;
+      padding: 3px 6px;
+    }
+
+    #buttons .seed-controls button.active {
+      /* Match active button style in #buttons */
+      background-color: #fff;
+      color: #000;
+    }
+
+    #buttons .seed-controls label[for="flowSpeed"] {
+      /* Match other labels in .seed-controls */
+      font-weight: 600;
+      color: #fff;
+      margin-left: 5px; /* Add some spacing if needed */
+    }
+
+    #buttons .seed-controls input#flowSpeed {
+      /* Match other number inputs in #buttons */
+      font-family: 'DS-Digital', cursive;
+      background: #0002;
+      border: 1.5px solid #fff;
+      color: #fff;
+      border-radius: 4px;
+      font-size: 1rem;
+      padding: 3px 6px;
+      width: 10vmin; /* Adjust width as needed, less than seed input */
+    }
+
     play-pause-button {
       width: 100px;
       height: 100px;
@@ -371,6 +411,8 @@ class PromptDjMidi extends LitElement {
    @state() private autoTopK = PromptDjMidi.INITIAL_AUTO_STATES.autoTopK;
    @state() private autoGuidance = PromptDjMidi.INITIAL_AUTO_STATES.autoGuidance;
    @state() private showSeedInputHoverEffect = false;
+   @state() private isSeedFlowing = false;
+   @state() private flowSpeed = 1000;
 
    @state() private apiKeyInvalid = false;
    @state() private lastDefinedTemperature = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
@@ -393,6 +435,8 @@ class PromptDjMidi extends LitElement {
      this.midiDispatcher = midiDispatcher;
      this.config.seed = Math.floor(Math.random() * 1000000) + 1;
      this.updateAudioLevel = this.updateAudioLevel.bind(this);
+     this.toggleSeedFlow = this.toggleSeedFlow.bind(this);
+     this.handleFlowSpeedChange = this.handleFlowSpeedChange.bind(this);
  
      this.geminiApiKey = localStorage.getItem('geminiApiKey');
  
@@ -734,6 +778,56 @@ class PromptDjMidi extends LitElement {
      this.activeMidiInputId = this.midiDispatcher.activeMidiInputId;
    }
  
+   private toggleSeedFlow() {
+     this.isSeedFlowing = !this.isSeedFlowing;
+     if (this.isSeedFlowing) {
+       this.startSeedFlow();
+     } else {
+       this.stopSeedFlow();
+     }
+   }
+
+   private handleFlowSpeedChange(event: Event) {
+     const inputElement = event.target as HTMLInputElement;
+     this.flowSpeed = parseInt(inputElement.value, 10);
+     if (this.isSeedFlowing) {
+       this.stopSeedFlow();
+       this.startSeedFlow();
+     }
+   }
+
+   private startSeedFlow() {
+     if (this.seedFlowInterval) {
+       clearInterval(this.seedFlowInterval);
+     }
+     this.seedFlowInterval = window.setInterval(() => {
+       let currentSeed = this.config.seed;
+       if (currentSeed === null || currentSeed === undefined) {
+         currentSeed = Math.floor(Math.random() * 1000000) + 1;
+       }
+
+       const MIN_SEED_CHANGE = -10;
+       const MAX_SEED_CHANGE = 10;
+       const seedChange = Math.floor(Math.random() * (MAX_SEED_CHANGE - MIN_SEED_CHANGE + 1)) + MIN_SEED_CHANGE;
+
+       let newSeed = currentSeed + seedChange;
+
+       const MIN_SEED_VALUE = 1;
+       const MAX_SEED_VALUE = 9999999;
+       newSeed = Math.max(MIN_SEED_VALUE, Math.min(newSeed, MAX_SEED_VALUE));
+
+       this.config = { ...this.config, seed: newSeed };
+       this._sendPlaybackParametersToSession();
+     }, this.flowSpeed);
+   }
+
+   private stopSeedFlow() {
+     if (this.seedFlowInterval) {
+       clearInterval(this.seedFlowInterval);
+       this.seedFlowInterval = null;
+     }
+   }
+
    private handleMidiInputChange(event: Event) {
      const selectElement = event.target as HTMLSelectElement;
      const newMidiId = selectElement.value;
@@ -907,6 +1001,11 @@ class PromptDjMidi extends LitElement {
      const target = event.target as HTMLInputElement | HTMLSelectElement | WeightKnob;
      const id = target.id;
  
+     if (id === 'seed' && this.isSeedFlowing) {
+       this.isSeedFlowing = false;
+       this.stopSeedFlow();
+     }
+
      if (target instanceof HTMLInputElement && target.type === 'checkbox') {
        const isChecked = target.checked;
        if (id === 'auto-density') {
@@ -1035,7 +1134,19 @@ class PromptDjMidi extends LitElement {
                   id="seed"
                   .value=${cfg.seed ?? ''}
                   @input=${this.handleInputChange}
-                  placeholder="Auto" />
+                  placeholder="Auto"
+                  .disabled=${this.isSeedFlowing} />
+              <button @click=${this.toggleSeedFlow} class=${this.isSeedFlowing ? 'active' : ''}>Flow</button>
+              ${this.isSeedFlowing ? html`
+                <label for="flowSpeed">Flow Speed (ms)</label>
+                <input
+                  type="number"
+                  id="flowSpeed"
+                  .value=${this.flowSpeed.toString()}
+                  @input=${this.handleFlowSpeedChange}
+                  min="100"
+                />
+              ` : ''}
           </div>
           ${!this.geminiApiKey || this.apiKeyInvalid ? html`
             <button @click=${this.getApiKey}>Get API Key</button>
