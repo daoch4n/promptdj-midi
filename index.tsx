@@ -21,6 +21,7 @@ import type { WeightKnob } from './components/WeightKnob';
 import './components/DJStyleSelector';
 import type { DJStyleSelectorOption } from './components/DJStyleSelector';
 import './components/PlayPauseButton';
+import './components/DSPOverloadIndicator.js';
 
 import type { Prompt, PlaybackState } from './types';
 
@@ -78,6 +79,14 @@ class PromptDjMidi extends LitElement {
     lastDefinedTemperature: 1.1,
     lastDefinedTopK: 40,
     lastDefinedGuidance: 4.0,
+  };
+
+  private static readonly KNOB_CONFIGS = {
+    density: { defaultValue: PromptDjMidi.INITIAL_CONFIG.density, min: 0, max: 1, autoProperty: 'autoDensity', lastDefinedProperty: 'lastDefinedDensity' },
+    brightness: { defaultValue: PromptDjMidi.INITIAL_CONFIG.brightness, min: 0, max: 1, autoProperty: 'autoBrightness', lastDefinedProperty: 'lastDefinedBrightness' },
+    temperature: { defaultValue: PromptDjMidi.INITIAL_CONFIG.temperature, min: 0, max: 3, autoProperty: 'autoTemperature', lastDefinedProperty: 'lastDefinedTemperature' },
+    topK: { defaultValue: PromptDjMidi.INITIAL_CONFIG.topK, min: 1, max: 100, autoProperty: 'autoTopK', lastDefinedProperty: 'lastDefinedTopK' },
+    guidance: { defaultValue: PromptDjMidi.INITIAL_CONFIG.guidance, min: 0, max: 6, autoProperty: 'autoGuidance', lastDefinedProperty: 'lastDefinedGuidance' },
   };
 
   static override styles = css`
@@ -432,6 +441,9 @@ class PromptDjMidi extends LitElement {
    @state() private lastDefinedTemperature = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
    @state() private lastDefinedTopK = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTopK;
    @state() private lastDefinedGuidance = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedGuidance;
+
+  @state() private promptWeightedAverage = 0;
+  @state() private knobAverageExtremeness = 0;
  
    private audioLevelRafId: number | null = null;
    private connectionError = true;
@@ -470,6 +482,8 @@ class PromptDjMidi extends LitElement {
  
    override async firstUpdated() {
      await customElements.whenDefined('toast-message');
+     this.calculatePromptWeightedAverage();
+     this.calculateKnobAverageExtremeness();
    }
  
    private async connectToSession() {
@@ -642,12 +656,101 @@ class PromptDjMidi extends LitElement {
      newPrompts.set(promptId, prompt);
  
      this.setPrompts(newPrompts);
+     this.calculatePromptWeightedAverage();
    }
  
    private setPrompts(newPrompts: Map<string, Prompt>) {
      this.prompts = newPrompts;
      this.requestUpdate();
      this.dispatchPromptsChange();
+     this.calculatePromptWeightedAverage();
+   }
+ 
+   private calculatePromptWeightedAverage(): void {
+     let totalWeight = 0;
+     const promptCount = this.prompts.size;
+ 
+     if (promptCount === 0) {
+       this.promptWeightedAverage = 0;
+       return;
+     }
+ 
+     for (const prompt of this.prompts.values()) {
+       totalWeight += prompt.weight;
+     }
+ 
+     this.promptWeightedAverage = totalWeight / promptCount;
+     this.checkAndTriggerOverloadReset();
+   }
+ 
+   private calculateKnobAverageExtremeness(): void {
+     const extremenessValues: number[] = [];
+     const knobKeys = Object.keys(PromptDjMidi.KNOB_CONFIGS) as Array<keyof typeof PromptDjMidi.KNOB_CONFIGS>;
+ 
+     for (const knobId of knobKeys) {
+       const config = PromptDjMidi.KNOB_CONFIGS[knobId];
+       const isAuto = this[config.autoProperty as keyof this] as boolean;
+ 
+       if (isAuto) {
+         extremenessValues.push(0);
+       } else {
+         let currentValue = this.config[knobId] as number | null;
+         // If still null for some reason (e.g. other knobs if they could be null), treat as default (0 extremeness)
+         if (currentValue === null) {
+            extremenessValues.push(0);
+            continue;
+         }
+ 
+         const defaultValue = config.defaultValue;
+         const minValue = config.min;
+         const maxValue = config.max;
+         const range = maxValue - minValue;
+ 
+         if (range === 0) {
+           extremenessValues.push(0);
+         } else {
+           const extremeness = Math.abs(currentValue - defaultValue) / range;
+           extremenessValues.push(Math.min(1, Math.max(0, extremeness))); // Clamp 0-1
+         }
+       }
+     }
+ 
+     // Handle scale selector
+     if (this.config.scale === PromptDjMidi.INITIAL_CONFIG.scale) {
+       extremenessValues.push(0);
+     } else {
+       extremenessValues.push(1);
+     }
+ 
+     if (extremenessValues.length > 0) {
+       const sum = extremenessValues.reduce((acc, val) => acc + val, 0);
+       this.knobAverageExtremeness = sum / extremenessValues.length;
+     } else {
+       this.knobAverageExtremeness = 0;
+     }
+     this.checkAndTriggerOverloadReset();
+   }
+ 
+   private checkAndTriggerOverloadReset(): void {
+     const promptAverageCritical = 1.95;
+     const knobExtremenessCritical = 0.95;
+     const combinedFactorThreshold = 1.8; // (e.g. prompt avg 1.6 -> 0.8, knob avg 1.0 -> 1.0 => 1.8)
+ 
+     // Normalize promptAverage to 0-1 for combined factor, then add knobExtremeness (already 0-1)
+     // Max possible combinedFactor is 2.0 (promptAvg 2.0 -> 1.0; knobExtremeness 1.0 -> 1.0)
+     const combinedFactor = (this.promptWeightedAverage / 2) + this.knobAverageExtremeness;
+ 
+     if (
+       this.promptWeightedAverage >= promptAverageCritical ||
+       this.knobAverageExtremeness >= knobExtremenessCritical ||
+       combinedFactor >= combinedFactorThreshold
+     ) {
+       console.warn('DSP Overload detected! Resetting all parameters.');
+       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+         this.toastMessage.show('Critical DSP Overload! Resetting parameters.', 'error');
+       }
+       this.resetAll();
+     }
    }
  
    private globalFlowTick(): void {
@@ -705,7 +808,8 @@ class PromptDjMidi extends LitElement {
             this._sendPlaybackParametersToSession();
        }
        this.setSessionPrompts(); 
-       this.requestUpdate(); 
+       this.requestUpdate();
+       this.calculatePromptWeightedAverage();
      }
    }
  
@@ -961,16 +1065,35 @@ class PromptDjMidi extends LitElement {
       this.autoDensity = PromptDjMidi.INITIAL_AUTO_STATES.autoDensity;
       this.autoBrightness = PromptDjMidi.INITIAL_AUTO_STATES.autoBrightness;
       this.autoBpm = PromptDjMidi.INITIAL_AUTO_STATES.autoBpm;
+      // Also reset other auto states for knobs
+      this.autoTemperature = PromptDjMidi.INITIAL_AUTO_STATES.autoTemperature;
+      this.autoTopK = PromptDjMidi.INITIAL_AUTO_STATES.autoTopK;
+      this.autoGuidance = PromptDjMidi.INITIAL_AUTO_STATES.autoGuidance;
  
       this.lastDefinedDensity = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedDensity;
       this.lastDefinedBrightness = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBrightness;
       this.lastDefinedBpm = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBpm;
+      this.lastDefinedTemperature = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
+      this.lastDefinedTopK = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTopK;
+      this.lastDefinedGuidance = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedGuidance;
  
-      this.setPrompts(PromptDjMidi.buildDefaultPrompts());
+      // Reset prompts: all weights to 0, keep text/color/cc, reset autoFlow
+      const newPrompts = new Map<string, Prompt>();
+      const defaultPrompts = PromptDjMidi.buildDefaultPrompts(); // Gets initial structure
+      for (const [promptId, defaultPrompt] of defaultPrompts.entries()) {
+        newPrompts.set(promptId, {
+          ...defaultPrompt,
+          weight: 0,
+          isAutoFlowing: false, // Ensure auto-flow is also reset
+        });
+      }
+      this.setPrompts(newPrompts); // This will call calculatePromptWeightedAverage
  
-      this.requestUpdate(); 
+      this.requestUpdate();
  
-      this._sendPlaybackParametersToSession();
+      this._sendPlaybackParametersToSession(); // This should use the reset config values
+      this.calculatePromptWeightedAverage(); // Though setPrompts calls it, an explicit call ensures it uses the zeroed weights.
+      this.calculateKnobAverageExtremeness(); // Call after config and auto states are reset
     }
  
     private _sendPlaybackParametersToSession() {
@@ -1082,7 +1205,8 @@ class PromptDjMidi extends LitElement {
           break;
       }
       this.requestUpdate();
-      this._sendPlaybackParametersToSession(); 
+      this._sendPlaybackParametersToSession();
+      this.calculateKnobAverageExtremeness();
     }
  
     private handleInputChange(event: Event) {
@@ -1159,6 +1283,7 @@ class PromptDjMidi extends LitElement {
         this.config = { ...this.config, [id]: value };
      }
      this.requestUpdate();
+     this.calculateKnobAverageExtremeness();
    }
  
    
@@ -1192,6 +1317,10 @@ class PromptDjMidi extends LitElement {
      const djStyleSelectorOptions = Array.from(scaleMap, ([label, { value, color }]) => ({ label, value, color } as DJStyleSelectorOption));
  
       return html`
+        <dsp-overload-indicator
+          .currentPromptAverage=${this.promptWeightedAverage}
+          .currentKnobAverageExtremeness=${this.knobAverageExtremeness}
+        ></dsp-overload-indicator>
         <div id="background" style=${bg}></div>
         <div id="buttons">
           <!-- MIDI Controls -->
