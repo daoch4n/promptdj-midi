@@ -50,7 +50,7 @@ class PromptDjMidi extends LitElement {
   // Inside PromptDjMidi class
   private static readonly INITIAL_CONFIG = {
     seed: null as number | null,
-    bpm: null as number | null, // Consistent with autoBpm=true initially setting config.bpm to null
+    bpm: null as number | null,
     density: 0.5,
     brightness: 0.5,
     scale: 'SCALE_UNSPECIFIED',
@@ -130,7 +130,7 @@ class PromptDjMidi extends LitElement {
       max-width: 1600px;
       height: 100%;
       padding: 8vmin 5vmin;
-      padding-right: 240px; /* Added for fixed panel */
+      padding-right: 240px;
       box-sizing: border-box;
     }
     .advanced-settings-panel {
@@ -163,17 +163,17 @@ class PromptDjMidi extends LitElement {
         margin-bottom: 8px;
         font-weight: bold;
         text-align: center;
-        color: #fff; /* Ensure labels are white */
+        color: #fff;
     }
     .advanced-settings-panel .setting > label .label-value {
-      font-weight: normal; /* Labels are bold, so values can be normal */
-      color: #dddddd;     /* Slightly lighter or different color for the value */
-      margin-left: 8px;  /* Space between label text and value */
+      font-weight: normal;
+      color: #dddddd;
+      margin-left: 8px;
     }
 
     .advanced-settings-panel .setting weight-knob {
       width: 100px;
-      margin: 0 auto; /* Center the knob if its container is wider */
+      margin: 0 auto;
     }
  
    .advanced-settings-panel .setting .auto-row,
@@ -191,37 +191,34 @@ class PromptDjMidi extends LitElement {
       cursor: pointer;
       transition: background-color 0.2s, box-shadow 0.2s;
       font-size: 0.9em;
-      margin-top: 5px; /* Added to provide some space from the label */
+      margin-top: 5px;
     }
     .advanced-settings-panel .setting .option-button:hover {
       background-color: #444;
-      box-shadow: 0 0 5px -1px #007bff; /* Dimmer blue glow */
+      box-shadow: 0 0 5px -1px #007bff;
     }
     .advanced-settings-panel .setting .option-button.selected {
-      background-color: #0069d9; /* Active blue background */
-      /* box-shadow: 0 0 8px #007bff; */ /* Removed to avoid conflict with specific auto button glow */
-      border-color: #0056b3; /* Optional: to match the blue theme */
+      background-color: #0069d9;
+      border-color: #0056b3;
       color: #fff;
       font-weight: bold;
     }
 
     .advanced-settings-panel .setting .option-button[id^="auto-"].selected {
-      color: #fff; /* Keep text color */
-      font-weight: bold; /* Keep font weight */
-      animation: rgb-glow 40s linear infinite; /* Apply the RGB glow animation */
-      border: 1px solid transparent; /* Add a transparent border to maintain size and prevent shifting, adjust as needed */
+      color: #fff;
+      font-weight: bold;
+      animation: rgb-glow 40s linear infinite;
+      border: 1px solid transparent;
     }
 
     dj-style-selector#scale .option.auto-scale-selected {
-      color: #fff; /* Ensure text color stays white */
-      font-weight: bold; /* Keep font weight */
-      text-shadow: 0px 0px 4px rgba(0,0,0,0.7), 0px 0px 1px rgba(0,0,0,0.9); /* Preserve text shadow for readability */
-      border: 1px solid transparent; /* Maintain layout consistency */
-      animation: rgb-glow 40s linear infinite; /* Apply the RGB glow animation */
-      /* The background-color and box-shadow will now come purely from the animation. */
+      color: #fff;
+      font-weight: bold;
+      text-shadow: 0px 0px 4px rgba(0,0,0,0.7), 0px 0px 1px rgba(0,0,0,0.9);
+      border: 1px solid transparent;
+      animation: rgb-glow 40s linear infinite;
     }
 
-    /* Add these rules within the static styles */
    #grid {
      width: 80vmin;
      height: 80vmin;
@@ -233,10 +230,10 @@ class PromptDjMidi extends LitElement {
 
     @media (max-width: 767px) {
       #grid {
-        grid-template-columns: 1fr; /* Ensures 1 knob per row */
-        width: 50vw; /* Set width to half viewport width */
-        height: auto; /* Adjust height to content if necessary */
-        margin: 0 auto; /* Center the grid */
+        grid-template-columns: 1fr;
+        width: 50vw;
+        height: auto;
+        margin: 0 auto;
       }
     }
  
@@ -305,21 +302,15 @@ class PromptDjMidi extends LitElement {
         padding: 3px 6px;
     }
     #buttons input[type="text"] {
-        width: 18vmin; /* Approximately matches prompt input width */
-    }
-    #buttons input[type="number"] {
-        /* General width for number inputs in the top bar */
         width: 18vmin;
     }
-
+    #buttons input[type="number"] {
+        width: 18vmin;
+    }
     #buttons .seed-controls input#seed {
-        /* Specific width for the main seed input */
         width: 10vmin;
     }
-
-    /* Styles for Flow button and Flow Speed input */
-    #buttons .seed-controls button {
-      /* Match general button style in #buttons */
+    #buttons .seed-controls button { /* General style for buttons in seed-controls */
       font: inherit;
       font-weight: 600;
       cursor: pointer;
@@ -331,41 +322,18 @@ class PromptDjMidi extends LitElement {
       user-select: none;
       padding: 3px 6px;
     }
-
-    #buttons .seed-controls button.active {
-      /* Match active button style in #buttons */
+    #buttons .seed-controls button.active { /* Active state for Flow button */
       background-color: #fff;
       color: #000;
     }
-
-    #buttons .seed-controls label[for="flowFrequency"] {
-      /* Match other labels in .seed-controls */
-      font-weight: 600;
-      color: #fff;
-      margin-left: 5px; /* Add some spacing if needed */
-    }
-
-    #buttons .seed-controls input#flowFrequency {
-      /* Match other number inputs in #buttons */
-      font-family: 'DS-Digital', cursive;
-      background: #0002;
-      border: 1.5px solid #fff;
-      color: #fff;
-      border-radius: 4px;
-      font-size: 1rem;
-      padding: 3px 6px;
-      width: 10vmin; /* Adjust width as needed, less than seed input */
-    }
-
+    #buttons .seed-controls label[for="flowFrequency"],
     #buttons .seed-controls label[for="flowAmplitude"] {
-      /* Match other labels in .seed-controls */
       font-weight: 600;
       color: #fff;
-      margin-left: 5px; /* Add some spacing if needed */
+      margin-left: 5px;
     }
-
+    #buttons .seed-controls input#flowFrequency,
     #buttons .seed-controls input#flowAmplitude {
-      /* Match other number inputs in #buttons */
       font-family: 'DS-Digital', cursive;
       background: #0002;
       border: 1.5px solid #fff;
@@ -375,9 +343,7 @@ class PromptDjMidi extends LitElement {
       padding: 3px 6px;
       width: 10vmin;
     }
-
     .flow-direction-button {
-      /* Match general button style in #buttons .seed-controls button */
       font: inherit;
       font-weight: 600;
       cursor: pointer;
@@ -390,9 +356,7 @@ class PromptDjMidi extends LitElement {
       padding: 3px 6px;
       margin-left: 5px;
     }
-
     .flow-direction-button.active {
-      /* Match active button style in #buttons .seed-controls button.active */
       background-color: #fff;
       color: #000;
     }
@@ -400,23 +364,23 @@ class PromptDjMidi extends LitElement {
     play-pause-button {
       width: 100px;
       height: 100px;
-      margin: 0 auto 15px auto; /* top right&left bottom */
+      margin: 0 auto 15px auto;
       display: block;
       cursor: pointer;
     }
    .solo-group-header {
      font-weight: bold;
-     margin-top: 15px; /* Add some space above the header */
-     margin-bottom: 5px; /* Space between header and buttons */
-     text-align: center; /* Or left, as preferred */
-     color: #fff; /* Ensure visibility */
+     margin-top: 15px;
+     margin-bottom: 5px;
+     text-align: center;
+     color: #fff;
    }
    .solo-button-group .setting {
-     margin-bottom: 8px; /* Adjust spacing between grouped buttons if needed */
+     margin-bottom: 8px;
    }
    #reset-button:hover {
-     box-shadow: 0 0 8px #ff0000, 0 0 12px #ff0000; /* Red glow */
-     border-color: #ff4444; /* Optional: change border color too */
+     box-shadow: 0 0 8px #ff0000, 0 0 12px #ff0000;
+     border-color: #ff4444;
    }
    `;
  
@@ -425,13 +389,13 @@ class PromptDjMidi extends LitElement {
    private audioAnalyser: AudioAnalyser | null = null;
  
    @state() private playbackState: PlaybackState = 'stopped';
-   @state() private audioReady = false; // State for audio context readiness
+   @state() private audioReady = false;
  
-   private session!: LiveMusicSession; // Initialized in connectToSession
+   private session!: LiveMusicSession;
    private audioContext: AudioContext | null = null;
    private outputNode: GainNode | null = null;
    private nextStartTime = 0;
-   private readonly bufferTime = 2; // adds an audio buffer in case of network latency
+   private readonly bufferTime = 2;
  
    private ai!: GoogleGenAI;
    @state() private geminiApiKey: string | null = null;
@@ -462,6 +426,7 @@ class PromptDjMidi extends LitElement {
    @state() private flowAmplitude = 5;
    @state() private flowDirectionUp = true;
    @state() private flowDirectionDown = true;
+   private globalFlowIntervalId: number | null = null;
 
    @state() private apiKeyInvalid = false;
    @state() private lastDefinedTemperature = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
@@ -480,6 +445,11 @@ class PromptDjMidi extends LitElement {
      midiDispatcher: MidiDispatcher,
    ) {
      super();
+     prompts.forEach(prompt => {
+       if (prompt.isAutoFlowing === undefined) {
+         prompt.isAutoFlowing = false;
+       }
+     });
      this.prompts = prompts;
      this.midiDispatcher = midiDispatcher;
      this.config.seed = Math.floor(Math.random() * 1000000) + 1;
@@ -488,6 +458,8 @@ class PromptDjMidi extends LitElement {
      this.handleFlowFrequencyChange = this.handleFlowFrequencyChange.bind(this);
      this.handleFlowAmplitudeChange = this.handleFlowAmplitudeChange.bind(this);
      this.toggleFlowDirection = this.toggleFlowDirection.bind(this);
+     this.handlePromptAutoFlowToggled = this.handlePromptAutoFlowToggled.bind(this);
+     this.globalFlowTick = this.globalFlowTick.bind(this);
  
      this.geminiApiKey = localStorage.getItem('geminiApiKey');
  
@@ -496,29 +468,6 @@ class PromptDjMidi extends LitElement {
      }
    }
  
-   private handleFlowAmplitudeChange(event: Event) {
-     const inputElement = event.target as HTMLInputElement;
-     this.flowAmplitude = parseInt(inputElement.value, 10);
-     if (this.isSeedFlowing) {
-       this.stopSeedFlow();
-       this.startSeedFlow();
-     }
-   }
-
-   private toggleFlowDirection(direction: 'up' | 'down') {
-     // Basic stub for now, full implementation in next step
-     if (direction === 'up') {
-       this.flowDirectionUp = !this.flowDirectionUp;
-     } else if (direction === 'down') {
-       this.flowDirectionDown = !this.flowDirectionDown;
-     }
-     this.requestUpdate();
-     if (this.isSeedFlowing) {
-       this.stopSeedFlow();
-       this.startSeedFlow();
-     }
-   }
-
    override async firstUpdated() {
      await customElements.whenDefined('toast-message');
    }
@@ -541,7 +490,7 @@ class PromptDjMidi extends LitElement {
              if (e.setupComplete) {
                this.connectionError = false;
                this.apiKeyInvalid = false;
-               this.currentRetryAttempt = 0; // Reset on successful connection setup
+               this.currentRetryAttempt = 0;
              }
              if (e.filteredPrompt) {
                this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
@@ -588,19 +537,15 @@ class PromptDjMidi extends LitElement {
          },
        });
      } catch (error) {
-       // This catch block handles initial connection errors (e.g., invalid API key on first try)
        this.connectionError = true;
        if (error instanceof Error && error.message.toLowerCase().includes('authentication failed')) {
          this.apiKeyInvalid = true;
        }
-       // For initial connection failures, we typically don't auto-retry here as it's often a setup issue.
-       // The user might need to correct something (like API key) and try again manually.
-       this.stop(); // Ensure playback is stopped
+       this.stop();
        if (this.toastMessage && typeof this.toastMessage.show === 'function') {
          this.toastMessage.show('Failed to connect to session. Check your API key and network connection.');
        }
        console.error('Failed to connect to session:', error);
-       // Reset retries for the next explicit user action
        this.currentRetryAttempt = 0;
      }
    }
@@ -610,24 +555,19 @@ class PromptDjMidi extends LitElement {
     this.currentRetryAttempt++;
 
     if (this.currentRetryAttempt <= this.maxRetries) {
-      this.playbackState = 'loading'; // Activate spinner during retry attempts
+      this.playbackState = 'loading';
       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
         this.toastMessage.show(`${messagePrefix}. Attempting to reconnect (attempt ${this.currentRetryAttempt} of ${this.maxRetries})...`);
       }
       setTimeout(() => {
-        // Before retrying, ensure that if an API key was marked invalid by a direct catch,
-        // and the user hasn't changed it, we don't loop on auth errors.
-        // However, connectToSession itself will show the API key input if apiKeyInvalid is true.
         this.connectToSession();
-      }, 2000); // 2-second delay
+      }, 2000);
     } else {
       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
         this.toastMessage.show('Failed to reconnect after multiple attempts. Please check your connection and try playing again.');
       }
-      this.playbackState = 'stopped'; // Or 'paused'
-      this.currentRetryAttempt = 0; // Reset for the next manual attempt
-      // Consider if apiKeyInvalid should be set true here if repeated failures might indicate it.
-      // For now, a general message is shown. The user can try saving the key again if they suspect it.
+      this.playbackState = 'stopped';
+      this.currentRetryAttempt = 0;
     }
   }
  
@@ -690,6 +630,10 @@ class PromptDjMidi extends LitElement {
        return;
      }
  
+     if (prompt.isAutoFlowing) {
+       prompt.isAutoFlowing = false;
+     }
+
      prompt.text = text;
      prompt.weight = weight;
      prompt.cc = cc;
@@ -706,6 +650,79 @@ class PromptDjMidi extends LitElement {
      this.dispatchPromptsChange();
    }
  
+   private globalFlowTick(): void {
+     let changesMade = false;
+
+     if (this.isSeedFlowing) {
+       let currentSeed = this.config.seed;
+       if (currentSeed === null || currentSeed === undefined) {
+         currentSeed = Math.floor(Math.random() * 1000000) + 1;
+       }
+
+       const baseMagnitude = Math.floor(Math.random() * 10) + 1;
+       let seedChange = 0;
+
+       if (this.flowDirectionUp && this.flowDirectionDown) {
+         const direction = Math.random() < 0.5 ? 1 : -1;
+         seedChange = baseMagnitude * direction * this.flowAmplitude;
+       } else if (this.flowDirectionUp) {
+         seedChange = baseMagnitude * this.flowAmplitude;
+       } else if (this.flowDirectionDown) {
+         seedChange = baseMagnitude * -1 * this.flowAmplitude;
+       } else {
+         seedChange = 0;
+       }
+
+       let newSeed = currentSeed + seedChange;
+       const MIN_SEED_VALUE = 1;
+       const MAX_SEED_VALUE = 9999999;
+       newSeed = Math.max(MIN_SEED_VALUE, Math.min(newSeed, MAX_SEED_VALUE));
+
+       if (this.config.seed !== newSeed) {
+         this.config = { ...this.config, seed: newSeed };
+         changesMade = true;
+       }
+     }
+
+     for (const prompt of this.prompts.values()) {
+       if (prompt.isAutoFlowing) {
+         const baseMagnitude = (Math.random() * 0.04) + 0.01;
+         const direction = Math.random() < 0.5 ? 1 : -1;
+         const weightChange = baseMagnitude * direction * (this.flowAmplitude / 10);
+
+         let newWeight = prompt.weight + weightChange;
+         newWeight = Math.max(0, Math.min(newWeight, 2));
+
+         if (prompt.weight !== newWeight) {
+           prompt.weight = newWeight;
+           changesMade = true;
+         }
+       }
+     }
+
+     if (changesMade) {
+       if (this.isSeedFlowing) {
+            this._sendPlaybackParametersToSession();
+       }
+       this.setSessionPrompts();
+       this.requestUpdate();
+     }
+   }
+
+   private startGlobalFlowInterval() {
+     if (this.globalFlowIntervalId) {
+       clearInterval(this.globalFlowIntervalId);
+     }
+     this.globalFlowIntervalId = window.setInterval(this.globalFlowTick, this.flowFrequency);
+   }
+
+   private stopGlobalFlowInterval() {
+     if (this.globalFlowIntervalId) {
+       clearInterval(this.globalFlowIntervalId);
+       this.globalFlowIntervalId = null;
+     }
+   }
+
    private readonly makeBackground = throttle(
      () => {
        const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
@@ -797,19 +814,14 @@ class PromptDjMidi extends LitElement {
    }
  
    private async handleMainAudioButton() {
-    // Reset retry attempts when user manually clicks play/pause
-    // This ensures that a user action starts the retry cycle fresh if needed.
-    // If connectToSession is successful, it will reset currentRetryAttempt to 0 anyway.
-    // If it fails and goes into retries, this reset prevents interference.
      this.currentRetryAttempt = 0;
 
      if (!this.audioReady) {
        this.playbackState = 'loading';
-       await this.connectToSession(); // connectToSession will handle its own retries internally now
-       if (this.connectionError || this.apiKeyInvalid) { // Check status after connectToSession (and its retries) are done
+       await this.connectToSession();
+       if (this.connectionError || this.apiKeyInvalid) {
          this.playbackState = 'stopped';
-         // Toast message is handled by connectToSession or handleConnectionIssue if max retries are hit
-         if (!this.toastMessage.showing) { // Show a generic message if no specific one from retries is up
+         if (!this.toastMessage.showing) {
             this.toastMessage.show('Failed to connect. Please check your API key and connection.');
          }
          return;
@@ -822,8 +834,8 @@ class PromptDjMidi extends LitElement {
        } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
          if (this.connectionError || this.apiKeyInvalid) {
            this.playbackState = 'loading';
-           await this.connectToSession(); // connectToSession will handle its own retries
-           if (this.connectionError || this.apiKeyInvalid) { // Check status after attempts
+           await this.connectToSession();
+           if (this.connectionError || this.apiKeyInvalid) {
              this.playbackState = (this.playbackState === 'loading' || this.playbackState === 'playing') ? 'stopped' : this.playbackState;
              if (!this.toastMessage.showing) {
                 this.toastMessage.show('Failed to reconnect. Please check your connection or API key.');
@@ -831,7 +843,6 @@ class PromptDjMidi extends LitElement {
              return;
            }
          }
-         // If connection is now fine (or was already fine)
          await this.setSessionPrompts();
          this.play();
        } else if (this.playbackState === 'loading') {
@@ -840,6 +851,11 @@ class PromptDjMidi extends LitElement {
      }
    }
  
+   private get isAnyFlowActive(): boolean {
+     const isAnyPromptAutoFlowing = [...this.prompts.values()].some(p => p.isAutoFlowing);
+     return this.isSeedFlowing || isAnyPromptAutoFlowing;
+   }
+
    private get isButtonOn() {
      return this.playbackState === 'playing' || this.playbackState === 'loading';
    }
@@ -854,62 +870,60 @@ class PromptDjMidi extends LitElement {
  
    private toggleSeedFlow() {
      this.isSeedFlowing = !this.isSeedFlowing;
-     if (this.isSeedFlowing) {
-       this.startSeedFlow();
+     if (this.isAnyFlowActive) {
+       this.startGlobalFlowInterval();
      } else {
-       this.stopSeedFlow();
+       this.stopGlobalFlowInterval();
      }
    }
 
    private handleFlowFrequencyChange(event: Event) {
      const inputElement = event.target as HTMLInputElement;
      this.flowFrequency = parseInt(inputElement.value, 10);
-     if (this.isSeedFlowing) {
-       this.stopSeedFlow();
-       this.startSeedFlow();
+     if (this.isAnyFlowActive) {
+       this.stopGlobalFlowInterval();
+       this.startGlobalFlowInterval();
      }
    }
 
-   private startSeedFlow() {
-     if (this.seedFlowInterval) {
-       clearInterval(this.seedFlowInterval);
+   private handleFlowAmplitudeChange(event: Event) {
+     const inputElement = event.target as HTMLInputElement;
+     this.flowAmplitude = parseInt(inputElement.value, 10);
+     if (this.isAnyFlowActive) {
+       this.stopGlobalFlowInterval();
+       this.startGlobalFlowInterval();
      }
-     this.seedFlowInterval = window.setInterval(() => {
-       let currentSeed = this.config.seed;
-       if (currentSeed === null || currentSeed === undefined) {
-         currentSeed = Math.floor(Math.random() * 1000000) + 1;
-       }
+   }
 
-       const baseMagnitude = Math.floor(Math.random() * 10) + 1; // Random int from 1 to 10
-       let seedChange = 0;
+   private toggleFlowDirection(direction: 'up' | 'down') {
+     if (direction === 'up') {
+       this.flowDirectionUp = !this.flowDirectionUp;
+     } else if (direction === 'down') {
+       this.flowDirectionDown = !this.flowDirectionDown;
+     }
+     this.requestUpdate();
+     if (this.isAnyFlowActive) {
+       this.stopGlobalFlowInterval();
+       this.startGlobalFlowInterval();
+     } else {
+       this.stopGlobalFlowInterval();
+     }
+   }
 
-       if (this.flowDirectionUp && this.flowDirectionDown) {
-         const direction = Math.random() < 0.5 ? 1 : -1;
-         seedChange = baseMagnitude * direction * this.flowAmplitude;
-       } else if (this.flowDirectionUp) {
-         seedChange = baseMagnitude * this.flowAmplitude;
-       } else if (this.flowDirectionDown) {
-         seedChange = baseMagnitude * -1 * this.flowAmplitude;
+   private handlePromptAutoFlowToggled(event: CustomEvent<{ promptId: string; isAutoFlowing: boolean }>) {
+     const { promptId, isAutoFlowing: newIsAutoFlowingState } = event.detail;
+     const prompt = this.prompts.get(promptId);
+
+     if (prompt) {
+       prompt.isAutoFlowing = newIsAutoFlowingState;
+       this.prompts.set(promptId, prompt);
+       this.requestUpdate();
+
+       if (this.isAnyFlowActive) {
+         this.startGlobalFlowInterval();
        } else {
-         // Both are false, seedChange remains 0, so seed stays still.
-         seedChange = 0;
+         this.stopGlobalFlowInterval();
        }
-
-       let newSeed = currentSeed + seedChange;
-
-       const MIN_SEED_VALUE = 1;
-       const MAX_SEED_VALUE = 9999999;
-       newSeed = Math.max(MIN_SEED_VALUE, Math.min(newSeed, MAX_SEED_VALUE));
-
-       this.config = { ...this.config, seed: newSeed };
-       this._sendPlaybackParametersToSession();
-     }, this.flowFrequency);
-   }
-
-   private stopSeedFlow() {
-     if (this.seedFlowInterval) {
-       clearInterval(this.seedFlowInterval);
-       this.seedFlowInterval = null;
      }
    }
 
@@ -942,26 +956,20 @@ class PromptDjMidi extends LitElement {
      window.open('https://aistudio.google.com/apikey', '_blank');
    }
     private resetAll() {
-      // Reset config properties
       this.config = { ...PromptDjMidi.INITIAL_CONFIG };
  
-      // Reset auto states
       this.autoDensity = PromptDjMidi.INITIAL_AUTO_STATES.autoDensity;
       this.autoBrightness = PromptDjMidi.INITIAL_AUTO_STATES.autoBrightness;
       this.autoBpm = PromptDjMidi.INITIAL_AUTO_STATES.autoBpm;
  
-      // Reset last defined states
       this.lastDefinedDensity = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedDensity;
       this.lastDefinedBrightness = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBrightness;
       this.lastDefinedBpm = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBpm;
  
-      // Reset prompts
       this.setPrompts(PromptDjMidi.buildDefaultPrompts());
  
-      // Request UI update
-      this.requestUpdate(); // Important to reflect changes in UI
+      this.requestUpdate();
  
-      // Send reset parameters to session
       this._sendPlaybackParametersToSession();
     }
  
@@ -978,7 +986,6 @@ class PromptDjMidi extends LitElement {
             scale: this.config.scale === 'SCALE_UNSPECIFIED' ? undefined : (this.config.scale as Scale),
             temperature: this.config.temperature,
             guidance: this.config.guidance,
-            // Include seed if it's managed and sent this way
             seed: this.config.seed === null ? undefined : this.config.seed,
           }
         });
@@ -992,7 +999,7 @@ class PromptDjMidi extends LitElement {
       if (id === 'muteBass' || id === 'muteDrums' || id === 'onlyBassAndDrums') {
         this.config = { ...this.config, [id]: !this.config[id] };
         this.requestUpdate();
-        this._sendPlaybackParametersToSession(); // Replace previous session call
+        this._sendPlaybackParametersToSession();
       }
     }
  
@@ -1009,22 +1016,21 @@ class PromptDjMidi extends LitElement {
       switch (id) {
         case 'auto-density':
           this.autoDensity = !this.autoDensity;
-          if (!this.autoDensity) { // Switched to Manual
+          if (!this.autoDensity) {
             newDensity = this.lastDefinedDensity;
-          } else { // Switched to Auto
-            newDensity = 0.5; // Default auto value for density (0-1 scale)
+          } else {
+            newDensity = 0.5;
           }
-          // Update config only if it changed to avoid redundant updates if already 0.5
           if (this.config.density !== newDensity) {
             this.config = { ...this.config, density: newDensity };
           }
           break;
         case 'auto-brightness':
           this.autoBrightness = !this.autoBrightness;
-          if (!this.autoBrightness) { // Switched to Manual
+          if (!this.autoBrightness) {
             newBrightness = this.lastDefinedBrightness;
-          } else { // Switched to Auto
-            newBrightness = 0.5; // Default auto value for brightness (0-1 scale)
+          } else {
+            newBrightness = 0.5;
           }
           if (this.config.brightness !== newBrightness) {
             this.config = { ...this.config, brightness: newBrightness };
@@ -1032,12 +1038,9 @@ class PromptDjMidi extends LitElement {
           break;
         case 'auto-bpm':
           this.autoBpm = !this.autoBpm;
-          if (!this.autoBpm) { // Switched to Manual
+          if (!this.autoBpm) {
             newBpm = this.lastDefinedBpm;
-          } else { // Switched to Auto
-            // For BPM, null is used to signify auto to the backend in updatePlaybackParameters.
-            // Or, if a default BPM is preferred for config, set it here (e.g., 120).
-            // Let's use null in config as well for consistency with what might be sent.
+          } else {
             newBpm = null;
           }
           if (this.config.bpm !== newBpm) {
@@ -1047,7 +1050,7 @@ class PromptDjMidi extends LitElement {
         case 'auto-temperature':
           this.autoTemperature = !this.autoTemperature;
           if (this.autoTemperature) {
-            newTemperature = 1.1; // Default auto value
+            newTemperature = 1.1;
           } else {
             newTemperature = this.lastDefinedTemperature;
           }
@@ -1058,7 +1061,7 @@ class PromptDjMidi extends LitElement {
         case 'auto-topK':
           this.autoTopK = !this.autoTopK;
           if (this.autoTopK) {
-            newTopK = 40; // Default auto value
+            newTopK = 40;
           } else {
             newTopK = this.lastDefinedTopK;
           }
@@ -1069,7 +1072,7 @@ class PromptDjMidi extends LitElement {
         case 'auto-guidance':
           this.autoGuidance = !this.autoGuidance;
           if (this.autoGuidance) {
-            newGuidance = 4.0; // Default auto value
+            newGuidance = 4.0;
           } else {
             newGuidance = this.lastDefinedGuidance;
           }
@@ -1079,7 +1082,7 @@ class PromptDjMidi extends LitElement {
           break;
       }
       this.requestUpdate();
-      this._sendPlaybackParametersToSession(); // Replace previous session call
+      this._sendPlaybackParametersToSession();
     }
  
     private handleInputChange(event: Event) {
@@ -1088,7 +1091,7 @@ class PromptDjMidi extends LitElement {
  
      if (id === 'seed' && this.isSeedFlowing) {
        this.isSeedFlowing = false;
-       this.stopSeedFlow();
+       this.stopGlobalFlowInterval(); // Use global stop
      }
 
      if (target instanceof HTMLInputElement && target.type === 'checkbox') {
@@ -1104,13 +1107,13 @@ class PromptDjMidi extends LitElement {
        }
      } else if (target.tagName === 'WEIGHT-KNOB') {
         const knob = target as WeightKnob;
-        const knobValue = knob.value; // This is the 0-2 value
+        const knobValue = knob.value;
         if (id === 'density') {
-            this.lastDefinedDensity = knobValue / 2; // 0-1 scale
+            this.lastDefinedDensity = knobValue / 2;
             this.autoDensity = false;
             this.config = { ...this.config, density: this.lastDefinedDensity };
         } else if (id === 'brightness') {
-            this.lastDefinedBrightness = knobValue / 2; // 0-1 scale
+            this.lastDefinedBrightness = knobValue / 2;
             this.autoBrightness = false;
             this.config = { ...this.config, brightness: this.lastDefinedBrightness };
         } else if (id === 'bpm') {
@@ -1123,39 +1126,37 @@ class PromptDjMidi extends LitElement {
         } else if (id === 'temperature') {
             const minTemp = 0;
             const maxTemp = 3;
-            const newTemp = parseFloat(((knobValue / 2) * (maxTemp - minTemp) + minTemp).toFixed(1)); // Keep one decimal
-            this.lastDefinedTemperature = newTemp; // Store last defined value
-            this.autoTemperature = false; // Turn off auto mode
+            const newTemp = parseFloat(((knobValue / 2) * (maxTemp - minTemp) + minTemp).toFixed(1));
+            this.lastDefinedTemperature = newTemp;
+            this.autoTemperature = false;
             this.config = { ...this.config, temperature: newTemp };
         } else if (id === 'topK') {
             const minTopK = 1;
             const maxTopK = 100;
             const newTopK = Math.round((knobValue / 2) * (maxTopK - minTopK) + minTopK);
-            this.lastDefinedTopK = newTopK; // Store last defined value
-            this.autoTopK = false; // Turn off auto mode
+            this.lastDefinedTopK = newTopK;
+            this.autoTopK = false;
             this.config = { ...this.config, topK: newTopK };
         } else if (id === 'guidance') {
             const minGuidance = 0;
             const maxGuidance = 6;
-            const newGuidance = parseFloat(((knobValue / 2) * (maxGuidance - minGuidance) + minGuidance).toFixed(1)); // Keep one decimal
-            this.lastDefinedGuidance = newGuidance; // Store last defined value
-            this.autoGuidance = false; // Turn off auto mode
+            const newGuidance = parseFloat(((knobValue / 2) * (maxGuidance - minGuidance) + minGuidance).toFixed(1));
+            this.lastDefinedGuidance = newGuidance;
+            this.autoGuidance = false;
             this.config = { ...this.config, guidance: newGuidance };
         }
-        this._sendPlaybackParametersToSession(); // Add this call
+        this._sendPlaybackParametersToSession();
      } else if (target instanceof HTMLInputElement && target.type === 'number') {
         const value = (target as HTMLInputElement).value;
         this.config = { ...this.config, [id]: value === '' ? null : parseFloat(value) };
-        this._sendPlaybackParametersToSession(); // Also call for direct number inputs like seed
-     } else if (event instanceof CustomEvent && event.detail !== undefined) { // For DJStyleSelector
+        this._sendPlaybackParametersToSession();
+     } else if (event instanceof CustomEvent && event.detail !== undefined) {
         const value = event.detail;
         this.config = { ...this.config, [id]: value };
-        this._sendPlaybackParametersToSession(); // Also call for DJStyleSelector (scale)
-     } else { // For standard HTMLSelectElement
+        this._sendPlaybackParametersToSession();
+     } else {
         const value = (target as HTMLSelectElement).value;
         this.config = { ...this.config, [id]: value };
-        // Note: This branch is not currently used by any standard select, but if it were,
-        // it would also need: this._sendPlaybackParametersToSession();
      }
      this.requestUpdate();
    }
@@ -1220,9 +1221,9 @@ class PromptDjMidi extends LitElement {
                   .value=${cfg.seed ?? ''}
                   @input=${this.handleInputChange}
                   placeholder="Auto"
-                  .disabled=${this.isSeedFlowing} />
+                  .disabled=${this.isSeedFlowing && !this.isAnyFlowActive} />
               <button @click=${this.toggleSeedFlow} class=${this.isSeedFlowing ? 'active' : ''}>Flow</button>
-              ${this.isSeedFlowing ? html`
+              ${this.isAnyFlowActive ? html`
                 <label for="flowFrequency">Frequency</label>
                 <input
                   type="number"
@@ -1428,7 +1429,9 @@ ${this.renderPrompts()}
          .midiDispatcher=${this.midiDispatcher}
          .showCC=${this.showMidi}
          audioLevel=${this.audioLevel}
-         @prompt-changed=${this.handlePromptChanged}>
+         .isAutoFlowing=${prompt.isAutoFlowing}
+         @prompt-changed=${this.handlePromptChanged}
+         @prompt-autoflow-toggled=${this.handlePromptAutoFlowToggled}>
        </prompt-controller>`;
      })}
    </div>`;
@@ -1442,6 +1445,9 @@ ${this.renderPrompts()}
         try {
           const prompts = JSON.parse(storedPrompts) as Prompt[];
           console.log('Loading stored prompts', prompts);
+          prompts.forEach(p => {
+            if (p.isAutoFlowing === undefined) p.isAutoFlowing = false;
+          });
           return new Map(prompts.map((prompt) => [prompt.promptId, prompt]));
         } catch (e) {
           console.error('Failed to parse stored prompts', e);
@@ -1470,6 +1476,7 @@ ${this.renderPrompts()}
           weight: startOn.includes(prompt) ? 1 : 0,
           cc: i,
           color,
+          isAutoFlowing: false,
         });
       }
  

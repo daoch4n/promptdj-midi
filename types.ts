@@ -8,6 +8,7 @@ export interface Prompt {
   weight: number;
   cc: number;
   color: string;
+  isAutoFlowing?: boolean;
 }
 
 export interface ControlChange {
