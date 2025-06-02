@@ -90,6 +90,39 @@ export class PromptController extends LitElement {
         width: 60%;
       }
     }
+
+    .auto-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 0.75vmin;
+    }
+    .auto-button {
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+      background: #0002;
+      border: 1.5px solid #fff;
+      border-radius: 4px;
+      user-select: none;
+      padding: 3px 6px;
+    }
+    .auto-button.active {
+      background-color: #fff;
+      color: #000;
+    }
+    .auto-value-display {
+      font-family: 'DS-Digital', cursive;
+      font-size: 1.5vmin;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 2px 5px;
+      border-radius: 0.25vmin;
+      margin-top: 0.5vmin;
+      min-width: 3ch;
+      text-align: center;
+    }
   `;
 
   @property({ type: String }) promptId = '';
@@ -110,6 +143,7 @@ export class PromptController extends LitElement {
   midiDispatcher: MidiDispatcher | null = null;
 
   @property({ type: Number }) audioLevel = 0;
+  @property({ type: Boolean }) isAutoFlowing = false;
 
   @state() private isFocused = false; // New state to track focus
 
@@ -215,6 +249,19 @@ private toggleLearnMode() {
 this.learnMode = !this.learnMode;
 }
 
+private toggleAutoFlow() {
+  this.dispatchEvent(
+    new CustomEvent('prompt-autoflow-toggled', {
+      detail: {
+        promptId: this.promptId,
+        isAutoFlowing: !this.isAutoFlowing,
+      },
+      bubbles: true, // Important for event to reach PromptDjMidi
+      composed: true, // Important for event to cross shadow DOM boundary
+    })
+  );
+}
+
   override render() {
     const classes = classMap({
       'prompt': true,
@@ -236,6 +283,15 @@ this.learnMode = !this.learnMode;
         @keydown=${this.handleKeyDown}></span>
       <div id="midi" @click=${this.toggleLearnMode}>
         ${this.learnMode ? 'Learn' : `CC:${this.cc}`}
+      </div>
+      <div class="auto-controls">
+        <button
+          id="autoButton"
+          class="auto-button ${this.isAutoFlowing ? 'active' : ''}"
+          @click=${this.toggleAutoFlow}>Auto</button>
+        <div id="autoValueDisplay" class="auto-value-display">
+          ${this.weight.toFixed(2)}
+        </div>
       </div>
     </div>`;
   }
