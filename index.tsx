@@ -308,7 +308,13 @@ class PromptDjMidi extends LitElement {
         width: 18vmin; /* Approximately matches prompt input width */
     }
     #buttons input[type="number"] {
+        /* General width for number inputs in the top bar */
         width: 18vmin;
+    }
+
+    #buttons .seed-controls input#seed {
+        /* Specific width for the main seed input */
+        width: 10vmin;
     }
 
     /* Styles for Flow button and Flow Speed input */
