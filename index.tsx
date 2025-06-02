@@ -82,13 +82,34 @@ class PromptDjMidi extends LitElement {
 
   static override styles = css`
     @keyframes rgb-glow {
-      0% { box-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000; } /* Red */
-      17% { box-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff; } /* Magenta */
-      33% { box-shadow: 0 0 5px #0000ff, 0 0 10px #0000ff; } /* Blue */
-      50% { box-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff; } /* Cyan */
-      67% { box-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00; } /* Green */
-      83% { box-shadow: 0 0 5px #ffff00, 0 0 10px #ffff00; } /* Yellow */
-      100% { box-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000; } /* Red */
+      0% {
+        box-shadow: 0 0 7px #ff0000, 0 0 12px #ff0000;
+        background-color: #4d0000; /* Darker Red */
+      }
+      17% {
+        box-shadow: 0 0 7px #ff00ff, 0 0 12px #ff00ff;
+        background-color: #4d004d; /* Darker Magenta */
+      }
+      33% {
+        box-shadow: 0 0 7px #0000ff, 0 0 12px #0000ff;
+        background-color: #00004d; /* Darker Blue */
+      }
+      50% {
+        box-shadow: 0 0 7px #00ffff, 0 0 12px #00ffff;
+        background-color: #004d4d; /* Darker Cyan */
+      }
+      67% {
+        box-shadow: 0 0 7px #00ff00, 0 0 12px #00ff00;
+        background-color: #004d00; /* Darker Green */
+      }
+      83% {
+        box-shadow: 0 0 7px #ffff00, 0 0 12px #ffff00;
+        background-color: #4d4d00; /* Darker Yellow */
+      }
+      100% {
+        box-shadow: 0 0 7px #ff0000, 0 0 12px #ff0000;
+        background-color: #4d0000; /* Darker Red */
+      }
     }
     :host {
       height: 100%;
@@ -185,12 +206,22 @@ class PromptDjMidi extends LitElement {
     }
 
     .advanced-settings-panel .setting .option-button[id^="auto-"].selected {
-      /* Keep background and border for consistency, or define different ones if needed */
-      background-color: #0069d9;
-      border-color: #0056b3;
-      color: #fff;
-      font-weight: bold;
+      color: #fff; /* Keep text color */
+      font-weight: bold; /* Keep font weight */
       animation: rgb-glow 40s linear infinite; /* Apply the RGB glow animation */
+      border: 1px solid transparent; /* Add a transparent border to maintain size and prevent shifting, adjust as needed */
+    }
+
+    dj-style-selector#scale .option.selected[style*="--glow-color: #888888"] {
+      /* Remove static background and shadow to allow animation to take over */
+      background-color: transparent !important; /* Important to override inline style from component if necessary */
+      box-shadow: none !important; /* Important to override inline style from component if necessary */
+
+      color: #fff; /* Keep text color */
+      font-weight: bold; /* Keep font weight */
+      text-shadow: 0px 0px 4px rgba(0,0,0,0.7), 0px 0px 1px rgba(0,0,0,0.9); /* Keep text shadow for readability */
+      animation: rgb-glow 40s linear infinite; /* Apply the RGB glow animation */
+      border: 1px solid transparent; /* Maintain layout consistency */
     }
 
     /* Add these rules within the static styles */
