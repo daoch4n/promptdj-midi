@@ -34,11 +34,15 @@ export class DJStyleSelector extends LitElement {
       box-shadow: 0 0 4px -1px var(--glow-color, #007bff);
     }
     .option.selected {
-      background-color: var(--glow-color, #007bff); /* Use variable for inner color */
-      box-shadow: 0 0 7px var(--glow-color, #007bff); /* Subtle outer glow */
+      /* Common styles for all selected options, including .auto-scale-selected */
       color: #fff;
       font-weight: bold;
       text-shadow: 0px 0px 4px rgba(0,0,0,0.7), 0px 0px 1px rgba(0,0,0,0.9);
+    }
+    .option.selected:not(.auto-scale-selected) {
+      /* Styles specific to selected options that are NOT .auto-scale-selected */
+      background-color: var(--glow-color, #007bff);
+      box-shadow: 0 0 7px var(--glow-color, #007bff);
     }
   `;
 
