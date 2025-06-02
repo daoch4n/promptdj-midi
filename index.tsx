@@ -81,6 +81,36 @@ class PromptDjMidi extends LitElement {
   };
 
   static override styles = css`
+    @keyframes rgb-glow {
+      0% {
+        box-shadow: 0 0 4px #ff0000, 0 0 8px #ff0000;
+        background-color: #4d0000; /* Darker Red */
+      }
+      17% {
+        box-shadow: 0 0 4px #ff00ff, 0 0 8px #ff00ff;
+        background-color: #4d004d; /* Darker Magenta */
+      }
+      33% {
+        box-shadow: 0 0 4px #0000ff, 0 0 8px #0000ff;
+        background-color: #00004d; /* Darker Blue */
+      }
+      50% {
+        box-shadow: 0 0 4px #00ffff, 0 0 8px #00ffff;
+        background-color: #004d4d; /* Darker Cyan */
+      }
+      67% {
+        box-shadow: 0 0 4px #00ff00, 0 0 8px #00ff00;
+        background-color: #004d00; /* Darker Green */
+      }
+      83% {
+        box-shadow: 0 0 4px #ffff00, 0 0 8px #ffff00;
+        background-color: #4d4d00; /* Darker Yellow */
+      }
+      100% {
+        box-shadow: 0 0 4px #ff0000, 0 0 8px #ff0000;
+        background-color: #4d0000; /* Darker Red */
+      }
+    }
     :host {
       height: 100%;
       display: flex;
@@ -169,10 +199,26 @@ class PromptDjMidi extends LitElement {
     }
     .advanced-settings-panel .setting .option-button.selected {
       background-color: #0069d9; /* Active blue background */
-      box-shadow: 0 0 8px #007bff; /* Brighter blue glow */
+      /* box-shadow: 0 0 8px #007bff; */ /* Removed to avoid conflict with specific auto button glow */
       border-color: #0056b3; /* Optional: to match the blue theme */
       color: #fff;
       font-weight: bold;
+    }
+
+    .advanced-settings-panel .setting .option-button[id^="auto-"].selected {
+      color: #fff; /* Keep text color */
+      font-weight: bold; /* Keep font weight */
+      animation: rgb-glow 40s linear infinite; /* Apply the RGB glow animation */
+      border: 1px solid transparent; /* Add a transparent border to maintain size and prevent shifting, adjust as needed */
+    }
+
+    dj-style-selector#scale .option.auto-scale-selected {
+      color: #fff; /* Ensure text color stays white */
+      font-weight: bold; /* Keep font weight */
+      text-shadow: 0px 0px 4px rgba(0,0,0,0.7), 0px 0px 1px rgba(0,0,0,0.9); /* Preserve text shadow for readability */
+      border: 1px solid transparent; /* Maintain layout consistency */
+      animation: rgb-glow 40s linear infinite; /* Apply the RGB glow animation */
+      /* No need for !important on background-color or box-shadow if component isn't setting them for this specific class */
     }
 
     /* Add these rules within the static styles */
@@ -645,7 +691,7 @@ class PromptDjMidi extends LitElement {
        if (this.connectionError || this.apiKeyInvalid) { // Check status after connectToSession (and its retries) are done
          this.playbackState = 'stopped';
          // Toast message is handled by connectToSession or handleConnectionIssue if max retries are hit
-         if (!this.toastMessage.active) { // Show a generic message if no specific one from retries is up
+         if (!this.toastMessage.showing) { // Show a generic message if no specific one from retries is up
             this.toastMessage.show('Failed to connect. Please check your API key and connection.');
          }
          return;
@@ -661,7 +707,7 @@ class PromptDjMidi extends LitElement {
            await this.connectToSession(); // connectToSession will handle its own retries
            if (this.connectionError || this.apiKeyInvalid) { // Check status after attempts
              this.playbackState = (this.playbackState === 'loading' || this.playbackState === 'playing') ? 'stopped' : this.playbackState;
-             if (!this.toastMessage.active) {
+             if (!this.toastMessage.showing) {
                 this.toastMessage.show('Failed to reconnect. Please check your connection or API key.');
              }
              return;
