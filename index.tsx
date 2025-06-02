@@ -491,7 +491,11 @@ class PromptDjMidi extends LitElement {
  
    private async connectToSession() {
      if (!this.geminiApiKey) {
-       this.toastMessage.show('Please enter your Gemini API key to connect to the session.');
+      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+        this.toastMessage.show('Please enter your Gemini API key to connect to the session.');
+      } else {
+        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Please enter your Gemini API key to connect to the session.');
+      }
        return;
      }
  
@@ -511,16 +515,22 @@ class PromptDjMidi extends LitElement {
              }
              if (e.filteredPrompt) {
                this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
-               if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-                 this.toastMessage.show(e.filteredPrompt.filteredReason as string);
-               }
+              if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+                this.toastMessage.show(e.filteredPrompt.filteredReason as string);
+              } else if (this.toastMessage) {
+                console.warn('toastMessage.show() is not a function. Message:', e.filteredPrompt.filteredReason as string);
+              } else {
+                console.warn('toastMessage is null. Message:', e.filteredPrompt.filteredReason as string);
+              }
              }
              if (e.serverContent?.audioChunks !== undefined) {
                if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
                if (!this.audioContext || !this.outputNode) {
-                 if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-                   this.toastMessage.show('Audio context not initialized. Please refresh.');
-                 }
+                if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+                  this.toastMessage.show('Audio context not initialized. Please refresh.');
+                } else {
+                  console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Audio context not initialized. Please refresh.');
+                }
                  console.error('AudioContext or outputNode not initialized.');
                  return;
                }
@@ -559,9 +569,11 @@ class PromptDjMidi extends LitElement {
          this.apiKeyInvalid = true;
        }
        this.stop(); 
-       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-         this.toastMessage.show('Failed to connect to session. Check your API key and network connection.');
-       }
+      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+        this.toastMessage.show('Failed to connect to session. Check your API key and network connection.');
+      } else {
+        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Failed to connect to session. Check your API key and network connection.');
+      }
        console.error('Failed to connect to session:', error);
        this.currentRetryAttempt = 0;
      }
@@ -572,19 +584,23 @@ class PromptDjMidi extends LitElement {
     this.currentRetryAttempt++;
 
     if (this.currentRetryAttempt <= this.maxRetries) {
-      this.playbackState = 'loading'; 
+      this.playbackState = 'loading';
       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
         this.toastMessage.show(`${messagePrefix}. Attempting to reconnect (attempt ${this.currentRetryAttempt} of ${this.maxRetries})...`);
+      } else {
+        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', `${messagePrefix}. Attempting to reconnect (attempt ${this.currentRetryAttempt} of ${this.maxRetries})...`);
       }
       setTimeout(() => {
         this.connectToSession();
-      }, 2000); 
+      }, 2000);
     } else {
       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
         this.toastMessage.show('Failed to reconnect after multiple attempts. Please check your connection and try playing again.');
+      } else {
+        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Failed to reconnect after multiple attempts. Please check your connection and try playing again.');
       }
-      this.playbackState = 'stopped'; 
-      this.currentRetryAttempt = 0; 
+      this.playbackState = 'stopped';
+      this.currentRetryAttempt = 0;
     }
   }
  
@@ -598,9 +614,11 @@ class PromptDjMidi extends LitElement {
    private setSessionPrompts = throttle(async () => {
      const promptsToSend = this.getPromptsToSend();
      if (promptsToSend.length === 0) {
-       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-         this.toastMessage.show('There needs to be one active prompt to play.')
-       }
+      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+        this.toastMessage.show('There needs to be one active prompt to play.');
+      } else {
+        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'There needs to be one active prompt to play.');
+      }
        this.pause();
        return;
      }
@@ -612,13 +630,17 @@ class PromptDjMidi extends LitElement {
        }
      } catch (e: unknown) {
        if (e instanceof Error) {
-         if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-           this.toastMessage.show(e.message)
-         }
+        if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+          this.toastMessage.show(e.message);
+        } else {
+          console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', e.message);
+        }
        } else {
-         if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-           this.toastMessage.show('An unknown error occurred.')
-         }
+        if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+          this.toastMessage.show('An unknown error occurred.');
+        } else {
+          console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'An unknown error occurred.');
+        }
        }
        this.pause();
      }
@@ -750,9 +772,11 @@ class PromptDjMidi extends LitElement {
        combinedFactor >= combinedFactorThreshold
      ) {
        console.warn('DSP Overload detected! Resetting all parameters.');
-       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-         this.toastMessage.show('Critical DSP Overload! Resetting parameters.', 'error');
-       }
+      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+        this.toastMessage.show('Critical DSP Overload! Resetting parameters.', 'error');
+      } else {
+        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Critical DSP Overload! Resetting parameters.');
+      }
        this.resetAll();
      }
    }
@@ -926,12 +950,14 @@ class PromptDjMidi extends LitElement {
 
      if (!this.audioReady) {
        this.playbackState = 'loading';
-       await this.connectToSession(); 
-       if (this.connectionError || this.apiKeyInvalid) { 
+       await this.connectToSession();
+       if (this.connectionError || this.apiKeyInvalid) {
          this.playbackState = 'stopped';
-         if (!this.toastMessage.showing) { 
-            this.toastMessage.show('Failed to connect. Please check your API key and connection.');
-         }
+        if (this.toastMessage && typeof this.toastMessage.show === 'function' && !this.toastMessage.showing) {
+          this.toastMessage.show('Failed to connect. Please check your API key and connection.');
+        } else if (!this.toastMessage || typeof this.toastMessage.show !== 'function') {
+          console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Failed to connect. Please check your API key and connection.');
+        }
          return;
        }
        await this.setSessionPrompts();
@@ -942,12 +968,14 @@ class PromptDjMidi extends LitElement {
        } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
          if (this.connectionError || this.apiKeyInvalid) {
            this.playbackState = 'loading';
-           await this.connectToSession(); 
-           if (this.connectionError || this.apiKeyInvalid) { 
+           await this.connectToSession();
+           if (this.connectionError || this.apiKeyInvalid) {
              this.playbackState = (this.playbackState === 'loading' || this.playbackState === 'playing') ? 'stopped' : this.playbackState;
-             if (!this.toastMessage.showing) {
-                this.toastMessage.show('Failed to reconnect. Please check your connection or API key.');
-             }
+            if (this.toastMessage && typeof this.toastMessage.show === 'function' && !this.toastMessage.showing) {
+              this.toastMessage.show('Failed to reconnect. Please check your connection or API key.');
+            } else if (!this.toastMessage || typeof this.toastMessage.show !== 'function') {
+              console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Failed to reconnect. Please check your connection or API key.');
+            }
              return;
            }
          }
@@ -1047,10 +1075,18 @@ class PromptDjMidi extends LitElement {
       localStorage.setItem('geminiApiKey', this.geminiApiKey);
       this.apiKeyInvalid = false;
       this.connectionError = false;
-      this.toastMessage.show('Gemini API key saved to local storage.');
+      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+        this.toastMessage.show('Gemini API key saved to local storage.');
+      } else {
+        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Gemini API key saved to local storage.');
+      }
     } else {
       localStorage.removeItem('geminiApiKey');
-      this.toastMessage.show('Gemini API key removed from local storage.');
+      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
+        this.toastMessage.show('Gemini API key removed from local storage.');
+      } else {
+        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Gemini API key removed from local storage.');
+      }
     }
     this.handleMainAudioButton();
    }
