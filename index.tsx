@@ -1580,6 +1580,24 @@ class PromptDjMidi extends LitElement {
       // this.clipboardError = 'Failed to paste from clipboard. Permission might be denied.';
     }
   }
+
+  private async handleSaveApiKeyClick() {
+    if (!this.geminiApiKey) {
+      this.setTransientApiKeyStatus("No API Key to save");
+      return;
+    }
+
+    if (!this.isValidApiKeyFormat(this.geminiApiKey)) {
+      this.setTransientApiKeyStatus("Invalid API Key format. Cannot save.");
+      this.apiKeyInvalid = true;
+      this.apiKeySavedSuccessfully = false;
+      this.requestUpdate();
+      return;
+    }
+
+    await this.saveApiKeyToLocalStorage();
+    this.requestUpdate();
+  }
  
    private getApiKey() {
      window.open('https://aistudio.google.com/apikey', '_blank');
@@ -1928,6 +1946,7 @@ class PromptDjMidi extends LitElement {
                 @input=${this.handleApiKeyInputChange}
               />
               <button @click=${this.handlePasteApiKeyClick}>Paste API key</button>
+              <button @click=${this.handleSaveApiKeyClick}>Save API Key</button>
             </div>
           ` : !this.apiKeySavedSuccessfully && this.geminiApiKey === null ? html`<span style="color: yellow; margin-left: 5px;">API Key Cleared</span>` : ''}
           <!-- Message when API key is loaded but not yet saved, or if saving failed -->
