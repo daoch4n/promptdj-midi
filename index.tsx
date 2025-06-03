@@ -441,6 +441,7 @@ class PromptDjMidi extends LitElement {
    @state() private lastDefinedTopK = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTopK;
    @state() private lastDefinedGuidance = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedGuidance;
 
+  @state() private apiKeySavedSuccessfully = false;
   @state() private promptWeightedAverage = 0;
   @state() private knobAverageExtremeness = 0;
 
@@ -490,6 +491,7 @@ class PromptDjMidi extends LitElement {
      if (this.geminiApiKey) {
        this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
      }
+     this.checkApiKeyStatus();
    }
  
    override async firstUpdated() {
@@ -1040,21 +1042,97 @@ class PromptDjMidi extends LitElement {
  
    private async saveApiKeyToLocalStorage() {
     await this.updateComplete;
-    if (typeof localStorage !== 'undefined') {
-      if (this.geminiApiKey) {
+    const MAX_RETRIES = 3;
+    const INITIAL_BACKOFF_DELAY = 1000; // 1 second
+
+    if (typeof localStorage === 'undefined') {
+      console.warn('localStorage is not available. Cannot save or remove Gemini API key from localStorage.');
+      this.apiKeyInvalid = true; // Or some other state to indicate failure
+      this.connectionError = true; // Or some other state to indicate failure
+      this.handleMainAudioButton();
+      return;
+    }
+
+    if (!this.geminiApiKey) {
+      try {
+        localStorage.removeItem('geminiApiKey');
+        console.log('Gemini API key removed from local storage.');
+        this.apiKeyInvalid = false;
+        this.connectionError = false;
+      } catch (error) {
+        // This case is less likely for removeItem, but good to be aware
+        console.error('Error removing API key from local storage:', error);
+        // Optionally set states to indicate this specific type of error
+      }
+      this.handleMainAudioButton();
+      return;
+    }
+
+    let retries = 0;
+    let success = false;
+    while (retries < MAX_RETRIES && !success) {
+      try {
         localStorage.setItem('geminiApiKey', this.geminiApiKey);
         this.apiKeyInvalid = false;
         this.connectionError = false;
-        console.log('Gemini API key saved to local storage.');
-      } else {
-        localStorage.removeItem('geminiApiKey');
-        console.log('Gemini API key removed from local storage.');
+        console.log(`Gemini API key saved to local storage (attempt ${retries + 1}).`);
+        success = true;
+      } catch (error) {
+        retries++;
+        const delay = INITIAL_BACKOFF_DELAY * Math.pow(2, retries - 1);
+        console.warn(`Attempt ${retries} to save API key failed. Retrying in ${delay}ms...`, error);
+        if (retries < MAX_RETRIES) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
-    } else {
-      console.warn('localStorage is not available. Cannot save or remove Gemini API key from localStorage.');
     }
+
+    if (!success) {
+      console.error(`Failed to save API key after ${MAX_RETRIES} attempts.`);
+      this.apiKeyInvalid = true;
+      this.connectionError = true; // Or a more specific error state
+    }
+    // Call handleMainAudioButton first, then check status,
+    // as checkApiKeyStatus might influence UI related to the button's action.
     this.handleMainAudioButton();
+    this.checkApiKeyStatus();
    }
+
+  private checkApiKeyStatus() {
+    if (typeof localStorage === 'undefined') {
+      console.warn('localStorage is not available. Cannot verify API key status.');
+      this.apiKeySavedSuccessfully = false;
+      return;
+    }
+    try {
+      const storedApiKey = localStorage.getItem('geminiApiKey');
+      if (storedApiKey && this.geminiApiKey && storedApiKey === this.geminiApiKey) {
+        this.apiKeySavedSuccessfully = true;
+        console.log('API key is verified and saved correctly in localStorage.');
+      } else if (storedApiKey && !this.geminiApiKey) {
+        // This case implies the key was previously saved, but now the input is cleared.
+        // Depending on desired behavior, this might still be 'false' or a different state.
+        // For now, if a key is in storage but not in the component's current state, consider it not "successfully saved" in current context.
+        this.apiKeySavedSuccessfully = false;
+        console.log('API key found in localStorage, but not active in component. Consider re-saving if needed.');
+      } else if (!storedApiKey && this.geminiApiKey) {
+        // Key in component but not in storage - implies it needs to be saved.
+        this.apiKeySavedSuccessfully = false;
+        console.log('API key present in component but not in localStorage. Needs saving.');
+      }
+      else if (!storedApiKey) {
+        this.apiKeySavedSuccessfully = false;
+        console.log('No API key found in local storage.');
+      } else {
+        // Mismatch or other conditions
+        this.apiKeySavedSuccessfully = false;
+        console.warn('API key verification failed. Stored key does not match active key, or key needs saving.');
+      }
+    } catch (error) {
+      console.error('Error checking API key status from localStorage:', error);
+      this.apiKeySavedSuccessfully = false;
+    }
+  }
 
   private togglePresetControlsVisibility() {
     this.showPresetControls = !this.showPresetControls;
@@ -1669,8 +1747,18 @@ class PromptDjMidi extends LitElement {
                 @input=${this.handleApiKeyInputChange}
               />
               <button @click=${this.saveApiKeyToLocalStorage}>Save</button>
+              ${this.apiKeySavedSuccessfully ? html`<span style="color: lightgreen; margin-left: 5px;">API Key Saved</span>` : this.geminiApiKey ? html`<span style="color: orange; margin-left: 5px;">Unsaved Key</span>` : ''}
             </div>
+          ` : !this.apiKeySavedSuccessfully && this.geminiApiKey === null ? html`<span style="color: yellow; margin-left: 5px;">API Key Cleared</span>` : this.apiKeySavedSuccessfully ? html`<span style="color: lightgreen; margin-left: 5px;">API Key Verified</span>` : ''}
+          <!-- Message when API key is loaded but not yet saved, or if saving failed -->
+          ${!this.apiKeyInvalid && !this.apiKeySavedSuccessfully && this.geminiApiKey ? html`
+            <span style="color: orange; margin-left: 10px;">API Key entered but not saved. Click Save.</span>
           ` : ''}
+          <!-- Message when API key is invalid after attempting to connect -->
+          ${this.apiKeyInvalid ? html`
+            <span style="color: red; margin-left: 10px;">API Key is invalid or authentication failed.</span>
+          ` : ''}
+
 
           <!-- Preset Controls -->
           ${this.showPresetControls ? html`
