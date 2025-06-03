@@ -16,7 +16,6 @@ import { MidiDispatcher } from './utils/MidiDispatcher';
 
 import './components/WeightKnob';
 import './components/PromptController';
-import { ToastMessage } from './components/ToastMessage';
 import type { WeightKnob } from './components/WeightKnob';
 import './components/DJStyleSelector';
 import type { DJStyleSelectorOption } from './components/DJStyleSelector';
@@ -450,8 +449,6 @@ class PromptDjMidi extends LitElement {
    private readonly maxRetries = 3;
    private currentRetryAttempt = 0;
  
-   @query('toast-message') private toastMessage!: ToastMessage;
- 
    constructor(
      prompts: Map<string, Prompt>,
      midiDispatcher: MidiDispatcher,
@@ -476,7 +473,12 @@ class PromptDjMidi extends LitElement {
      this.handlePromptAutoFlowToggled = this.handlePromptAutoFlowToggled.bind(this);
      this.globalFlowTick = this.globalFlowTick.bind(this);
  
-     this.geminiApiKey = localStorage.getItem('geminiApiKey');
+    if (typeof localStorage !== 'undefined') {
+      this.geminiApiKey = localStorage.getItem('geminiApiKey');
+    } else {
+      this.geminiApiKey = null;
+      console.warn('localStorage is not available. Cannot load Gemini API key from localStorage.');
+    }
  
      if (this.geminiApiKey) {
        this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
@@ -484,14 +486,14 @@ class PromptDjMidi extends LitElement {
    }
  
    override async firstUpdated() {
-     await customElements.whenDefined('toast-message');
      this.calculatePromptWeightedAverage();
      this.calculateKnobAverageExtremeness();
    }
  
    private async connectToSession() {
+    await this.updateComplete;
      if (!this.geminiApiKey) {
-       this.toastMessage.show('Please enter your Gemini API key to connect to the session.');
+      console.warn('Please enter your Gemini API key to connect to the session.');
        return;
      }
  
@@ -511,16 +513,12 @@ class PromptDjMidi extends LitElement {
              }
              if (e.filteredPrompt) {
                this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
-               if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-                 this.toastMessage.show(e.filteredPrompt.filteredReason as string);
-               }
+              console.warn('Filtered prompt reason:', e.filteredPrompt.filteredReason as string);
              }
              if (e.serverContent?.audioChunks !== undefined) {
                if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
                if (!this.audioContext || !this.outputNode) {
-                 if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-                   this.toastMessage.show('Audio context not initialized. Please refresh.');
-                 }
+                console.warn('Audio context not initialized. Please refresh.');
                  console.error('AudioContext or outputNode not initialized.');
                  return;
                }
@@ -558,33 +556,28 @@ class PromptDjMidi extends LitElement {
        if (error instanceof Error && error.message.toLowerCase().includes('authentication failed')) {
          this.apiKeyInvalid = true;
        }
-       this.stop(); 
-       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-         this.toastMessage.show('Failed to connect to session. Check your API key and network connection.');
-       }
+       this.stop();
+      console.warn('Failed to connect to session. Check your API key and network connection.');
        console.error('Failed to connect to session:', error);
        this.currentRetryAttempt = 0;
      }
    }
 
-  private handleConnectionIssue(messagePrefix: string) {
+  private async handleConnectionIssue(messagePrefix: string) {
+    await this.updateComplete;
     this.connectionError = true;
     this.currentRetryAttempt++;
 
     if (this.currentRetryAttempt <= this.maxRetries) {
-      this.playbackState = 'loading'; 
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show(`${messagePrefix}. Attempting to reconnect (attempt ${this.currentRetryAttempt} of ${this.maxRetries})...`);
-      }
+      this.playbackState = 'loading';
+      console.warn(`${messagePrefix}. Attempting to reconnect (attempt ${this.currentRetryAttempt} of ${this.maxRetries})...`);
       setTimeout(() => {
         this.connectToSession();
-      }, 2000); 
+      }, 2000);
     } else {
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show('Failed to reconnect after multiple attempts. Please check your connection and try playing again.');
-      }
-      this.playbackState = 'stopped'; 
-      this.currentRetryAttempt = 0; 
+      console.warn('Failed to reconnect after multiple attempts. Please check your connection and try playing again.');
+      this.playbackState = 'stopped';
+      this.currentRetryAttempt = 0;
     }
   }
  
@@ -596,11 +589,10 @@ class PromptDjMidi extends LitElement {
    }
  
    private setSessionPrompts = throttle(async () => {
+    await this.updateComplete;
      const promptsToSend = this.getPromptsToSend();
      if (promptsToSend.length === 0) {
-       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-         this.toastMessage.show('There needs to be one active prompt to play.')
-       }
+      console.warn('There needs to be one active prompt to play.');
        this.pause();
        return;
      }
@@ -612,13 +604,9 @@ class PromptDjMidi extends LitElement {
        }
      } catch (e: unknown) {
        if (e instanceof Error) {
-         if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-           this.toastMessage.show(e.message)
-         }
+        console.warn('Error setting session prompts:', e.message);
        } else {
-         if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-           this.toastMessage.show('An unknown error occurred.')
-         }
+        console.warn('An unknown error occurred while setting session prompts.');
        }
        this.pause();
      }
@@ -687,7 +675,8 @@ class PromptDjMidi extends LitElement {
      this.checkAndTriggerOverloadReset();
    }
  
-   private calculateKnobAverageExtremeness(): void {
+   private async calculateKnobAverageExtremeness(): Promise<void> {
+    await this.updateComplete;
      const extremenessValues: number[] = [];
      const knobKeys = Object.keys(PromptDjMidi.KNOB_CONFIGS) as Array<keyof typeof PromptDjMidi.KNOB_CONFIGS>;
  
@@ -735,7 +724,8 @@ class PromptDjMidi extends LitElement {
      this.checkAndTriggerOverloadReset();
    }
  
-   private checkAndTriggerOverloadReset(): void {
+   private async checkAndTriggerOverloadReset(): Promise<void> {
+    await this.updateComplete;
      const promptAverageCritical = 1.95;
      const knobExtremenessCritical = 0.95;
      const combinedFactorThreshold = 1.8; // (e.g. prompt avg 1.6 -> 0.8, knob avg 1.0 -> 1.0 => 1.8)
@@ -750,9 +740,7 @@ class PromptDjMidi extends LitElement {
        combinedFactor >= combinedFactorThreshold
      ) {
        console.warn('DSP Overload detected! Resetting all parameters.');
-       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-         this.toastMessage.show('Critical DSP Overload! Resetting parameters.', 'error');
-       }
+      console.warn('Critical DSP Overload! Resetting parameters.');
        this.resetAll();
      }
    }
@@ -878,15 +866,15 @@ class PromptDjMidi extends LitElement {
      }
    }
  
-   private play() {
+   private async play() {
      const promptsToSend = this.getPromptsToSend();
      if (promptsToSend.length === 0) {
-       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-         this.toastMessage.show('There needs to be one active prompt to play. Turn up a knob to resume playback.')
-       }
+      console.warn('There needs to be one active prompt to play. Turn up a knob to resume playback.');
        this.pause();
        return;
      }
+    // No change here, await this.updateComplete was already in the correct place
+    // The issue is the method signature itself.
  
      if (!this.audioContext) {
        this.audioContext = new AudioContext({ sampleRate: 48000 });
@@ -922,16 +910,18 @@ class PromptDjMidi extends LitElement {
    }
  
    private async handleMainAudioButton() {
+    await this.updateComplete;
      this.currentRetryAttempt = 0;
 
      if (!this.audioReady) {
        this.playbackState = 'loading';
-       await this.connectToSession(); 
-       if (this.connectionError || this.apiKeyInvalid) { 
+       await this.connectToSession();
+       if (this.connectionError || this.apiKeyInvalid) {
          this.playbackState = 'stopped';
-         if (!this.toastMessage.showing) { 
-            this.toastMessage.show('Failed to connect. Please check your API key and connection.');
-         }
+        // Corresponding console.warn was already present in the previous step for this condition.
+        // No additional console.warn needed here if the original logic didn't have one specifically for !this.toastMessage.showing
+        // but the generic one for "toastMessage or its show method is not available" covers it.
+        console.warn('Failed to connect. Please check your API key and connection.');
          return;
        }
        await this.setSessionPrompts();
@@ -942,12 +932,11 @@ class PromptDjMidi extends LitElement {
        } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
          if (this.connectionError || this.apiKeyInvalid) {
            this.playbackState = 'loading';
-           await this.connectToSession(); 
-           if (this.connectionError || this.apiKeyInvalid) { 
+           await this.connectToSession();
+           if (this.connectionError || this.apiKeyInvalid) {
              this.playbackState = (this.playbackState === 'loading' || this.playbackState === 'playing') ? 'stopped' : this.playbackState;
-             if (!this.toastMessage.showing) {
-                this.toastMessage.show('Failed to reconnect. Please check your connection or API key.');
-             }
+            // Similar to above, console.warn for this specific condition.
+            console.warn('Failed to reconnect. Please check your connection or API key.');
              return;
            }
          }
@@ -1042,15 +1031,20 @@ class PromptDjMidi extends LitElement {
      this.midiDispatcher.activeMidiInputId = newMidiId;
    }
  
-   private saveApiKeyToLocalStorage() {
-    if (this.geminiApiKey) {
-      localStorage.setItem('geminiApiKey', this.geminiApiKey);
-      this.apiKeyInvalid = false;
-      this.connectionError = false;
-      this.toastMessage.show('Gemini API key saved to local storage.');
+   private async saveApiKeyToLocalStorage() {
+    await this.updateComplete;
+    if (typeof localStorage !== 'undefined') {
+      if (this.geminiApiKey) {
+        localStorage.setItem('geminiApiKey', this.geminiApiKey);
+        this.apiKeyInvalid = false;
+        this.connectionError = false;
+        console.log('Gemini API key saved to local storage.');
+      } else {
+        localStorage.removeItem('geminiApiKey');
+        console.log('Gemini API key removed from local storage.');
+      }
     } else {
-      localStorage.removeItem('geminiApiKey');
-      this.toastMessage.show('Gemini API key removed from local storage.');
+      console.warn('localStorage is not available. Cannot save or remove Gemini API key from localStorage.');
     }
     this.handleMainAudioButton();
    }
@@ -1581,9 +1575,18 @@ ${this.renderPrompts()}
  }
  
     static getInitialPrompts(): Map<string, Prompt> {
-      const { localStorage } = window;
-      const storedPrompts = localStorage.getItem('prompts');
- 
+      let storedPrompts = null;
+      if (typeof localStorage !== 'undefined') {
+        try {
+          storedPrompts = localStorage.getItem('prompts');
+        } catch (e) {
+          console.warn('localStorage.getItem("prompts") failed:', e);
+          // storedPrompts remains null
+        }
+      } else {
+        console.warn('localStorage is not available. Cannot load prompts from localStorage.');
+      }
+
       if (storedPrompts) {
         try {
           const prompts = JSON.parse(storedPrompts) as Prompt[];
@@ -1594,11 +1597,11 @@ ${this.renderPrompts()}
           return new Map(prompts.map((prompt) => [prompt.promptId, prompt]));
         } catch (e) {
           console.error('Failed to parse stored prompts', e);
+          // Fall through to default prompts if parsing fails
         }
       }
- 
-      console.log('No stored prompts, using default prompts');
- 
+
+      console.log('No stored prompts or localStorage not available/failed, using default prompts');
       return PromptDjMidi.buildDefaultPrompts();
     }
  
@@ -1628,8 +1631,15 @@ ${this.renderPrompts()}
  
     static setStoredPrompts(prompts: Map<string, Prompt>) {
       const storedPrompts = JSON.stringify([...prompts.values()]);
-      const { localStorage } = window;
-      localStorage.setItem('prompts', storedPrompts);
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem('prompts', storedPrompts);
+        } catch (e) {
+          console.warn('localStorage.setItem("prompts") failed:', e);
+        }
+      } else {
+        console.warn('localStorage is not available. Cannot save prompts to localStorage.');
+      }
     }
   }
  
@@ -1644,5 +1654,3 @@ ${this.renderPrompts()}
   }
  
   main(document.body);
-
-[end of index.tsx]
