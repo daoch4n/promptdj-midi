@@ -16,7 +16,6 @@ import { MidiDispatcher } from './utils/MidiDispatcher';
 
 import './components/WeightKnob';
 import './components/PromptController';
-import { ToastMessage } from './components/ToastMessage';
 import type { WeightKnob } from './components/WeightKnob';
 import './components/DJStyleSelector';
 import type { DJStyleSelectorOption } from './components/DJStyleSelector';
@@ -450,8 +449,6 @@ class PromptDjMidi extends LitElement {
    private readonly maxRetries = 3;
    private currentRetryAttempt = 0;
  
-   @query('toast-message') private toastMessage!: ToastMessage;
- 
    constructor(
      prompts: Map<string, Prompt>,
      midiDispatcher: MidiDispatcher,
@@ -484,7 +481,6 @@ class PromptDjMidi extends LitElement {
    }
  
    override async firstUpdated() {
-     await customElements.whenDefined('toast-message');
      this.calculatePromptWeightedAverage();
      this.calculateKnobAverageExtremeness();
    }
@@ -492,11 +488,7 @@ class PromptDjMidi extends LitElement {
    private async connectToSession() {
     await this.updateComplete;
      if (!this.geminiApiKey) {
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show('Please enter your Gemini API key to connect to the session.');
-      } else {
-        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Please enter your Gemini API key to connect to the session.');
-      }
+      console.warn('Please enter your Gemini API key to connect to the session.');
        return;
      }
  
@@ -516,22 +508,12 @@ class PromptDjMidi extends LitElement {
              }
              if (e.filteredPrompt) {
                this.filteredPrompts = new Set([...this.filteredPrompts, e.filteredPrompt.text as string])
-              if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-                this.toastMessage.show(e.filteredPrompt.filteredReason as string);
-              } else if (this.toastMessage) {
-                console.warn('toastMessage.show() is not a function. Message:', e.filteredPrompt.filteredReason as string);
-              } else {
-                console.warn('toastMessage is null. Message:', e.filteredPrompt.filteredReason as string);
-              }
+              console.warn('Filtered prompt reason:', e.filteredPrompt.filteredReason as string);
              }
              if (e.serverContent?.audioChunks !== undefined) {
                if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
                if (!this.audioContext || !this.outputNode) {
-                if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-                  this.toastMessage.show('Audio context not initialized. Please refresh.');
-                } else {
-                  console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Audio context not initialized. Please refresh.');
-                }
+                console.warn('Audio context not initialized. Please refresh.');
                  console.error('AudioContext or outputNode not initialized.');
                  return;
                }
@@ -569,12 +551,8 @@ class PromptDjMidi extends LitElement {
        if (error instanceof Error && error.message.toLowerCase().includes('authentication failed')) {
          this.apiKeyInvalid = true;
        }
-       this.stop(); 
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show('Failed to connect to session. Check your API key and network connection.');
-      } else {
-        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Failed to connect to session. Check your API key and network connection.');
-      }
+       this.stop();
+      console.warn('Failed to connect to session. Check your API key and network connection.');
        console.error('Failed to connect to session:', error);
        this.currentRetryAttempt = 0;
      }
@@ -587,20 +565,12 @@ class PromptDjMidi extends LitElement {
 
     if (this.currentRetryAttempt <= this.maxRetries) {
       this.playbackState = 'loading';
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show(`${messagePrefix}. Attempting to reconnect (attempt ${this.currentRetryAttempt} of ${this.maxRetries})...`);
-      } else {
-        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', `${messagePrefix}. Attempting to reconnect (attempt ${this.currentRetryAttempt} of ${this.maxRetries})...`);
-      }
+      console.warn(`${messagePrefix}. Attempting to reconnect (attempt ${this.currentRetryAttempt} of ${this.maxRetries})...`);
       setTimeout(() => {
         this.connectToSession();
       }, 2000);
     } else {
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show('Failed to reconnect after multiple attempts. Please check your connection and try playing again.');
-      } else {
-        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Failed to reconnect after multiple attempts. Please check your connection and try playing again.');
-      }
+      console.warn('Failed to reconnect after multiple attempts. Please check your connection and try playing again.');
       this.playbackState = 'stopped';
       this.currentRetryAttempt = 0;
     }
@@ -617,11 +587,7 @@ class PromptDjMidi extends LitElement {
     await this.updateComplete;
      const promptsToSend = this.getPromptsToSend();
      if (promptsToSend.length === 0) {
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show('There needs to be one active prompt to play.');
-      } else {
-        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'There needs to be one active prompt to play.');
-      }
+      console.warn('There needs to be one active prompt to play.');
        this.pause();
        return;
      }
@@ -633,17 +599,9 @@ class PromptDjMidi extends LitElement {
        }
      } catch (e: unknown) {
        if (e instanceof Error) {
-        if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-          this.toastMessage.show(e.message);
-        } else {
-          console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', e.message);
-        }
+        console.warn('Error setting session prompts:', e.message);
        } else {
-        if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-          this.toastMessage.show('An unknown error occurred.');
-        } else {
-          console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'An unknown error occurred.');
-        }
+        console.warn('An unknown error occurred while setting session prompts.');
        }
        this.pause();
      }
@@ -777,11 +735,7 @@ class PromptDjMidi extends LitElement {
        combinedFactor >= combinedFactorThreshold
      ) {
        console.warn('DSP Overload detected! Resetting all parameters.');
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show('Critical DSP Overload! Resetting parameters.', 'error');
-      } else {
-        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Critical DSP Overload! Resetting parameters.');
-      }
+      console.warn('Critical DSP Overload! Resetting parameters.');
        this.resetAll();
      }
    }
@@ -910,9 +864,7 @@ class PromptDjMidi extends LitElement {
    private async play() {
      const promptsToSend = this.getPromptsToSend();
      if (promptsToSend.length === 0) {
-       if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-         this.toastMessage.show('There needs to be one active prompt to play. Turn up a knob to resume playback.')
-       }
+      console.warn('There needs to be one active prompt to play. Turn up a knob to resume playback.');
        this.pause();
        return;
      }
@@ -961,11 +913,10 @@ class PromptDjMidi extends LitElement {
        await this.connectToSession();
        if (this.connectionError || this.apiKeyInvalid) {
          this.playbackState = 'stopped';
-        if (this.toastMessage && typeof this.toastMessage.show === 'function' && !this.toastMessage.showing) {
-          this.toastMessage.show('Failed to connect. Please check your API key and connection.');
-        } else if (!this.toastMessage || typeof this.toastMessage.show !== 'function') {
-          console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Failed to connect. Please check your API key and connection.');
-        }
+        // Corresponding console.warn was already present in the previous step for this condition.
+        // No additional console.warn needed here if the original logic didn't have one specifically for !this.toastMessage.showing
+        // but the generic one for "toastMessage or its show method is not available" covers it.
+        console.warn('Failed to connect. Please check your API key and connection.');
          return;
        }
        await this.setSessionPrompts();
@@ -979,11 +930,8 @@ class PromptDjMidi extends LitElement {
            await this.connectToSession();
            if (this.connectionError || this.apiKeyInvalid) {
              this.playbackState = (this.playbackState === 'loading' || this.playbackState === 'playing') ? 'stopped' : this.playbackState;
-            if (this.toastMessage && typeof this.toastMessage.show === 'function' && !this.toastMessage.showing) {
-              this.toastMessage.show('Failed to reconnect. Please check your connection or API key.');
-            } else if (!this.toastMessage || typeof this.toastMessage.show !== 'function') {
-              console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Failed to reconnect. Please check your connection or API key.');
-            }
+            // Similar to above, console.warn for this specific condition.
+            console.warn('Failed to reconnect. Please check your connection or API key.');
              return;
            }
          }
@@ -1084,18 +1032,10 @@ class PromptDjMidi extends LitElement {
       localStorage.setItem('geminiApiKey', this.geminiApiKey);
       this.apiKeyInvalid = false;
       this.connectionError = false;
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show('Gemini API key saved to local storage.');
-      } else {
-        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Gemini API key saved to local storage.');
-      }
+      console.log('Gemini API key saved to local storage.');
     } else {
       localStorage.removeItem('geminiApiKey');
-      if (this.toastMessage && typeof this.toastMessage.show === 'function') {
-        this.toastMessage.show('Gemini API key removed from local storage.');
-      } else {
-        console.warn('toastMessage.show() called when toastMessage or its show method is not available. Message:', 'Gemini API key removed from local storage.');
-      }
+      console.log('Gemini API key removed from local storage.');
     }
     this.handleMainAudioButton();
    }
@@ -1366,7 +1306,6 @@ class PromptDjMidi extends LitElement {
      const djStyleSelectorOptions = Array.from(scaleMap, ([label, { value, color }]) => ({ label, value, color } as DJStyleSelectorOption));
  
       return html`
-        <toast-message></toast-message>
         <dsp-overload-indicator
           .currentPromptAverage=${this.promptWeightedAverage}
           .currentKnobAverageExtremeness=${this.knobAverageExtremeness}
