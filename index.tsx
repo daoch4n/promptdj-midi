@@ -445,6 +445,8 @@ class PromptDjMidi extends LitElement {
   @state() private apiKeySavedSuccessfully = false;
   @state() private promptWeightedAverage = 0;
   @state() private knobAverageExtremeness = 0;
+  @state() private transientApiKeyStatusMessage: string | null = null;
+  private apiKeyMessageTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   // Preset UI State
   @state() private presetNameToSave: string = "";
@@ -1062,12 +1064,19 @@ class PromptDjMidi extends LitElement {
         console.log('Gemini API key removed from local storage.');
         this.apiKeyInvalid = false;
         this.connectionError = false;
+        this.setTransientApiKeyStatus("API Key Cleared");
       } catch (error) {
         // This case is less likely for removeItem, but good to be aware
         console.error('Error removing API key from local storage:', error);
         // Optionally set states to indicate this specific type of error
       }
       this.handleMainAudioButton();
+      // checkApiKeyStatus will be called by handleMainAudioButton or at the end of this function,
+      // but we want to ensure the transient message for "cleared" is set.
+      // If checkApiKeyStatus is called after this, it might override the transient message
+      // if it decides the key is "loaded" (e.g. if an old key was still in component state, though unlikely here)
+      // Forcing a final checkApiKeyStatus to ensure consistent state after action.
+      this.checkApiKeyStatus(); // This will ensure apiKeySavedSuccessfully is false.
       return;
     }
 
@@ -1080,6 +1089,8 @@ class PromptDjMidi extends LitElement {
         this.connectionError = false;
         console.log(`Gemini API key saved to local storage (attempt ${retries + 1}).`);
         success = true;
+        this.apiKeySavedSuccessfully = true; // Set this before the transient message
+        this.setTransientApiKeyStatus("API Key Saved");
       } catch (error) {
         retries++;
         const delay = INITIAL_BACKOFF_DELAY * Math.pow(2, retries - 1);
@@ -1111,10 +1122,19 @@ class PromptDjMidi extends LitElement {
       const storedApiKey = localStorage.getItem('geminiApiKey');
       if (storedApiKey && this.geminiApiKey && storedApiKey === this.geminiApiKey) {
         this.apiKeySavedSuccessfully = true;
+        // Only set "API Key Loaded" if it wasn't just saved (which has its own message)
+        // This check is a bit tricky as `saveApiKeyToLocalStorage` also calls `checkApiKeyStatus`.
+        // We rely on `setTransientApiKeyStatus` to clear previous messages.
+        // If `transientApiKeyStatusMessage` is null, it means no recent save/clear action happened.
+        if (this.transientApiKeyStatusMessage === null || !["API Key Saved", "API Key Cleared"].includes(this.transientApiKeyStatusMessage)) {
+            this.setTransientApiKeyStatus("API Key Loaded");
+        }
         console.log('API key is verified and saved correctly in localStorage.');
       } else if (storedApiKey && !this.geminiApiKey) {
-        // This case implies the key was previously saved, but now the input is cleared.
-        // Depending on desired behavior, this might still be 'false' or a different state.
+        // This case implies the key was previously saved (in localStorage), but now the input/component state is cleared.
+        // `saveApiKeyToLocalStorage` handles the "API Key Cleared" message when it removes it.
+        // If we reach here, it means the key is in storage but not in component - potentially an inconsistent state
+        // or just after clearing the input but before the (debounced) save that removes it from storage.
         // For now, if a key is in storage but not in the component's current state, consider it not "successfully saved" in current context.
         this.apiKeySavedSuccessfully = false;
         console.log('API key found in localStorage, but not active in component. Consider re-saving if needed.');
@@ -1122,19 +1142,44 @@ class PromptDjMidi extends LitElement {
         // Key in component but not in storage - implies it needs to be saved.
         this.apiKeySavedSuccessfully = false;
         console.log('API key present in component but not in localStorage. Needs saving.');
-      }
-      else if (!storedApiKey) {
+        // No transient message here; the "Verifying or attempting to save" in render will cover it if key is in input.
+      } else if (!storedApiKey && !this.geminiApiKey) {
+        // No key in storage, no key in component.
         this.apiKeySavedSuccessfully = false;
-        console.log('No API key found in local storage.');
-      } else {
-        // Mismatch or other conditions
+        console.log('No API key found in local storage or component.');
+        // If a "cleared" message was just shown, don't override it.
+        if (this.transientApiKeyStatusMessage !== "API Key Cleared") {
+            // this.setTransientApiKeyStatus(null); // Or a specific message like "No API Key"
+        }
+      } else if (!storedApiKey && this.geminiApiKey) {
+        // Key in component, but not in storage (e.g. user typed but debounce hasn't fired)
+        this.apiKeySavedSuccessfully = false;
+        console.log('API key in component, but not in local storage yet.');
+      }
+      else { // Covers mismatch: storedApiKey exists, geminiApiKey exists, but they don't match
         this.apiKeySavedSuccessfully = false;
         console.warn('API key verification failed. Stored key does not match active key, or key needs saving.');
+        // Potentially set a transient message for mismatch if desired, e.g.
+        // this.setTransientApiKeyStatus("API key does not match stored key", 3000);
       }
     } catch (error) {
       console.error('Error checking API key status from localStorage:', error);
       this.apiKeySavedSuccessfully = false;
     }
+  }
+
+  private setTransientApiKeyStatus(message: string | null, duration: number = 2500) {
+    if (this.apiKeyMessageTimeoutId !== null) {
+      clearTimeout(this.apiKeyMessageTimeoutId);
+    }
+    this.transientApiKeyStatusMessage = message;
+    if (message !== null) {
+      this.apiKeyMessageTimeoutId = setTimeout(() => {
+        this.transientApiKeyStatusMessage = null;
+        this.apiKeyMessageTimeoutId = null;
+      }, duration);
+    }
+    // Request update is handled by @state decorator for transientApiKeyStatusMessage
   }
 
   private togglePresetControlsVisibility() {
@@ -1788,20 +1833,22 @@ class PromptDjMidi extends LitElement {
           ` : ''}
 
           <!-- General API Key Status Messages -->
-          ${this.apiKeyInvalid ? html`
+          ${this.transientApiKeyStatusMessage ? html`
+            <span style="color: lightblue; margin-left: 10px;">${this.transientApiKeyStatusMessage}</span>
+          ` : this.apiKeyInvalid ? html`
             <span style="color: red; margin-left: 10px;">
-              ${ typeof localStorage === 'undefined'
+              ${typeof localStorage === 'undefined'
                 ? "localStorage not available. API Key cannot be saved."
-                : "API Key is invalid, failed to save, or auth failed."
-              }
+                : "API Key is invalid or saving failed."}
             </span>
-          ` : this.apiKeySavedSuccessfully && this.geminiApiKey ? html`
-            <span style="color: lightgreen; margin-left: 10px;">API Key Saved & Verified</span>
           ` : !this.geminiApiKey && !this.apiKeySavedSuccessfully ? html`
-            <span style="color: yellow; margin-left: 10px;">API Key Cleared</span>
-          ` : this.geminiApiKey && !this.apiKeySavedSuccessfully ? html`
-            <span style="color: orange; margin-left: 10px;">Verifying or attempting to save API Key...</span>
+            <span style="color: yellow; margin-left: 10px;">No API Key provided.</span>
+          ` : this.geminiApiKey && !this.apiKeySavedSuccessfully && !this.apiKeyInvalid ? html`
+            <span style="color: orange; margin-left: 10px;">Key entered, will attempt to save.</span>
           ` : ''}
+          <!-- Note: "API Key Saved & Verified" is now handled by transientApiKeyStatusMessage -->
+          <!-- "API Key Cleared" is also handled by transientApiKeyStatusMessage -->
+          <!-- "Verifying or attempting to save API Key..." is effectively replaced by the "Key entered, will attempt to save" or transient messages -->
 
           <!-- Preset Controls -->
           ${this.showPresetControls ? html`
