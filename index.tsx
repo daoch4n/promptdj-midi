@@ -448,6 +448,7 @@ class PromptDjMidi extends LitElement {
   @state() private presetNameToSave: string = "";
   @state() private availablePresets: string[] = [];
   @state() private selectedPreset: string = "";
+  @state() private showPresetControls: boolean = false;
  
    private audioLevelRafId: number | null = null;
    private connectionError = true;
@@ -1055,6 +1056,10 @@ class PromptDjMidi extends LitElement {
     this.handleMainAudioButton();
    }
 
+  private togglePresetControlsVisibility() {
+    this.showPresetControls = !this.showPresetControls;
+  }
+
   // Preset Management Methods
   private loadAvailablePresets() {
     if (typeof localStorage === 'undefined') {
@@ -1583,6 +1588,10 @@ class PromptDjMidi extends LitElement {
             @click=${this.toggleShowMidi}
             class=${this.showMidi ? 'active' : ''}
             >MIDI</button>
+          <button
+            @click=${this.togglePresetControlsVisibility}
+            class=${this.showPresetControls ? 'active' : ''}
+            >Presets</button>
           ${this.showMidi ? html`
             <select
               @change=${this.handleMidiInputChange}
@@ -1658,6 +1667,7 @@ class PromptDjMidi extends LitElement {
           ` : ''}
 
           <!-- Preset Controls -->
+          ${this.showPresetControls ? html`
           <div class="preset-controls">
             <input
               type="text"
@@ -1683,6 +1693,7 @@ class PromptDjMidi extends LitElement {
               Delete Preset
             </button>
           </div>
+          ` : ''}
         </div>
         <div id="main-content-area">
 ${this.renderPrompts()}
