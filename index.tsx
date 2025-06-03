@@ -1611,7 +1611,7 @@ class PromptDjMidi extends LitElement {
           <button @click=${this.toggleSeedFlow} class=${this.isSeedFlowing ? 'active' : ''}>Flow</button>
 
           <!-- Conditional Flow Parameters Group -->
-          ${this.isAnyFlowActive ? html`
+          ${this.isSeedFlowing ? html`
             <div class="flow-parameters-group">
               <button
                 id="flowUpButton"
@@ -1641,6 +1641,7 @@ class PromptDjMidi extends LitElement {
           ` : ''}
 
           <!-- Seed Input Controls -->
+          ${this.isSeedFlowing ? html`
           <div class="seed-input-controls"> 
             <label for="seed">Seed</label>
             <input
@@ -1651,6 +1652,7 @@ class PromptDjMidi extends LitElement {
                 placeholder="Auto"
                 .disabled=${this.isSeedFlowing} /> 
           </div>
+          ` : ''}
 
           <!-- API Key Controls -->
           ${!this.geminiApiKey || this.apiKeyInvalid ? html`
