@@ -473,7 +473,12 @@ class PromptDjMidi extends LitElement {
      this.handlePromptAutoFlowToggled = this.handlePromptAutoFlowToggled.bind(this);
      this.globalFlowTick = this.globalFlowTick.bind(this);
  
-     this.geminiApiKey = localStorage.getItem('geminiApiKey');
+    if (typeof localStorage !== 'undefined') {
+      this.geminiApiKey = localStorage.getItem('geminiApiKey');
+    } else {
+      this.geminiApiKey = null;
+      console.warn('localStorage is not available. Cannot load Gemini API key from localStorage.');
+    }
  
      if (this.geminiApiKey) {
        this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey, apiVersion: 'v1alpha' });
@@ -1028,14 +1033,18 @@ class PromptDjMidi extends LitElement {
  
    private async saveApiKeyToLocalStorage() {
     await this.updateComplete;
-    if (this.geminiApiKey) {
-      localStorage.setItem('geminiApiKey', this.geminiApiKey);
-      this.apiKeyInvalid = false;
-      this.connectionError = false;
-      console.log('Gemini API key saved to local storage.');
+    if (typeof localStorage !== 'undefined') {
+      if (this.geminiApiKey) {
+        localStorage.setItem('geminiApiKey', this.geminiApiKey);
+        this.apiKeyInvalid = false;
+        this.connectionError = false;
+        console.log('Gemini API key saved to local storage.');
+      } else {
+        localStorage.removeItem('geminiApiKey');
+        console.log('Gemini API key removed from local storage.');
+      }
     } else {
-      localStorage.removeItem('geminiApiKey');
-      console.log('Gemini API key removed from local storage.');
+      console.warn('localStorage is not available. Cannot save or remove Gemini API key from localStorage.');
     }
     this.handleMainAudioButton();
    }
@@ -1566,9 +1575,18 @@ ${this.renderPrompts()}
  }
  
     static getInitialPrompts(): Map<string, Prompt> {
-      const { localStorage } = window;
-      const storedPrompts = localStorage.getItem('prompts');
- 
+      let storedPrompts = null;
+      if (typeof localStorage !== 'undefined') {
+        try {
+          storedPrompts = localStorage.getItem('prompts');
+        } catch (e) {
+          console.warn('localStorage.getItem("prompts") failed:', e);
+          // storedPrompts remains null
+        }
+      } else {
+        console.warn('localStorage is not available. Cannot load prompts from localStorage.');
+      }
+
       if (storedPrompts) {
         try {
           const prompts = JSON.parse(storedPrompts) as Prompt[];
@@ -1579,11 +1597,11 @@ ${this.renderPrompts()}
           return new Map(prompts.map((prompt) => [prompt.promptId, prompt]));
         } catch (e) {
           console.error('Failed to parse stored prompts', e);
+          // Fall through to default prompts if parsing fails
         }
       }
- 
-      console.log('No stored prompts, using default prompts');
- 
+
+      console.log('No stored prompts or localStorage not available/failed, using default prompts');
       return PromptDjMidi.buildDefaultPrompts();
     }
  
@@ -1613,8 +1631,15 @@ ${this.renderPrompts()}
  
     static setStoredPrompts(prompts: Map<string, Prompt>) {
       const storedPrompts = JSON.stringify([...prompts.values()]);
-      const { localStorage } = window;
-      localStorage.setItem('prompts', storedPrompts);
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem('prompts', storedPrompts);
+        } catch (e) {
+          console.warn('localStorage.setItem("prompts") failed:', e);
+        }
+      } else {
+        console.warn('localStorage is not available. Cannot save prompts to localStorage.');
+      }
     }
   }
  
