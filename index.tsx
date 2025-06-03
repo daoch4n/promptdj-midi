@@ -11,6 +11,7 @@ import { GoogleGenAI, type LiveMusicSession, type LiveMusicServerMessage, type S
 
 import { decode, decodeAudioData } from './utils/audio'
 import { throttle } from './utils/throttle'
+import { debounce } from './utils/debounce';
 import { AudioAnalyser } from './utils/AudioAnalyser';
 import { MidiDispatcher } from './utils/MidiDispatcher';
 
@@ -455,6 +456,8 @@ class PromptDjMidi extends LitElement {
    private connectionError = true;
    private readonly maxRetries = 3;
    private currentRetryAttempt = 0;
+
+   private debouncedSaveApiKey = debounce(this.saveApiKeyToLocalStorage, 500);
  
    constructor(
      prompts: Map<string, Prompt>,
@@ -1392,7 +1395,41 @@ class PromptDjMidi extends LitElement {
    private handleApiKeyInputChange(event: Event) {
      const inputElement = event.target as HTMLInputElement;
      this.geminiApiKey = inputElement.value;
+     // When the input changes, apiKeySavedSuccessfully should reflect that the current value might not be saved.
+     // However, checkApiKeyStatus() is called at the end of saveApiKeyToLocalStorage,
+     // so the debounced call will eventually update this.
+     // For immediate feedback that the key is "dirty", we can set it here.
+     // But the current UI logic for "Unsaved Key" depends on geminiApiKey being truthy
+     // and apiKeySavedSuccessfully being false, which checkApiKeyStatus will handle.
+     this.debouncedSaveApiKey();
    }
+
+  private async handlePasteApiKeyClick() {
+    if (!navigator.clipboard || !navigator.clipboard.readText) {
+      console.warn('Clipboard API not available or readText not supported.');
+      // Optionally, update a state to inform the user via UI
+      // this.clipboardError = 'Clipboard API not available.';
+      return;
+    }
+
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && text.trim().length > 0) {
+        this.geminiApiKey = text.trim();
+        await this.requestUpdate(); // Ensure the input field updates
+        console.log('API Key pasted from clipboard.');
+        await this.saveApiKeyToLocalStorage(); // Direct save
+      } else {
+        console.warn('Clipboard is empty or contains only whitespace.');
+        // Optionally, update a state to inform the user
+        // this.clipboardError = 'Clipboard is empty.';
+      }
+    } catch (err) {
+      console.error('Failed to read from clipboard:', err);
+      // Optionally, update a state to inform the user
+      // this.clipboardError = 'Failed to paste from clipboard. Permission might be denied.';
+    }
+  }
  
    private getApiKey() {
      window.open('https://aistudio.google.com/apikey', '_blank');
@@ -1746,8 +1783,7 @@ class PromptDjMidi extends LitElement {
                 .value=${this.geminiApiKey || ''}
                 @input=${this.handleApiKeyInputChange}
               />
-              <button @click=${this.saveApiKeyToLocalStorage}>Save</button>
-              ${this.apiKeySavedSuccessfully ? html`<span style="color: lightgreen; margin-left: 5px;">API Key Saved</span>` : this.geminiApiKey ? html`<span style="color: orange; margin-left: 5px;">Unsaved Key</span>` : ''}
+              <button @click=${this.handlePasteApiKeyClick}>Paste API key</button>
             </div>
           ` : !this.apiKeySavedSuccessfully && this.geminiApiKey === null ? html`<span style="color: yellow; margin-left: 5px;">API Key Cleared</span>` : this.apiKeySavedSuccessfully ? html`<span style="color: lightgreen; margin-left: 5px;">API Key Verified</span>` : ''}
           <!-- Message when API key is loaded but not yet saved, or if saving failed -->
@@ -1759,6 +1795,22 @@ class PromptDjMidi extends LitElement {
             <span style="color: red; margin-left: 10px;">API Key is invalid or authentication failed.</span>
           ` : ''}
 
+
+          <!-- General API Key Status Messages -->
+          ${this.apiKeyInvalid ? html`
+            <span style="color: red; margin-left: 10px;">
+              ${ typeof localStorage === 'undefined'
+                ? "localStorage not available. API Key cannot be saved."
+                : "API Key is invalid, failed to save, or auth failed."
+              }
+            </span>
+          ` : this.apiKeySavedSuccessfully && this.geminiApiKey ? html`
+            <span style="color: lightgreen; margin-left: 10px;">API Key Saved & Verified</span>
+          ` : !this.geminiApiKey && !this.apiKeySavedSuccessfully ? html`
+            <span style="color: yellow; margin-left: 10px;">API Key Cleared</span>
+          ` : this.geminiApiKey && !this.apiKeySavedSuccessfully ? html`
+            <span style="color: orange; margin-left: 10px;">Verifying or attempting to save API Key...</span>
+          ` : ''}
 
           <!-- Preset Controls -->
           ${this.showPresetControls ? html`

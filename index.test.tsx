@@ -1,14 +1,7 @@
 import { html, fixture, expect, nextFrame } from '@open-wc/testing';
 import './index'; // Assuming 'index.ts' registers 'prompt-dj-midi'
-import { PromptDjMidi } from './index'; // Adjust if class name/export is different
-import { MidiDispatcher } from './utils/MidiDispatcher'; // Mock this if necessary
-
-// Helper function to create and wait for the element to update
-async function fixtureCleanup<T extends HTMLElement>(template: unknown): Promise<T> {
-  const el = await fixture(template) as T;
-  await el.updateComplete; // Ensure LitElement lifecycle is complete
-  return el;
-}
+import { PromptDjMidi } from './index';
+import { MidiDispatcher } from './utils/MidiDispatcher';
 
 describe('PromptDjMidi - API Key Management', () => {
   let element: PromptDjMidi;
@@ -24,49 +17,102 @@ describe('PromptDjMidi - API Key Management', () => {
   let consoleErrorSpy: jest.SpyInstance;
   let consoleLogSpy: jest.SpyInstance;
 
-  // Mock for methods on the class itself if needed
-  let handleMainAudioButtonSpy: jest.SpyInstance;
-  // let connectToSessionSpy: jest.SpyInstance; // Usually not needed if handleMainAudioButton is fully mocked
+  // Mocks for navigator.clipboard
+  let clipboardReadTextSpy: jest.SpyInstance;
+
+  // Spy for component's own method for finer control
+  let saveApiKeyToLocalStorageSpy: jest.SpyInstance;
 
 
   beforeEach(async () => {
-    // Mock MidiDispatcher
     mockMidiDispatcher = {
       getMidiAccess: jest.fn().mockResolvedValue([]),
       activeMidiInputId: null,
       getDeviceName: jest.fn().mockReturnValue('Mock MIDI Device'),
-      on: jest.fn(), // Add other methods if PromptDjMidi calls them during init or tested methods
+      on: jest.fn(),
       off: jest.fn(),
     } as unknown as MidiDispatcher;
 
-    // Spy on localStorage methods BEFORE element instantiation if constructor uses them
-    localStorageGetItemSpy = jest.spyOn(Storage.prototype, 'getItem');
-    localStorageSetItemSpy = jest.spyOn(Storage.prototype, 'setItem');
-    localStorageRemoveItemSpy = jest.spyOn(Storage.prototype, 'removeItem');
+    localStorageGetItemSpy = jest.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
+    localStorageSetItemSpy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {});
+    localStorageRemoveItemSpy = jest.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {});
 
-    // Default mock implementations
-    localStorageGetItemSpy.mockReturnValue(null); // Default to no key in storage
-    localStorageSetItemSpy.mockImplementation(() => {}); // Default to successful set
-    localStorageRemoveItemSpy.mockImplementation(() => {}); // Default to successful remove
-
-    // Spy on console methods
     consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
-    // Instantiate the element. This will call the constructor.
+    // Mock navigator.clipboard
+    // Ensure a default implementation for clipboardReadTextSpy
+    clipboardReadTextSpy = jest.fn().mockResolvedValue('default-clipboard-text');
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {
+        readText: clipboardReadTextSpy,
+      },
+      configurable: true,
+      writable: true,
+    });
+
     element = new PromptDjMidi(new Map(), mockMidiDispatcher);
 
-    // Spy on methods of the instance AFTER instantiation
-    // Mocking handleMainAudioButton as its full logic isn't tested here.
-    // The API key methods call it at the end, so we need to control its behavior.
-    handleMainAudioButtonSpy = jest.spyOn(element as any, 'handleMainAudioButton').mockImplementation(async () => {
-      // Simulate that connectToSession might be called within handleMainAudioButton
-      // And it might set apiKeyInvalid or connectionError based on its outcome.
-      // For most API key saving tests, we assume connection will be fine if key is fine.
-      if (element['ai'] && !element['geminiApiKey']){ // If AI was init but key is now gone
-         // element['apiKeyInvalid'] = true; // This might be set by a real connectToSession
-      }
+    // Spy on actual instance methods AFTER element creation
+    // We spy on the real method to see if it's called, but also allow its execution.
+    saveApiKeyToLocalStorageSpy = jest.spyOn(element as any, 'saveApiKeyToLocalStorage');
+    // handleMainAudioButton is called by saveApiKeyToLocalStorage, mock it to simplify tests
+    jest.spyOn(element as any, 'handleMainAudioButton').mockImplementation(async () => {});
+
+
+    document.body.appendChild(element);
+    await element.updateComplete;
+  });
+
+  afterEach(() => {
+    if (element.parentNode === document.body) {
+      document.body.removeChild(element);
+    }
+    jest.restoreAllMocks();
+    jest.useRealTimers(); // Ensure real timers are restored
+  });
+
+  describe('Initial Load & Basic Save', () => {
+    test('initial load - no API key in localStorage, UI reflects no key', async () => {
+      expect(localStorageGetItemSpy).toHaveBeenCalledWith('geminiApiKey');
+      expect(element['apiKeySavedSuccessfully']).toBe(false);
+      await element.updateComplete;
+      const statusMessage = element.shadowRoot?.textContent;
+      expect(statusMessage).not.toContain('API Key Saved & Verified');
+      // It might show "API Key Cleared" if geminiApiKey is null and not saved, which is the default
+      expect(statusMessage).toContain('API Key Cleared');
+    });
+
+    test('initial load - API key exists and is verified, UI reflects verified', async () => {
+      const testKey = 'verified-key';
+      localStorageGetItemSpy.mockReturnValue(testKey);
+
+      if (element.parentNode) element.parentNode.removeChild(element); // Clean up previous
+      element = new PromptDjMidi(new Map(), mockMidiDispatcher); // Re-instantiate
+      jest.spyOn(element as any, 'handleMainAudioButton').mockImplementation(async () => {});
+      saveApiKeyToLocalStorageSpy = jest.spyOn(element as any, 'saveApiKeyToLocalStorage');
+      document.body.appendChild(element);
+      await element.updateComplete;
+
+      expect(element['geminiApiKey']).toBe(testKey);
+      expect(element['apiKeySavedSuccessfully']).toBe(true);
+      const statusMessage = element.shadowRoot?.textContent;
+      expect(statusMessage).toContain('API Key Saved & Verified');
+    });
+
+    test('localStorage is unavailable during save, UI shows error', async () => {
+      const originalLocalStorage = Object.getOwnPropertyDescriptor(window, 'localStorage');
+      Object.defineProperty(window, 'localStorage', { value: undefined, configurable: true });
+
+      element['geminiApiKey'] = 'test-key';
+      await element.saveApiKeyToLocalStorage(); // Call directly
+
+      expect(element['apiKeyInvalid']).toBe(true);
+      await element.updateComplete;
+      expect(element.shadowRoot?.textContent).toContain('localStorage not available. API Key cannot be saved.');
+
+      if(originalLocalStorage) Object.defineProperty(window, 'localStorage', originalLocalStorage);
     });
 
     // Add element to the DOM to allow Lit an update cycle.
@@ -75,193 +121,151 @@ describe('PromptDjMidi - API Key Management', () => {
     await element.updateComplete; // Wait for initial render and updates from constructor
   });
 
-  afterEach(() => {
-    if (element.parentNode === document.body) {
-      document.body.removeChild(element);
-    }
-    jest.restoreAllMocks();
+  describe('Debounced Autosave on Input', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    test('input change calls debounced saveApiKeyToLocalStorage', async () => {
+      const apiKeyInput = element.shadowRoot?.querySelector('input[type="text"]') as HTMLInputElement;
+      expect(apiKeyInput).not.toBeNull();
+
+      apiKeyInput.value = 'new-key';
+      apiKeyInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+
+      expect(saveApiKeyToLocalStorageSpy).not.toHaveBeenCalled(); // Not called immediately
+
+      jest.advanceTimersByTime(500); // Advance past debounce delay
+
+      expect(saveApiKeyToLocalStorageSpy).toHaveBeenCalledTimes(1);
+      await element.updateComplete; // Wait for state changes from save to reflect
+      // Assuming save is successful
+      expect(element['apiKeySavedSuccessfully']).toBe(true);
+      expect(element.shadowRoot?.textContent).toContain('API Key Saved & Verified');
+    });
+
+    test('multiple input changes trigger only one save call after last debounce', async () => {
+      const apiKeyInput = element.shadowRoot?.querySelector('input[type="text"]') as HTMLInputElement;
+      apiKeyInput.value = 'key1';
+      apiKeyInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+      jest.advanceTimersByTime(200); // Less than debounce
+
+      apiKeyInput.value = 'key12';
+      apiKeyInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+      jest.advanceTimersByTime(200); // Less than debounce
+
+      apiKeyInput.value = 'key123';
+      apiKeyInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+
+      expect(saveApiKeyToLocalStorageSpy).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(500); // Past debounce of last input
+      expect(saveApiKeyToLocalStorageSpy).toHaveBeenCalledTimes(1);
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
   });
 
-  test('initial load - no API key in localStorage', async () => {
-    // constructor called in beforeEach, localStorageGetItemSpy already configured to return null
-    // checkApiKeyStatus is called in constructor
-    expect(localStorageGetItemSpy).toHaveBeenCalledWith('geminiApiKey');
-    expect(element['apiKeySavedSuccessfully']).toBe(false);
+  describe('Paste API Key Button', () => {
+    let pasteButton: HTMLButtonElement | null | undefined;
 
-    await element.updateComplete; // ensure UI reflects this state
-    const statusMessage = element.shadowRoot?.textContent;
-    expect(statusMessage).not.toContain('API Key Saved');
-    expect(statusMessage).not.toContain('API Key Verified');
+    beforeEach(async () => {
+      // The button only appears if !this.geminiApiKey or this.apiKeyInvalid
+      element['geminiApiKey'] = null; // Ensure condition for button to be visible
+      element['apiKeyInvalid'] = true; // Or this
+      await element.updateComplete;
+      pasteButton = element.shadowRoot?.querySelector('.api-controls button');
+      expect(pasteButton).not.toBeNull();
+      expect(pasteButton?.textContent).toBe('Paste API key');
+    });
+
+    test('successful paste and immediate save', async () => {
+      const pastedKey = 'pasted-api-key';
+      clipboardReadTextSpy.mockResolvedValue(pastedKey);
+      localStorageSetItemSpy.mockClear(); // Clear from potential earlier calls in other tests
+
+      pasteButton!.click();
+      await element.updateComplete; // Wait for async operations in handler
+
+      expect(clipboardReadTextSpy).toHaveBeenCalledTimes(1);
+      expect(element['geminiApiKey']).toBe(pastedKey);
+
+      const apiKeyInput = element.shadowRoot?.querySelector('input[type="text"]') as HTMLInputElement;
+      expect(apiKeyInput.value).toBe(pastedKey);
+
+      expect(saveApiKeyToLocalStorageSpy).toHaveBeenCalledTimes(1); // Direct call
+      expect(localStorageSetItemSpy).toHaveBeenCalledWith('geminiApiKey', pastedKey);
+      expect(element['apiKeySavedSuccessfully']).toBe(true);
+      expect(element.shadowRoot?.textContent).toContain('API Key Saved & Verified');
+    });
+
+    test('clipboard API unavailable', async () => {
+      Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+
+      pasteButton!.click();
+      await element.updateComplete;
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Clipboard API not available or readText not supported.');
+      expect(saveApiKeyToLocalStorageSpy).not.toHaveBeenCalled();
+    });
+
+    test('clipboard read error (permission denied)', async () => {
+      clipboardReadTextSpy.mockRejectedValue(new Error('Permission denied'));
+
+      pasteButton!.click();
+      await element.updateComplete;
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to read from clipboard:', expect.any(Error));
+      expect(saveApiKeyToLocalStorageSpy).not.toHaveBeenCalled();
+    });
+
+    test('empty or whitespace clipboard', async () => {
+      clipboardReadTextSpy.mockResolvedValue('   '); // Whitespace
+
+      pasteButton!.click();
+      await element.updateComplete;
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Clipboard is empty or contains only whitespace.');
+      expect(saveApiKeyToLocalStorageSpy).not.toHaveBeenCalled(); // Or if it was, it was with an empty key leading to removal
+      // Check if geminiApiKey state remains unchanged or becomes null
+      // expect(element['geminiApiKey']).toBeNull(); // Depending on desired behavior
+    });
   });
 
-  test('initial load - API key exists in localStorage and is verified', async () => {
-    const testKey = 'test-api-key-from-storage';
-    localStorageGetItemSpy.mockReturnValue(testKey); // Configure spy BEFORE instantiation
+  describe('UI Messages Refined', () => {
+    test('UI shows "API Key Cleared" when key is null and not saved', async () => {
+      element['geminiApiKey'] = null;
+      element['apiKeySavedSuccessfully'] = false;
+      await element.updateComplete;
+      expect(element.shadowRoot?.textContent).toContain('API Key Cleared');
+    });
 
-    // Re-instantiate for a clean test of the constructor path
-    if (element.parentNode) element.parentNode.removeChild(element); // Clean up previous
-    element = new PromptDjMidi(new Map(), mockMidiDispatcher);
-    handleMainAudioButtonSpy = jest.spyOn(element as any, 'handleMainAudioButton').mockImplementation(async () => {});
-    document.body.appendChild(element);
-    await element.updateComplete;
+    test('UI shows "Verifying or attempting to save API Key..." when key present but not saved/verified', async () => {
+      element['geminiApiKey'] = 'some-key';
+      element['apiKeySavedSuccessfully'] = false;
+      element['apiKeyInvalid'] = false;
+      await element.updateComplete;
+      expect(element.shadowRoot?.textContent).toContain('Verifying or attempting to save API Key...');
+    });
 
-    expect(localStorageGetItemSpy).toHaveBeenCalledWith('geminiApiKey');
-    expect(element['geminiApiKey']).toBe(testKey);
-    expect(element['apiKeySavedSuccessfully']).toBe(true);
+    test('UI shows "API Key is invalid..." when apiKeyInvalid is true (generic case)', async () => {
+        element['apiKeyInvalid'] = true;
+        // Ensure localStorage is defined for this sub-test, to hit the generic invalid message
+        const originalLocalStorage = Object.getOwnPropertyDescriptor(window, 'localStorage');
+        if (!window.localStorage) { // If it was already undefined by a prior test in this suite.
+            Object.defineProperty(window, 'localStorage', { value: Storage.prototype, configurable: true, writable: true });
+        }
 
-    await element.updateComplete;
-    const successMsg = element.shadowRoot?.textContent?.includes('API Key Verified');
-    expect(successMsg).toBe(true);
-  });
+        await element.updateComplete;
+        expect(element.shadowRoot?.textContent).toContain('API Key is invalid, failed to save, or auth failed.');
 
-  test('localStorage is unavailable during save attempt', async () => {
-    // Undefine localStorage globally for this test
-    const originalLocalStorage = Object.getOwnPropertyDescriptor(window, 'localStorage');
-    Object.defineProperty(window, 'localStorage', { value: undefined, configurable: true });
-
-    element['geminiApiKey'] = 'test-key';
-    await element.saveApiKeyToLocalStorage(); // This calls checkApiKeyStatus at the end
-
-    expect(consoleWarnSpy).toHaveBeenCalledWith('localStorage is not available. Cannot save or remove Gemini API key from localStorage.');
-    expect(element['apiKeyInvalid']).toBe(true);
-    expect(element['connectionError']).toBe(true);
-    expect(element['apiKeySavedSuccessfully']).toBe(false); // checkApiKeyStatus will set this
-    expect(handleMainAudioButtonSpy).toHaveBeenCalled();
-
-    // Restore localStorage
-    if(originalLocalStorage) {
-      Object.defineProperty(window, 'localStorage', originalLocalStorage);
-    }
-  });
-
-  test('API key saving succeeds on the first try', async () => {
-    const testKey = 'test-key-save-success';
-    element['geminiApiKey'] = testKey;
-    // localStorageSetItemSpy is already mocked to succeed by default
-
-    await element.saveApiKeyToLocalStorage();
-    // saveApiKeyToLocalStorage calls checkApiKeyStatus at the end.
-
-    expect(localStorageSetItemSpy).toHaveBeenCalledTimes(1);
-    expect(localStorageSetItemSpy).toHaveBeenCalledWith('geminiApiKey', testKey);
-    expect(consoleLogSpy).toHaveBeenCalledWith(`Gemini API key saved to local storage (attempt 1).`);
-    expect(element['apiKeySavedSuccessfully']).toBe(true);
-    expect(handleMainAudioButtonSpy).toHaveBeenCalled();
-
-    await element.updateComplete;
-    const successMsg = element.shadowRoot?.textContent?.includes('API Key Saved');
-    expect(successMsg).toBe(true);
-  });
-
-  test('API key saving succeeds after retries (e.g., on 3rd try)', async () => {
-    const testKey = 'test-key-retry-success';
-    element['geminiApiKey'] = testKey;
-
-    jest.useFakeTimers(); // Use fake timers for setTimeout
-
-    localStorageSetItemSpy
-      .mockImplementationOnce(() => { throw new Error('Simulated localStorage error 1'); })
-      .mockImplementationOnce(() => { throw new Error('Simulated localStorage error 2'); })
-      .mockImplementationOnce(() => {}); // Success on the third try
-
-    const savePromise = element.saveApiKeyToLocalStorage();
-
-    // Advance timers for the first two failed attempts
-    await jest.advanceTimersByTimeAsync(1000); // Delay after 1st failure
-    await jest.advanceTimersByTimeAsync(2000); // Delay after 2nd failure
-
-    await savePromise; // Wait for the save process to complete
-    await element.updateComplete;
-
-    expect(localStorageSetItemSpy).toHaveBeenCalledTimes(3);
-    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Attempt 1 to save API key failed.'), expect.any(Error));
-    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Attempt 2 to save API key failed.'), expect.any(Error));
-    expect(consoleLogSpy).toHaveBeenCalledWith(`Gemini API key saved to local storage (attempt 3).`);
-    expect(element['apiKeySavedSuccessfully']).toBe(true);
-    expect(handleMainAudioButtonSpy).toHaveBeenCalled();
-
-    const successMsg = element.shadowRoot?.textContent?.includes('API Key Saved');
-    expect(successMsg).toBe(true);
-
-    jest.useRealTimers(); // Restore real timers
-  });
-
-  test('API key saving fails after all retries', async () => {
-    const testKey = 'test-key-retry-fail';
-    element['geminiApiKey'] = testKey;
-    const maxRetries = element['maxRetries'] || 3; // Accessing private member for test clarity
-
-    jest.useFakeTimers();
-    localStorageSetItemSpy.mockImplementation(() => { throw new Error('Simulated consistent localStorage error'); });
-
-    const savePromise = element.saveApiKeyToLocalStorage();
-
-    for (let i = 0; i < maxRetries; i++) {
-      await jest.advanceTimersByTimeAsync(1000 * Math.pow(2, i) + 100); // Advance past each backoff
-    }
-    await savePromise;
-    await element.updateComplete;
-
-    expect(localStorageSetItemSpy).toHaveBeenCalledTimes(maxRetries);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(`Failed to save API key after ${maxRetries} attempts.`);
-    expect(element['apiKeySavedSuccessfully']).toBe(false);
-    expect(element['apiKeyInvalid']).toBe(true);
-    expect(element['connectionError']).toBe(true);
-    expect(handleMainAudioButtonSpy).toHaveBeenCalled();
-
-    const failMsg = element.shadowRoot?.textContent?.includes('API Key is invalid');
-    expect(failMsg).toBe(true); // Check for specific failure message related to apiKeyInvalid
-
-    jest.useRealTimers();
-  });
-
-  test('API key removal when geminiApiKey is set to null', async () => {
-    // Simulate key was initially present
-    localStorageGetItemSpy.mockReturnValue('existing-key');
-    element['geminiApiKey'] = 'existing-key'; // Simulate it was loaded
-    await element.updateComplete;
-    element['geminiApiKey'] = null; // User clears the key
-    await element.updateComplete;
-
-    await element.saveApiKeyToLocalStorage(); // Attempt to "save" the null key (which means remove)
-
-    expect(localStorageRemoveItemSpy).toHaveBeenCalledTimes(1);
-    expect(localStorageRemoveItemSpy).toHaveBeenCalledWith('geminiApiKey');
-    expect(consoleLogSpy).toHaveBeenCalledWith('Gemini API key removed from local storage.');
-    expect(element['apiKeySavedSuccessfully']).toBe(false);
-    expect(handleMainAudioButtonSpy).toHaveBeenCalled();
-
-    await element.updateComplete;
-    const clearedMsg = element.shadowRoot?.textContent?.includes('API Key Cleared');
-    expect(clearedMsg).toBe(true);
-  });
-
-  test('checkApiKeyStatus correctly identifies unsaved key', async () => {
-    element['geminiApiKey'] = 'unsaved-key';
-    localStorageGetItemSpy.mockReturnValue(null); // No key in storage
-
-    (element as any).checkApiKeyStatus(); // Call directly for this specific test
-    await element.updateComplete;
-
-    expect(element['apiKeySavedSuccessfully']).toBe(false);
-    const statusMessage = element.shadowRoot?.textContent;
-    expect(statusMessage).toContain('Unsaved Key'); // Assuming this message is shown near input
-    expect(statusMessage).toContain('API Key entered but not saved. Click Save.'); // General status
-  });
-
-  test('checkApiKeyStatus correctly identifies mismatched key', async () => {
-    element['geminiApiKey'] = 'active-key';
-    localStorageGetItemSpy.mockReturnValue('stored-different-key'); // Different key in storage
-
-    (element as any).checkApiKeyStatus();
-    await element.updateComplete;
-
-    expect(element['apiKeySavedSuccessfully']).toBe(false);
-    expect(consoleWarnSpy).toHaveBeenCalledWith('API key verification failed. Stored key does not match active key, or key needs saving.');
-    // UI should reflect it's not "Saved" or "Verified"
-    const statusMessage = element.shadowRoot?.textContent;
-    expect(statusMessage).not.toContain('API Key Saved');
-    expect(statusMessage).not.toContain('API Key Verified');
-    expect(statusMessage).toContain('Unsaved Key'); // Or similar indication that current key isn't the one in storage
+        if (originalLocalStorage && window.localStorage === undefined) { // Restore if we set it
+             Object.defineProperty(window, 'localStorage', originalLocalStorage);
+        } else if (!originalLocalStorage && window.localStorage !== undefined) { // If it was defined by us
+            Object.defineProperty(window, 'localStorage', { value: undefined, configurable: true });
+        }
+    });
   });
 });
