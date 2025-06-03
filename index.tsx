@@ -319,6 +319,26 @@ class PromptDjMidi extends LitElement {
     #buttons .seed-controls input#seed {
         width: 10vmin;
     }
+    #buttons dsp-overload-indicator {
+      /* Copied from #buttons button and adjusted */
+      font-weight: 600;
+      cursor: default; /* It's an indicator, not a button */
+      color: #fff;
+      background: #0002;
+      -webkit-font-smoothing: antialiased;
+      border: 1.5px solid #fff;
+      border-radius: 4px;
+      user-select: none;
+      padding: 3px 6px;
+      display: none; /* Original logic for appearing/disappearing */
+      vertical-align: middle;
+      height: auto;
+      box-sizing: border-box;
+    }
+    /* Override display:none when it should be visible */
+    #buttons dsp-overload-indicator.is-visible {
+      display: inline-block;
+    }
     #buttons .seed-controls button { /* General style for buttons in seed-controls */
       font: inherit;
       font-weight: 600;
@@ -1737,12 +1757,12 @@ class PromptDjMidi extends LitElement {
      const djStyleSelectorOptions = Array.from(scaleMap, ([label, { value, color }]) => ({ label, value, color } as DJStyleSelectorOption));
  
       return html`
-        <dsp-overload-indicator
-          .currentPromptAverage=${this.promptWeightedAverage}
-          .currentKnobAverageExtremeness=${this.knobAverageExtremeness}
-        ></dsp-overload-indicator>
         <div id="background" style=${bg}></div>
         <div id="buttons">
+          <dsp-overload-indicator
+            .currentPromptAverage=${this.promptWeightedAverage}
+            .currentKnobAverageExtremeness=${this.knobAverageExtremeness}
+          ></dsp-overload-indicator>
           <!-- MIDI Controls -->
           <button
             @click=${this.toggleShowMidi}
@@ -1851,13 +1871,18 @@ class PromptDjMidi extends LitElement {
                 : "API Key is invalid or saving failed."}
             </span>
           ` : !this.geminiApiKey && !this.apiKeySavedSuccessfully ? html`
+            <!-- This covers the case where the field is empty, and no key is successfully stored. -->
             <span style="color: yellow; margin-left: 10px;">No API Key provided.</span>
           ` : this.geminiApiKey && !this.apiKeySavedSuccessfully && !this.apiKeyInvalid ? html`
+            <!-- This covers when a key is typed/pasted but not yet confirmed saved (e.g. during debounce), and not invalid. -->
             <span style="color: orange; margin-left: 10px;">Key entered, will attempt to save.</span>
           ` : ''}
-          <!-- Note: "API Key Saved & Verified" is now handled by transientApiKeyStatusMessage -->
-          <!-- "API Key Cleared" is also handled by transientApiKeyStatusMessage -->
-          <!-- "Verifying or attempting to save API Key..." is effectively replaced by the "Key entered, will attempt to save" or transient messages -->
+          <!--
+            The persistent "API Key Saved & Verified" (previously shown when
+            `this.apiKeySavedSuccessfully && this.geminiApiKey` was true and no error)
+            is intentionally removed. Successful save/load is now indicated by transient messages.
+            If a key is present, saved, not invalid, and no transient message is active, no specific message is shown.
+          -->
 
           <!-- Preset Controls -->
           ${this.showPresetControls ? html`
