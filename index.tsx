@@ -339,6 +339,12 @@ class PromptDjMidi extends LitElement {
     #buttons dsp-overload-indicator.is-visible {
       display: inline-block;
     }
+    #buttons .flow-parameters-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      /* margin-left: 5px; */ /* Retaining this commented out as per instruction */
+    }
     #buttons .seed-controls button { /* General style for buttons in seed-controls */
       font: inherit;
       font-weight: 600;
@@ -1802,6 +1808,14 @@ class PromptDjMidi extends LitElement {
                   id="flowDownButton"
                   class="flow-direction-button ${this.flowDirectionDown ? 'active' : ''}"
                   @click=${() => this.toggleFlowDirection('down')}>Down</button>
+                <label for="seed">Seed</label>
+                <input
+                    type="number"
+                    id="seed"
+                    .value=${this.config.seed ?? ''}
+                    @input=${this.handleInputChange}
+                    placeholder="Auto"
+                    .disabled=${this.isSeedFlowing} />
               ` : ''}
               ${this.isAnyFlowActive ? html`
                 <label for="flowFrequency">Frequency</label>
@@ -1822,20 +1836,6 @@ class PromptDjMidi extends LitElement {
                 />
               ` : ''}
             </div>
-          ` : ''}
-
-          <!-- Seed Input Controls -->
-          ${this.isSeedFlowing ? html`
-          <div class="seed-input-controls"> 
-            <label for="seed">Seed</label>
-            <input
-                type="number"
-                id="seed"
-                .value=${cfg.seed ?? ''}
-                @input=${this.handleInputChange}
-                placeholder="Auto"
-                .disabled=${this.isSeedFlowing} /> 
-          </div>
           ` : ''}
 
           <!-- API Key Controls -->
