@@ -1598,6 +1598,12 @@ class PromptDjMidi extends LitElement {
     await this.saveApiKeyToLocalStorage();
     this.requestUpdate();
   }
+
+  private async handleClearApiKeyClick() {
+    this.geminiApiKey = null;
+    await this.saveApiKeyToLocalStorage();
+    this.requestUpdate();
+  }
  
    private getApiKey() {
      window.open('https://aistudio.google.com/apikey', '_blank');
@@ -1936,45 +1942,40 @@ class PromptDjMidi extends LitElement {
           ` : ''}
 
           <!-- API Key Controls -->
-          ${!this.geminiApiKey || this.apiKeyInvalid ? html`
+          ${this.geminiApiKey ? html`
+            <button @click=${this.handleClearApiKeyClick}>Clear API Key</button>
+          ` : html`
             <button @click=${this.getApiKey}>Get API Key</button>
-            <div class="api-controls">
-              <input
-                type="text"
-                placeholder="Gemini API Key"
-                .value=${this.geminiApiKey || ''}
-                @input=${this.handleApiKeyInputChange}
-              />
-              <button @click=${this.handlePasteApiKeyClick}>Paste API key</button>
-              <button @click=${this.handleSaveApiKeyClick}>Save API Key</button>
-            </div>
-          ` : !this.apiKeySavedSuccessfully && this.geminiApiKey === null ? html`<span style="color: yellow; margin-left: 5px;">API Key Cleared</span>` : ''}
-          <!-- Message when API key is loaded but not yet saved, or if saving failed -->
-          ${!this.apiKeyInvalid && !this.apiKeySavedSuccessfully && this.geminiApiKey ? html`
-            <span style="color: orange; margin-left: 10px;">API Key entered but not saved. Click Save.</span>
-          ` : ''}
-          <!-- Message when API key is invalid after attempting to connect -->
-          ${this.apiKeyInvalid ? html`
-            <span style="color: red; margin-left: 10px;">API Key is invalid or authentication failed.</span>
-          ` : ''}
-
-
-          <!-- General API Key Status Messages -->
-          ${this.transientApiKeyStatusMessage ? html`
-            <span style="color: lightblue; margin-left: 10px;">${this.transientApiKeyStatusMessage}</span>
-          ` : this.apiKeyInvalid ? html`
-            <span style="color: red; margin-left: 10px;">
-              ${typeof localStorage === 'undefined'
-                ? "localStorage not available. API Key cannot be saved."
-                : "API Key is invalid or saving failed."}
-            </span>
-          ` : !this.geminiApiKey && !this.apiKeySavedSuccessfully ? html`
-            <!-- This covers the case where the field is empty, and no key is successfully stored. -->
-            <span style="color: yellow; margin-left: 10px;">No API Key provided.</span>
-          ` : this.geminiApiKey && !this.apiKeySavedSuccessfully && !this.apiKeyInvalid ? html`
-            <!-- This covers when a key is typed/pasted but not yet confirmed saved (e.g. during debounce), and not invalid. -->
-            <span style="color: orange; margin-left: 10px;">Key entered, will attempt to save.</span>
-          ` : ''}
+          `}
+          <div class="api-controls">
+            <input
+              type="text"
+              placeholder="Gemini API Key"
+              .value=${this.geminiApiKey || ''}
+              @input=${this.handleApiKeyInputChange}
+            />
+            <button @click=${this.handlePasteApiKeyClick}>Paste API key</button>
+            <button @click=${this.handleSaveApiKeyClick}>Save API Key</button>
+          </div>
+          <div class="api-status-messages">
+            ${this.transientApiKeyStatusMessage ? html`
+              <span style="color: lightblue; margin-left: 10px;">${this.transientApiKeyStatusMessage}</span>
+            ` : this.apiKeyInvalid ? html`
+              <span style="color: red; margin-left: 10px;">
+                ${typeof localStorage === 'undefined'
+                  ? "localStorage not available. API Key cannot be saved."
+                  : this.connectionError && (!this.geminiApiKey || !this.isValidApiKeyFormat(this.geminiApiKey) || !this.apiKeySavedSuccessfully)
+                    ? "API Key is invalid or authentication failed."
+                    : "API Key is invalid, or format is incorrect, or saving failed."}
+              </span>
+            ` : !this.geminiApiKey && !this.apiKeySavedSuccessfully ? html`
+              <span style="color: yellow; margin-left: 10px;">No API Key provided.</span>
+            ` : this.geminiApiKey && !this.apiKeySavedSuccessfully ? html`
+              <span style="color: orange; margin-left: 10px;">API Key entered. Save or start playback to use.</span>
+            ` : this.apiKeySavedSuccessfully && this.geminiApiKey ? html`
+              <span style="color: lightgreen; margin-left: 10px;">API Key is saved and valid.</span>
+            ` : ''}
+          </div>
 
           <!-- Preset Controls -->
           ${this.showPresetControls ? html`
