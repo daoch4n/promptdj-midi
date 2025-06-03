@@ -4,7 +4,7 @@
 
 **Prerequisites:** `⚙️ Settings` > `Pages` > `Build and deployment` > `Source` set to `Github Actions`
 
-1. Fork repo
+1. [Fork the repo](https://github.com/daoch4n/promptdj-midi/fork)
 2. Github Action will handle the rest
    - Check it out at yourusername.github.io/promptdj-midi
 
