@@ -958,42 +958,92 @@ class PromptDjMidi extends LitElement {
  
    private async handleMainAudioButton() {
     await this.updateComplete;
-     this.currentRetryAttempt = 0;
+    this.currentRetryAttempt = 0;
 
-     if (!this.audioReady) {
-       this.playbackState = 'loading';
-       await this.connectToSession();
-       if (this.connectionError || this.apiKeyInvalid) {
-         this.playbackState = 'stopped';
-        // Corresponding console.warn was already present in the previous step for this condition.
-        // No additional console.warn needed here if the original logic didn't have one specifically for !this.toastMessage.showing
-        // but the generic one for "toastMessage or its show method is not available" covers it.
+    if (!this.audioReady) {
+      // Step 2.a: Check if API key is present
+      if (this.geminiApiKey) {
+        // Step 2.b: Validate API key format
+        if (!this.isValidApiKeyFormat(this.geminiApiKey)) {
+          // Step 2.c: Handle invalid format
+          this.setTransientApiKeyStatus("Invalid API Key format. Playback not started.");
+          this.apiKeyInvalid = true;
+          this.apiKeySavedSuccessfully = false;
+          this.playbackState = 'stopped';
+          return;
+        }
+        // Step 2.d.i: Save valid key
+        await this.saveApiKeyToLocalStorage();
+        // Step 2.d.ii: Check if save failed
+        if (this.apiKeyInvalid || !this.apiKeySavedSuccessfully) {
+          this.playbackState = 'stopped';
+          // Rely on message from saveApiKeyToLocalStorage or set a new one
+                          this.setTransientApiKeyStatus("Failed to save API Key. Playback not started.");
+          return;
+        }
+      } else if (!this.geminiApiKey && !this.apiKeySavedSuccessfully) {
+        // No API key in input, and none saved successfully prior (e.g. from localStorage load)
+        // This implies we can't proceed if a key is required for connection.
+        // However, connectToSession itself checks for this.geminiApiKey.
+        // If no key is available at all (neither in input nor previously loaded and valid),
+        // connectToSession will warn and return. We let it handle that specific message.
+      }
+
+      // Step 2.e: Proceed with loading
+      this.playbackState = 'loading';
+      // Step 2.f: Connect to session
+      await this.connectToSession();
+
+      // Step 2.g: Handle connection failure
+      if (this.connectionError || this.apiKeyInvalid) {
+        this.playbackState = 'stopped';
         console.warn('Failed to connect. Please check your API key and connection.');
-         return;
-       }
-       await this.setSessionPrompts();
-       this.play();
-     } else {
-       if (this.playbackState === 'playing') {
-         this.pause();
-       } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
-         if (this.connectionError || this.apiKeyInvalid) {
-           this.playbackState = 'loading';
-           await this.connectToSession();
-           if (this.connectionError || this.apiKeyInvalid) {
-             this.playbackState = (this.playbackState === 'loading' || this.playbackState === 'playing') ? 'stopped' : this.playbackState;
-            // Similar to above, console.warn for this specific condition.
+        return;
+      }
+      // Step 2.h: Set session prompts
+      await this.setSessionPrompts();
+      // Step 2.i: Play
+      this.play();
+    } else { // Step 3: Audio is ready
+      if (this.playbackState === 'playing') {
+        this.pause();
+      } else if (this.playbackState === 'paused' || this.playbackState === 'stopped') {
+        // Step 3.b.i: Check for existing errors before trying to play again
+        if (this.connectionError || this.apiKeyInvalid) {
+          this.playbackState = 'loading';
+
+          // Re-validate and attempt to save the current key if present
+          if (this.geminiApiKey) {
+            if (!this.isValidApiKeyFormat(this.geminiApiKey)) {
+              this.setTransientApiKeyStatus("Invalid API Key format. Playback not started.");
+              this.apiKeyInvalid = true;
+              this.apiKeySavedSuccessfully = false;
+              this.playbackState = 'stopped';
+              return;
+            }
+            await this.saveApiKeyToLocalStorage();
+            if (this.apiKeyInvalid || !this.apiKeySavedSuccessfully) {
+              this.playbackState = 'stopped';
+              this.setTransientApiKeyStatus("Failed to save API Key. Playback not started.");
+              return;
+            }
+          }
+
+          await this.connectToSession();
+          if (this.connectionError || this.apiKeyInvalid) {
+            this.playbackState = 'stopped';
             console.warn('Failed to reconnect. Please check your connection or API key.');
-             return;
-           }
-         }
-         await this.setSessionPrompts();
-         this.play();
-       } else if (this.playbackState === 'loading') {
-         this.stop();
-       }
-     }
-   }
+            return;
+          }
+        }
+        // Step 3.b.ii: (or continuation after successful re-connect)
+        await this.setSessionPrompts();
+        this.play();
+      } else if (this.playbackState === 'loading') {
+        this.stop();
+      }
+    }
+  }
  
    private get isAnyFlowActive(): boolean {
      const isAnyPromptAutoFlowing = [...this.prompts.values()].some(p => p.isAutoFlowing);
@@ -1151,10 +1201,7 @@ class PromptDjMidi extends LitElement {
       this.apiKeySavedSuccessfully = false;
       this.connectionError = true; // Or a more specific error state
     }
-    // Call handleMainAudioButton first, then check status,
     // as checkApiKeyStatus might influence UI related to the button's action.
-    this.handleMainAudioButton();
-    this.checkApiKeyStatus();
    }
 
   private checkApiKeyStatus() {
@@ -1505,7 +1552,6 @@ class PromptDjMidi extends LitElement {
      // For immediate feedback that the key is "dirty", we can set it here.
      // But the current UI logic for "Unsaved Key" depends on geminiApiKey being truthy
      // and apiKeySavedSuccessfully being false, which checkApiKeyStatus will handle.
-     this.debouncedSaveApiKey();
    }
 
   private async handlePasteApiKeyClick() {
