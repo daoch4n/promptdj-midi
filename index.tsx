@@ -1877,12 +1877,6 @@ class PromptDjMidi extends LitElement {
             <!-- This covers when a key is typed/pasted but not yet confirmed saved (e.g. during debounce), and not invalid. -->
             <span style="color: orange; margin-left: 10px;">Key entered, will attempt to save.</span>
           ` : ''}
-          <!--
-            The persistent "API Key Saved & Verified" (previously shown when
-            `this.apiKeySavedSuccessfully && this.geminiApiKey` was true and no error)
-            is intentionally removed. Successful save/load is now indicated by transient messages.
-            If a key is present, saved, not invalid, and no transient message is active, no specific message is shown.
-          -->
 
           <!-- Preset Controls -->
           ${this.showPresetControls ? html`
