@@ -1611,36 +1611,41 @@ class PromptDjMidi extends LitElement {
           <button @click=${this.toggleSeedFlow} class=${this.isSeedFlowing ? 'active' : ''}>Flow</button>
 
           <!-- Conditional Flow Parameters Group -->
-          ${this.isAnyFlowActive ? html`
+          ${(this.isSeedFlowing || this.isAnyFlowActive) ? html`
             <div class="flow-parameters-group">
-              <button
-                id="flowUpButton"
-                class="flow-direction-button ${this.flowDirectionUp ? 'active' : ''}"
-                @click=${() => this.toggleFlowDirection('up')}>Up</button>
-              <button
-                id="flowDownButton"
-                class="flow-direction-button ${this.flowDirectionDown ? 'active' : ''}"
-                @click=${() => this.toggleFlowDirection('down')}>Down</button>
-              <label for="flowFrequency">Frequency</label>
-              <input
-                type="number"
-                id="flowFrequency"
-                .value=${this.flowFrequency.toString()}
-                @input=${this.handleFlowFrequencyChange}
-                min="100"
-              />
-              <label for="flowAmplitude">Amplitude</label>
-              <input
-                type="number"
-                id="flowAmplitude"
-                .value=${this.flowAmplitude.toString()}
-                @input=${this.handleFlowAmplitudeChange}
-                min="1"
-              />
+              ${this.isSeedFlowing ? html`
+                <button
+                  id="flowUpButton"
+                  class="flow-direction-button ${this.flowDirectionUp ? 'active' : ''}"
+                  @click=${() => this.toggleFlowDirection('up')}>Up</button>
+                <button
+                  id="flowDownButton"
+                  class="flow-direction-button ${this.flowDirectionDown ? 'active' : ''}"
+                  @click=${() => this.toggleFlowDirection('down')}>Down</button>
+              ` : ''}
+              ${this.isAnyFlowActive ? html`
+                <label for="flowFrequency">Frequency</label>
+                <input
+                  type="number"
+                  id="flowFrequency"
+                  .value=${this.flowFrequency.toString()}
+                  @input=${this.handleFlowFrequencyChange}
+                  min="100"
+                />
+                <label for="flowAmplitude">Amplitude</label>
+                <input
+                  type="number"
+                  id="flowAmplitude"
+                  .value=${this.flowAmplitude.toString()}
+                  @input=${this.handleFlowAmplitudeChange}
+                  min="1"
+                />
+              ` : ''}
             </div>
           ` : ''}
 
           <!-- Seed Input Controls -->
+          ${this.isSeedFlowing ? html`
           <div class="seed-input-controls"> 
             <label for="seed">Seed</label>
             <input
@@ -1651,6 +1656,7 @@ class PromptDjMidi extends LitElement {
                 placeholder="Auto"
                 .disabled=${this.isSeedFlowing} /> 
           </div>
+          ` : ''}
 
           <!-- API Key Controls -->
           ${!this.geminiApiKey || this.apiKeyInvalid ? html`
