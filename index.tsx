@@ -443,6 +443,11 @@ class PromptDjMidi extends LitElement {
 
   @state() private promptWeightedAverage = 0;
   @state() private knobAverageExtremeness = 0;
+
+  // Preset UI State
+  @state() private presetNameToSave: string = "";
+  @state() private availablePresets: string[] = [];
+  @state() private selectedPreset: string = "";
  
    private audioLevelRafId: number | null = null;
    private connectionError = true;
@@ -472,6 +477,7 @@ class PromptDjMidi extends LitElement {
      this.toggleFlowDirection = this.toggleFlowDirection.bind(this);
      this.handlePromptAutoFlowToggled = this.handlePromptAutoFlowToggled.bind(this);
      this.globalFlowTick = this.globalFlowTick.bind(this);
+    this.loadAvailablePresets(); // Load available presets
  
     if (typeof localStorage !== 'undefined') {
       this.geminiApiKey = localStorage.getItem('geminiApiKey');
@@ -1048,6 +1054,257 @@ class PromptDjMidi extends LitElement {
     }
     this.handleMainAudioButton();
    }
+
+  // Preset Management Methods
+  private loadAvailablePresets() {
+    if (typeof localStorage === 'undefined') {
+      console.warn('localStorage is not available. Cannot load presets from prompt_presets_v2.');
+      this.availablePresets = [];
+      return;
+    }
+    try {
+      const storedPresets = localStorage.getItem('prompt_presets_v2');
+      if (storedPresets) {
+        try {
+          const parsedPresets = JSON.parse(storedPresets);
+          if (typeof parsedPresets === 'object' && parsedPresets !== null) {
+            this.availablePresets = Object.keys(parsedPresets);
+            console.log("Successfully loaded available presets from localStorage (prompt_presets_v2):", this.availablePresets);
+          } else {
+            console.warn("Stored presets format (prompt_presets_v2) is invalid, expected an object. Using empty list.");
+            this.availablePresets = [];
+            // localStorage.removeItem('prompt_presets_v2'); // Optionally remove
+          }
+        } catch (parseError) {
+          console.error("Failed to parse stored presets from localStorage (prompt_presets_v2). Data might be corrupted.", parseError);
+          this.availablePresets = [];
+          // localStorage.removeItem('prompt_presets_v2'); // Optionally remove
+        }
+      } else {
+        console.log("No presets found in localStorage (prompt_presets_v2). Initializing with empty list.");
+        this.availablePresets = [];
+      }
+    } catch (e) {
+      console.error("Error accessing localStorage to retrieve presets (prompt_presets_v2).", e);
+      this.availablePresets = [];
+    }
+  }
+
+  private handlePresetNameInputChange(e: Event) {
+    this.presetNameToSave = (e.target as HTMLInputElement).value;
+  }
+
+  private handleSavePresetClick() {
+    const presetName = this.presetNameToSave.trim();
+    if (!presetName) {
+      console.warn("Preset name cannot be empty.");
+      return;
+    }
+
+    if (typeof localStorage === 'undefined') {
+      console.warn('localStorage is not available. Cannot save preset to prompt_presets_v2.');
+      return;
+    }
+
+    // Gather all data for the preset
+    const promptsArray = [...this.prompts.values()];
+    const currentConfig = { ...this.config };
+    const currentAutoStates = {
+      autoDensity: this.autoDensity,
+      autoBrightness: this.autoBrightness,
+      autoBpm: this.autoBpm,
+      autoTemperature: this.autoTemperature,
+      autoTopK: this.autoTopK,
+      autoGuidance: this.autoGuidance
+    };
+    const currentLastDefinedStates = {
+      lastDefinedDensity: this.lastDefinedDensity,
+      lastDefinedBrightness: this.lastDefinedBrightness,
+      lastDefinedBpm: this.lastDefinedBpm,
+      lastDefinedTemperature: this.lastDefinedTemperature,
+      lastDefinedTopK: this.lastDefinedTopK,
+      lastDefinedGuidance: this.lastDefinedGuidance
+    };
+
+    // Create the comprehensive preset data object
+    const presetData = {
+      prompts: promptsArray,
+      config: currentConfig,
+      autoStates: currentAutoStates,
+      lastDefinedStates: currentLastDefinedStates
+    };
+    const presetDataString = JSON.stringify(presetData);
+
+    // Load existing main presets object
+    let allPresets: { [key: string]: string } = {}; // Stores presetName: stringifiedPresetData
+    try {
+      const existingPresetsString = localStorage.getItem('prompt_presets_v2');
+      if (existingPresetsString) {
+        try {
+          const parsed = JSON.parse(existingPresetsString);
+          if (typeof parsed === 'object' && parsed !== null) {
+            allPresets = parsed;
+          } else {
+            console.warn("Existing presets data (prompt_presets_v2) is not a valid object. Starting with a new preset list.");
+          }
+        } catch (parseError) {
+          console.error("Failed to parse existing presets (prompt_presets_v2) from localStorage. Data might be corrupted. Starting with a new preset list and overwriting.", parseError);
+          allPresets = {}; // Overwrite corrupted data
+        }
+      }
+    } catch (accessError) {
+      console.error("Error accessing localStorage to retrieve existing presets (prompt_presets_v2). Cannot save.", accessError);
+      return;
+    }
+
+    // Add/update the new preset (storing the stringified presetData)
+    allPresets[presetName] = presetDataString;
+
+    // Save updated main presets object
+    try {
+      localStorage.setItem('prompt_presets_v2', JSON.stringify(allPresets));
+      console.log(`Preset '${presetName}' saved successfully to prompt_presets_v2.`);
+      this.loadAvailablePresets(); // Refresh the dropdown
+      this.selectedPreset = presetName; // Select the newly saved preset
+      this.presetNameToSave = ""; // Clear the input field
+    } catch (saveError) {
+      console.error(`Error saving preset '${presetName}' to localStorage (prompt_presets_v2).`, saveError);
+    }
+  }
+
+  private handlePresetSelectedChange(e: Event) {
+    this.selectedPreset = (e.target as HTMLSelectElement).value;
+
+    if (!this.selectedPreset) {
+      console.log("No preset selected or 'Load Preset' option chosen.");
+      return;
+    }
+
+    if (typeof localStorage === 'undefined') {
+      console.warn('localStorage is not available. Cannot load preset from prompt_presets_v2.');
+      return;
+    }
+
+    let allPresets: { [key: string]: string } = {};
+    try {
+      const storedPresetsString = localStorage.getItem('prompt_presets_v2');
+      if (!storedPresetsString) {
+        console.error("No presets found in localStorage (prompt_presets_v2). Cannot load:", this.selectedPreset);
+        return;
+      }
+      allPresets = JSON.parse(storedPresetsString);
+    } catch (error) {
+      console.error("Error accessing or parsing 'prompt_presets_v2' from localStorage.", error);
+      return;
+    }
+
+    const presetDataString = allPresets[this.selectedPreset];
+    if (!presetDataString) {
+      console.error(`Preset '${this.selectedPreset}' not found in stored presets (prompt_presets_v2).`);
+      return;
+    }
+
+    let loadedPresetData;
+    try {
+      loadedPresetData = JSON.parse(presetDataString);
+    } catch (error) {
+      console.error(`Error parsing preset data for '${this.selectedPreset}' from prompt_presets_v2.`, error);
+      return;
+    }
+
+    // Validate loadedPresetData structure (basic check)
+    if (!loadedPresetData || typeof loadedPresetData !== 'object' ||
+        !loadedPresetData.prompts || !loadedPresetData.config ||
+        !loadedPresetData.autoStates || !loadedPresetData.lastDefinedStates) {
+      console.error(`Corrupted preset data for '${this.selectedPreset}' in prompt_presets_v2. Missing essential keys.`);
+      return;
+    }
+
+    // Apply Prompts
+    const promptsArray = loadedPresetData.prompts as Prompt[];
+    promptsArray.forEach(p => {
+      if (p.isAutoFlowing === undefined) p.isAutoFlowing = false;
+      if (p.activatedFromZero === undefined) p.activatedFromZero = false; // Ensure this too
+    });
+    const newPromptsMap = new Map(promptsArray.map(p => [p.promptId, p]));
+    this.setPrompts(newPromptsMap); // This method already handles requestUpdate and dispatches changes
+
+    // Apply Config
+    // Ensure all keys from INITIAL_CONFIG are present, then override with loadedPresetData.config
+    this.config = { ...PromptDjMidi.INITIAL_CONFIG, ...loadedPresetData.config };
+
+    // Apply Auto States
+    this.autoDensity = loadedPresetData.autoStates.autoDensity;
+    this.autoBrightness = loadedPresetData.autoStates.autoBrightness;
+    this.autoBpm = loadedPresetData.autoStates.autoBpm;
+    this.autoTemperature = loadedPresetData.autoStates.autoTemperature !== undefined ? loadedPresetData.autoStates.autoTemperature : PromptDjMidi.INITIAL_AUTO_STATES.autoTemperature;
+    this.autoTopK = loadedPresetData.autoStates.autoTopK !== undefined ? loadedPresetData.autoStates.autoTopK : PromptDjMidi.INITIAL_AUTO_STATES.autoTopK;
+    this.autoGuidance = loadedPresetData.autoStates.autoGuidance !== undefined ? loadedPresetData.autoStates.autoGuidance : PromptDjMidi.INITIAL_AUTO_STATES.autoGuidance;
+
+
+    // Apply Last Defined States
+    this.lastDefinedDensity = loadedPresetData.lastDefinedStates.lastDefinedDensity;
+    this.lastDefinedBrightness = loadedPresetData.lastDefinedStates.lastDefinedBrightness;
+    this.lastDefinedBpm = loadedPresetData.lastDefinedStates.lastDefinedBpm;
+    this.lastDefinedTemperature = loadedPresetData.lastDefinedStates.lastDefinedTemperature !== undefined ? loadedPresetData.lastDefinedStates.lastDefinedTemperature : PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
+    this.lastDefinedTopK = loadedPresetData.lastDefinedStates.lastDefinedTopK !== undefined ? loadedPresetData.lastDefinedStates.lastDefinedTopK : PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTopK;
+    this.lastDefinedGuidance = loadedPresetData.lastDefinedStates.lastDefinedGuidance !== undefined ? loadedPresetData.lastDefinedStates.lastDefinedGuidance : PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedGuidance;
+
+    // Update Application & UI
+    this.requestUpdate(); // Request LitElement to re-render with all new state.
+    this._sendPlaybackParametersToSession(); // Send new config to backend.
+    this.calculateKnobAverageExtremeness(); // Update UI related to knob extremeness.
+    // calculatePromptWeightedAverage is called by setPrompts
+
+    console.log(`Preset '${this.selectedPreset}' loaded successfully from prompt_presets_v2.`);
+  }
+
+  private handleDeletePresetClick() {
+    if (!this.selectedPreset) {
+      console.warn("No preset selected to delete.");
+      return;
+    }
+
+    if (typeof localStorage === 'undefined') {
+      console.warn('localStorage is not available. Cannot delete preset from prompt_presets_v2.');
+      return;
+    }
+
+    let allPresets: { [key: string]: string } = {};
+    try {
+      const storedPresetsString = localStorage.getItem('prompt_presets_v2');
+      if (!storedPresetsString) {
+        console.error("No presets found in localStorage (prompt_presets_v2) to delete from.");
+        // Might happen if deleted by another tab/window or manually
+        this.loadAvailablePresets(); // Refresh list in case it's out of sync
+        this.selectedPreset = "";
+        return;
+      }
+      allPresets = JSON.parse(storedPresetsString);
+    } catch (error) {
+      console.error("Error accessing or parsing 'prompt_presets_v2' from localStorage for deletion.", error);
+      return;
+    }
+
+    if (!allPresets.hasOwnProperty(this.selectedPreset)) {
+      console.warn(`Preset '${this.selectedPreset}' not found in stored presets (prompt_presets_v2). Cannot delete.`);
+      // It might have been deleted by another tab/window. Refresh list.
+      this.loadAvailablePresets();
+      this.selectedPreset = "";
+      return;
+    }
+
+    delete allPresets[this.selectedPreset];
+
+    try {
+      localStorage.setItem('prompt_presets_v2', JSON.stringify(allPresets));
+      console.log(`Preset '${this.selectedPreset}' deleted successfully from prompt_presets_v2.`);
+      this.loadAvailablePresets(); // Refresh the dropdown
+      this.selectedPreset = "";    // Reset dropdown to default
+    } catch (saveError) {
+      console.error(`Error saving updated presets to localStorage (prompt_presets_v2) after deletion.`, saveError);
+    }
+  }
  
    private handleApiKeyInputChange(event: Event) {
      const inputElement = event.target as HTMLInputElement;
@@ -1399,6 +1656,33 @@ class PromptDjMidi extends LitElement {
               <button @click=${this.saveApiKeyToLocalStorage}>Save</button>
             </div>
           ` : ''}
+
+          <!-- Preset Controls -->
+          <div class="preset-controls">
+            <input
+              type="text"
+              id="presetNameInput"
+              .value=${this.presetNameToSave}
+              @input=${this.handlePresetNameInputChange}
+              placeholder="Preset Name"
+            />
+            <button id="savePresetButton" @click=${this.handleSavePresetClick}>Save Preset</button>
+            <select
+              id="presetSelector"
+              .value=${this.selectedPreset}
+              @change=${this.handlePresetSelectedChange}
+            >
+              <option value="">Load Preset</option>
+              ${this.availablePresets.map(name => html`<option value=${name}>${name}</option>`)}
+            </select>
+            <button
+              id="deletePresetButton"
+              @click=${this.handleDeletePresetClick}
+              .disabled=${!this.selectedPreset || this.availablePresets.length === 0}
+            >
+              Delete Preset
+            </button>
+          </div>
         </div>
         <div id="main-content-area">
 ${this.renderPrompts()}
@@ -1575,33 +1859,42 @@ ${this.renderPrompts()}
  }
  
     static getInitialPrompts(): Map<string, Prompt> {
-      let storedPrompts = null;
-      if (typeof localStorage !== 'undefined') {
-        try {
-          storedPrompts = localStorage.getItem('prompts');
-        } catch (e) {
-          console.warn('localStorage.getItem("prompts") failed:', e);
-          // storedPrompts remains null
-        }
-      } else {
-        console.warn('localStorage is not available. Cannot load prompts from localStorage.');
+      if (typeof localStorage === 'undefined') {
+        console.warn('localStorage is not available. Cannot load prompts. Using default prompts.');
+        return PromptDjMidi.buildDefaultPrompts();
       }
 
-      if (storedPrompts) {
+      let storedPromptsJson: string | null = null;
+      try {
+        storedPromptsJson = localStorage.getItem('prompts');
+      } catch (e) {
+        console.error('Error accessing localStorage to retrieve prompts. Falling back to default prompts.', e);
+        return PromptDjMidi.buildDefaultPrompts();
+      }
+
+      if (storedPromptsJson) {
         try {
-          const prompts = JSON.parse(storedPrompts) as Prompt[];
-          console.log('Loading stored prompts', prompts);
-          prompts.forEach(p => {
+          const promptsArray = JSON.parse(storedPromptsJson) as Prompt[];
+          promptsArray.forEach(p => {
             if (p.isAutoFlowing === undefined) p.isAutoFlowing = false;
+            // Ensure other potentially missing properties also have defaults if necessary in the future
           });
-          return new Map(prompts.map((prompt) => [prompt.promptId, prompt]));
+          console.log('Successfully loaded prompts from localStorage.');
+          return new Map(promptsArray.map((prompt) => [prompt.promptId, prompt]));
         } catch (e) {
-          console.error('Failed to parse stored prompts', e);
-          // Fall through to default prompts if parsing fails
+          console.error('Error parsing stored prompts from localStorage. Data might be corrupted. Removing corrupted data and falling back to default prompts.', e);
+          try {
+            localStorage.removeItem('prompts');
+            console.log('Attempted to remove corrupted prompts from localStorage.');
+          } catch (removeError) {
+            console.error('Failed to remove corrupted prompts from localStorage.', removeError);
+          }
+          return PromptDjMidi.buildDefaultPrompts();
         }
       }
 
-      console.log('No stored prompts or localStorage not available/failed, using default prompts');
+      // If storedPromptsJson is null (meaning 'prompts' item doesn't exist)
+      console.log('No prompts found in localStorage. Using default prompts.');
       return PromptDjMidi.buildDefaultPrompts();
     }
  
@@ -1630,15 +1923,17 @@ ${this.renderPrompts()}
     }
  
     static setStoredPrompts(prompts: Map<string, Prompt>) {
-      const storedPrompts = JSON.stringify([...prompts.values()]);
-      if (typeof localStorage !== 'undefined') {
-        try {
-          localStorage.setItem('prompts', storedPrompts);
-        } catch (e) {
-          console.warn('localStorage.setItem("prompts") failed:', e);
-        }
-      } else {
-        console.warn('localStorage is not available. Cannot save prompts to localStorage.');
+      if (typeof localStorage === 'undefined') {
+        console.warn('localStorage is not available. Cannot save prompts.');
+        return;
+      }
+
+      const storedPromptsJson = JSON.stringify([...prompts.values()]);
+      try {
+        localStorage.setItem('prompts', storedPromptsJson);
+        console.log('Successfully saved prompts to localStorage.');
+      } catch (e) {
+        console.error('Error saving prompts to localStorage. This could be due to quota exceeded or security restrictions.', e);
       }
     }
   }
