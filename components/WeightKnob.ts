@@ -14,7 +14,7 @@ const MAX_HALO_SCALE = 2;
 const HALO_LEVEL_MODIFIER = 1;
 
 /** How quickly the knob animates to new values. Higher is slower. */
-const ANIMATION_SMOOTHING_FACTOR = 0.1;
+const ANIMATION_SMOOTHING_FACTOR = 0.2;
 
 /** A knob for adjusting and visualizing prompt weight. */
 @customElement('weight-knob')
