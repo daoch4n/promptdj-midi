@@ -1657,19 +1657,41 @@ class PromptDjMidi extends LitElement {
  
     private _sendPlaybackParametersToSession() {
       if (this.session) {
+        const configToSend: {
+            density: number | null | undefined;
+            brightness: number | null | undefined;
+            bpm?: number; // Make bpm optional
+            muteBass: boolean | undefined;
+            muteDrums: boolean | undefined;
+            onlyBassAndDrums: boolean | undefined;
+            scale?: Scale; // Make scale optional
+            temperature: number | null | undefined;
+            guidance: number | null | undefined;
+            seed?: number; // Make seed optional
+        } = {
+          density: this.config.density,
+          brightness: this.config.brightness,
+          muteBass: this.config.muteBass,
+          muteDrums: this.config.muteDrums,
+          onlyBassAndDrums: this.config.onlyBassAndDrums,
+          temperature: this.config.temperature,
+          guidance: this.config.guidance,
+        };
+
+        if (this.config.bpm !== null) {
+          configToSend.bpm = this.config.bpm;
+        }
+
+        if (this.config.scale !== 'SCALE_UNSPECIFIED') {
+          configToSend.scale = this.config.scale as Scale;
+        }
+
+        if (this.config.seed !== null) {
+          configToSend.seed = this.config.seed;
+        }
+
         this.session.setMusicGenerationConfig({
-          musicGenerationConfig: {
-            density: this.config.density,
-            brightness: this.config.brightness,
-            bpm: this.config.bpm === null ? undefined : this.config.bpm,
-            muteBass: this.config.muteBass,
-            muteDrums: this.config.muteDrums,
-            onlyBassAndDrums: this.config.onlyBassAndDrums,
-            scale: this.config.scale === 'SCALE_UNSPECIFIED' ? undefined : (this.config.scale as Scale),
-            temperature: this.config.temperature,
-            guidance: this.config.guidance,
-            seed: this.config.seed === null ? undefined : this.config.seed,
-          }
+          musicGenerationConfig: configToSend,
         });
       }
     }
