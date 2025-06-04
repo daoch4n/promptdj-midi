@@ -14,7 +14,7 @@ const MAX_HALO_SCALE = 2;
 const HALO_LEVEL_MODIFIER = 1;
 
 /** How quickly the knob animates to new values. Higher is slower. */
-const ANIMATION_SMOOTHING_FACTOR = 0.1;
+const DEFAULT_ANIMATION_SMOOTHING_FACTOR = 0.1;
 
 /** A knob for adjusting and visualizing prompt weight. */
 @customElement('weight-knob')
@@ -60,10 +60,12 @@ export class WeightKnob extends LitElement {
 
   set value(newVal: number) {
     const oldVal = this._value;
-    // Clamp new value between 0 and 2, similar to handlePointerMove
-    newVal = Math.max(0, Math.min(2, newVal));
-    this._value = newVal;
-    this._targetValue = newVal; // Update target value
+    newVal = Math.max(0, Math.min(2, newVal)); // Clamp
+    this._value = newVal; // Update internal value representation
+    this._targetValue = newVal; // Set target for animation
+
+    // Reset to default smoothing for direct value sets or drags
+    this._activeSmoothingFactor = DEFAULT_ANIMATION_SMOOTHING_FACTOR;
 
     if (this._animationFrameId === null) {
       this._animateKnob(); // Start animation if not already running
@@ -78,6 +80,7 @@ export class WeightKnob extends LitElement {
   private _currentValue = 0;
   private _targetValue = 0;
   private _animationFrameId: number | null = null;
+  private _activeSmoothingFactor = DEFAULT_ANIMATION_SMOOTHING_FACTOR;
 
   private dragStartPos = 0;
   private dragStartValue = 0;
@@ -89,6 +92,23 @@ export class WeightKnob extends LitElement {
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handlePointerMove = this.handlePointerMove.bind(this);
     this.handlePointerUp = this.handlePointerUp.bind(this);
+  }
+
+  public animateToValue(targetValue: number, smoothingFactor?: number) {
+    const clampedValue = Math.max(0, Math.min(2, targetValue)); // Clamp
+    this._value = clampedValue; // Update internal value representation to target
+    this._targetValue = clampedValue; // Set target for animation
+
+    this._activeSmoothingFactor =
+        smoothingFactor || DEFAULT_ANIMATION_SMOOTHING_FACTOR;
+
+    if (this._animationFrameId === null) {
+      this._animateKnob(); // Start animation if not already running
+    }
+    // Dispatch an event as the value property is effectively changed
+    // This is important if PromptController relies on the 'input' event
+    this.dispatchEvent(new CustomEvent<number>('input', {detail: this._value}));
+    this.requestUpdate(); // Ensure component re-renders with new state if needed
   }
 
   override connectedCallback() {
@@ -127,7 +147,7 @@ export class WeightKnob extends LitElement {
     }
 
     // Update currentValue towards targetValue.
-    this._currentValue += difference * ANIMATION_SMOOTHING_FACTOR;
+    this._currentValue += difference * this._activeSmoothingFactor;
 
     // Request a re-render because _currentValue changed.
     this.requestUpdate();

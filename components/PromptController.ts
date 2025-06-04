@@ -10,6 +10,8 @@ import type { WeightKnob } from './WeightKnob';
 import type { MidiDispatcher } from '../utils/MidiDispatcher';
 import type { Prompt, ControlChange } from '../types';
 
+const AUTO_ANIMATION_SMOOTHING_FACTOR = 0.02; // For slower animation
+
 /** A single prompt input associated with a MIDI CC. */
 @customElement('prompt-controller')
 export class PromptController extends LitElement {
@@ -259,7 +261,10 @@ private toggleAutoFlow() {
 
   if (this.isAutoFlowing) {
     // If auto-flow is now true, set weight to 1.0
-    this.weight = 1.0;
+    if (this.weightInput) { // Ensure weightInput is available
+      this.weightInput.animateToValue(1.0, AUTO_ANIMATION_SMOOTHING_FACTOR);
+    }
+    this.weight = 1.0; // Update PromptController's state
   } else {
     // If auto-flow is now false, check if the knob's current value is approximately 1.0
     if (Math.abs(currentWeight - 1.0) < 0.001) {
