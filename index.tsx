@@ -97,6 +97,11 @@ class PromptDjMidi extends LitElement {
     lastDefinedGuidance: 4.0,
   };
 
+  // Constants for background light rendering
+  private static readonly MAX_WEIGHT_BG = 0.5; // Renamed to avoid conflict if MAX_WEIGHT is used elsewhere with a different meaning
+  private static readonly MAX_ALPHA_BG = 0.6;  // Renamed for clarity
+  private static readonly LIGHT_SCALE_FACTOR = 1.5; // Example scale factor for lights
+
   private static readonly KNOB_CONFIGS = {
     density: { defaultValue: PromptDjMidi.INITIAL_CONFIG.density, min: 0, max: 1, autoProperty: 'autoDensity', lastDefinedProperty: 'lastDefinedDensity' },
     brightness: { defaultValue: PromptDjMidi.INITIAL_CONFIG.brightness, min: 0, max: 1, autoProperty: 'autoBrightness', lastDefinedProperty: 'lastDefinedBrightness' },
@@ -493,6 +498,10 @@ class PromptDjMidi extends LitElement {
    @state() private flowDirectionUp = true;   
    @state() private flowDirectionDown = true; 
    private globalFlowIntervalId: number | null = null;
+
+  private static clamp01(v: number): number {
+    return Math.min(Math.max(v, 0), 1);
+  }
 
    private readonly freqStep = 50; // milliseconds
    private readonly MIN_FREQ_VALUE = 50; // milliseconds
@@ -910,34 +919,45 @@ class PromptDjMidi extends LitElement {
      }
    }
  
-   private readonly makeBackground = throttle(
-     () => {
-       const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
- 
-       const MAX_WEIGHT = 0.5;
-       const MAX_ALPHA = 0.6;
- 
-       const bg: string[] = [];
- 
-       [...this.prompts.values()].forEach((p, i) => {
-         const alphaPct = clamp01(p.weight / MAX_WEIGHT) * MAX_ALPHA;
-         const alpha = Math.round(alphaPct * 0xff)
-           .toString(16)
-           .padStart(2, '0');
- 
-         const stop = p.weight / 2;
-         const x = (i % 8) / 7;
-         const y = Math.floor(i / 8) / 3;
-         const s = `radial-gradient(circle at ${x * 100}% ${y * 100}%, ${p.color}${alpha} 0px, ${p.color}00 ${stop * 100}%)`;
- 
-         bg.push(s);
-       });
- 
-       return bg.join(', ');
-     },
-     30,
-   );
- 
+   // makeBackground is removed as per instructions.
+   // The new _renderBackgroundLights method will replace its functionality.
+
+  private _renderBackgroundLights() {
+    const lightTemplates = [...this.prompts.values()].map((p, i) => {
+      const x = (i % 8) / 7; // 8 columns, 7 gaps
+      const y = Math.floor(i / 8) / 3; // 4 rows (0,1,2,3), 3 gaps
+
+      const opacityValue = PromptDjMidi.clamp01(p.weight / PromptDjMidi.MAX_WEIGHT_BG) * PromptDjMidi.MAX_ALPHA_BG;
+      // Ensure scale is non-negative and doesn't become excessively large if weight is high.
+      // p.weight is 0-2. MAX_WEIGHT_BG is 0.5. (p.weight / MAX_WEIGHT_BG) can be up to 4.
+      // Let's use p.weight directly for scaling, clamped to a reasonable range.
+      // A direct relation to weight, perhaps clamped or scaled.
+      // Original 'stop' was p.weight / 2. Let's try to keep a similar feel.
+      // Max p.weight is 2, so max stop was 1.
+      // We want scale to represent this intensity.
+      let scaleValue = PromptDjMidi.clamp01(p.weight / 2) * PromptDjMidi.LIGHT_SCALE_FACTOR; // p.weight/2 is 0-1.
+      scaleValue = Math.max(0.1, scaleValue); // Ensure a minimum visible size if weight is very low but non-zero.
+      if (p.weight === 0) scaleValue = 0; // Explicitly scale to 0 if weight is 0.
+
+      const lightStyles = {
+        position: 'absolute',
+        left: `${x * 100}%`,
+        top: `${y * 100}%`,
+        width: '15vmin', // Base size, scale will modify this
+        height: '15vmin',
+        backgroundColor: p.color,
+        opacity: `${opacityValue}`,
+        transform: `translate(-50%, -50%) scale(${scaleValue})`,
+        borderRadius: '50%',
+        // Transition will be added via CSS for properties like transform, opacity
+        mixBlendMode: 'lighten', // To better emulate additive blending of lights
+        pointerEvents: 'none', // So lights don't interfere with interactions
+      };
+      return html`<div class="background-light" style=${styleMap(lightStyles)}></div>`;
+    });
+    return lightTemplates;
+  }
+
    private pause() {
      if (this.session) {
        this.session.pause();
@@ -2042,9 +2062,8 @@ class PromptDjMidi extends LitElement {
  
    
     override render() {
-       const bg = styleMap({
-         backgroundImage: this.makeBackground(),
-       });
+       // The old bg styleMap is removed.
+       // Individual lights will be rendered directly.
  
      const advancedClasses = classMap({
        'advanced-settings-panel': true,
@@ -2071,7 +2090,9 @@ class PromptDjMidi extends LitElement {
      const djStyleSelectorOptions = Array.from(scaleMap, ([label, { value, color }]) => ({ label, value, color } as DJStyleSelectorOption));
  
       return html`
-        <div id="background" style=${bg}></div>
+        <div id="background">
+          ${this._renderBackgroundLights()}
+        </div>
         <div id="buttons">
           <dsp-overload-indicator
             .currentPromptAverage=${this.promptWeightedAverage}
