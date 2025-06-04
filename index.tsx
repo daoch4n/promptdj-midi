@@ -1626,7 +1626,9 @@ export class PromptDjMidi extends LitElement {
       autoTemperature: this.autoTemperature,
       autoTopK: this.autoTopK,
       autoGuidance: this.autoGuidance,
-      isSeedFlowing: this.isSeedFlowing // Save the state of the main Flow button
+      isSeedFlowing: this.isSeedFlowing, // Save the state of the main Flow button
+      flowFrequency: this.flowFrequency, // Save flowFrequency
+      flowAmplitude: this.flowAmplitude // Save flowAmplitude
     };
     const currentLastDefinedStates = {
       lastDefinedDensity: this.lastDefinedDensity,
@@ -1643,7 +1645,9 @@ export class PromptDjMidi extends LitElement {
       config: currentConfig,
       autoStates: currentAutoStates,
       lastDefinedStates: currentLastDefinedStates,
-      isSeedFlowing: this.isSeedFlowing // Also add to the main presetData object
+      isSeedFlowing: this.isSeedFlowing, // Also add to the main presetData object
+      flowFrequency: this.flowFrequency, // Also add to the main presetData object
+      flowAmplitude: this.flowAmplitude // Also add to the main presetData object
     };
     const presetDataString = JSON.stringify(presetData);
 
@@ -1728,7 +1732,9 @@ export class PromptDjMidi extends LitElement {
     if (!loadedPresetData || typeof loadedPresetData !== 'object' ||
         !loadedPresetData.prompts || !loadedPresetData.config ||
         !loadedPresetData.autoStates || !loadedPresetData.lastDefinedStates ||
-        loadedPresetData.isSeedFlowing === undefined) { // Check for isSeedFlowing
+        loadedPresetData.isSeedFlowing === undefined || // Check for isSeedFlowing
+        loadedPresetData.flowFrequency === undefined || // Check for flowFrequency
+        loadedPresetData.flowAmplitude === undefined) { // Check for flowAmplitude
       console.error(`Corrupted preset data for '${this.selectedPreset}' in prompt_presets_v2. Missing essential keys.`);
       return;
     }
@@ -1780,12 +1786,22 @@ export class PromptDjMidi extends LitElement {
     // calculatePromptWeightedAverage is called by setPrompts
 
     // Apply auto states to config and manage flow after all states are loaded
-    this._applyLoadedAutoStatesToConfigAndFlow(loadedPresetData.autoStates, loadedPresetData.isSeedFlowing);
+    this._applyLoadedAutoStatesToConfigAndFlow(
+      loadedPresetData.autoStates,
+      loadedPresetData.isSeedFlowing,
+      loadedPresetData.flowFrequency, // Pass flowFrequency
+      loadedPresetData.flowAmplitude // Pass flowAmplitude
+    );
 
     console.log(`Preset '${this.selectedPreset}' loaded successfully from prompt_presets_v2.`);
   }
 
-  private _applyLoadedAutoStatesToConfigAndFlow(loadedAutoStates: typeof PromptDjMidi.INITIAL_AUTO_STATES & { isSeedFlowing?: boolean }, loadedIsSeedFlowing: boolean) {
+  private _applyLoadedAutoStatesToConfigAndFlow(
+    loadedAutoStates: typeof PromptDjMidi.INITIAL_AUTO_STATES & { isSeedFlowing?: boolean },
+    loadedIsSeedFlowing: boolean,
+    loadedFlowFrequency: number, // Add loadedFlowFrequency parameter
+    loadedFlowAmplitude: number // Add loadedFlowAmplitude parameter
+  ) {
     // Apply auto states for knobs
     const knobKeys = Object.keys(PromptDjMidi.KNOB_CONFIGS) as Array<keyof typeof PromptDjMidi.KNOB_CONFIGS>;
     let newConfig = { ...this.config };
@@ -1812,6 +1828,10 @@ export class PromptDjMidi extends LitElement {
 
     // Handle isSeedFlowing
     this.isSeedFlowing = loadedIsSeedFlowing;
+
+    // Apply flowFrequency and flowAmplitude
+    this.flowFrequency = loadedFlowFrequency;
+    this.flowAmplitude = loadedFlowAmplitude;
 
     // Start/stop global flow interval based on the combined flow state
     if (this.isAnyFlowActive) {
