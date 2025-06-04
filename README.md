@@ -3,7 +3,7 @@
 ### Generate professional-grade 48kHz stereo audio with Auto Flow
 
 ## Features
-- 🎛️ 32 Editable Prompt Knobs (controllable via hardware MIDI devices)
+- 🎛️ 32 prompt knobs (reassignable in real-time and controllable via hardware MIDI devices)
 - ✨ Auto (toggleable realtime weights fluctualtion on every knob)
 - 🪩 Flow (toggleable realtime seed `fluctuation (both on)` / `🆙` / `down` flow)
 - 💾 Save / Load Presets
