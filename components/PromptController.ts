@@ -250,11 +250,33 @@ this.learnMode = !this.learnMode;
 }
 
 private toggleAutoFlow() {
+  // Store the previous state and toggle this.isAutoFlowing
+  const previousIsAutoFlowing = this.isAutoFlowing;
+  this.isAutoFlowing = !this.isAutoFlowing;
+
+  // Get the current weight
+  const currentWeight = this.weight;
+
+  if (this.isAutoFlowing) {
+    // If auto-flow is now true, set weight to 1.0
+    this.weight = 1.0;
+  } else {
+    // If auto-flow is now false, check if the knob's current value is approximately 1.0
+    if (Math.abs(currentWeight - 1.0) < 0.001) {
+      this.weight = 0.0;
+    }
+    // Otherwise, the weight remains as it was (or as set by other interactions)
+  }
+
+  // Dispatch the prompt change event
+  this.dispatchPromptChange();
+
+  // Dispatch the event with the new isAutoFlowing state
   this.dispatchEvent(
     new CustomEvent('prompt-autoflow-toggled', {
       detail: {
         promptId: this.promptId,
-        isAutoFlowing: !this.isAutoFlowing,
+        isAutoFlowing: this.isAutoFlowing, // Use the new state
       },
       bubbles: true, // Important for event to reach PromptDjMidi
       composed: true, // Important for event to cross shadow DOM boundary
