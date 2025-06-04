@@ -7,7 +7,7 @@
 - ✨ Auto (toggleable realtime weights fluctualtion on every knob)
 - 🪩 Flow (toggleable realtime seed `fluctuation (both on)` / `🆙` / `down` flow)
 - 💾 Save / Load Presets
-- ⚙️ Advanced settings panel for granular synthesis control backported from PromptDJ and restyled for fancy RGB lookz (`BPM`, `Density`, `Brightness`, `Scale`, `Temperature`, `Top K`, `Guidance`, `Bass / Drum Solo`)
+- ⚙️ Advanced settings panel for granular synthesis control (`BPM`, `Density`, `Brightness`, `Scale`, `Temperature`, `Top K`, `Guidance`, `Bass / Drum Solo`)
 
 ### Run Hosted
 
