@@ -51,7 +51,7 @@ const DEFAULT_PROMPTS = [
   { color: '#FFD700', text: 'Reggae' },
   { color: '#00FA9A', text: 'Jazz Fusion' },
   { color: '#8B4513', text: 'Folk' },
-  { color: '#DA70D6', text: 'Ethereal Vocals' },
+  { color: '#DA70D6', text: 'Ethereal Vibes' },
   { color: '#778899', text: 'Cinematic Score' },
   { color: '#1E90FF', text: 'Surf Rock' },
   { color: '#A9A9A9', text: 'Industrial' },
