@@ -2365,6 +2365,11 @@ export class PromptDjMidi extends LitElement {
                 placeholder="Gemini API Key"
                 .value=${this.geminiApiKey || ''}
                 @input=${this.handleApiKeyInputChange}
+                @keydown=${(e: KeyboardEvent) => {
+                  if (e.key === 'Enter') {
+                    this.handleSaveApiKeyClick();
+                  }
+                }}
               />
               <button @click=${this.handlePasteApiKeyClick}>Paste API key</button>
               <button @click=${this.handleSaveApiKeyClick}>Save API Key</button>
