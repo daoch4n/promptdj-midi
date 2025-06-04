@@ -148,6 +148,7 @@ export class PromptController extends LitElement {
   @property({ type: Boolean }) isAutoFlowing = false;
 
   @state() private isFocused = false; // New state to track focus
+  @state() private autoSetByButton = false;
 
   private lastValidText!: string;
 
@@ -243,7 +244,27 @@ private handleKeyDown(event: KeyboardEvent) {
 }
 
 private updateWeight() {
-  this.weight = this.weightInput.value;
+  const newWeight = this.weightInput.value;
+
+  // If Auto mode was active and user drags knob away from 1.0
+  if (this.isAutoFlowing && Math.abs(newWeight - 1.0) > 0.001) {
+    this.isAutoFlowing = false; // Turn off auto mode
+    this.autoSetByButton = false; // User interaction overrides button state
+
+    // Dispatch the autoflow toggled event as the state has changed
+    this.dispatchEvent(
+      new CustomEvent('prompt-autoflow-toggled', {
+        detail: {
+          promptId: this.promptId,
+          isAutoFlowing: this.isAutoFlowing, // Should be false here
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  this.weight = newWeight;
   this.dispatchPromptChange();
 }
 
@@ -252,39 +273,33 @@ this.learnMode = !this.learnMode;
 }
 
 private toggleAutoFlow() {
-  // Store the previous state and toggle this.isAutoFlowing
-  const previousIsAutoFlowing = this.isAutoFlowing;
-  this.isAutoFlowing = !this.isAutoFlowing;
-
-  // Get the current weight
-  const currentWeight = this.weight;
-
-  if (this.isAutoFlowing) {
-    // If auto-flow is now true, set weight to 1.0
-    if (this.weightInput) { // Ensure weightInput is available
+  if (!this.isAutoFlowing) { // Turning Auto ON
+    if (this.weightInput) {
       this.weightInput.animateToValue(1.0, AUTO_ANIMATION_SMOOTHING_FACTOR);
     }
-    this.weight = 1.0; // Update PromptController's state
-  } else {
-    // If auto-flow is now false, check if the knob's current value is approximately 1.0
-    if (Math.abs(currentWeight - 1.0) < 0.001) {
+    this.weight = 1.0;
+    this.autoSetByButton = true; // Auto was set by button
+    this.isAutoFlowing = true;
+  } else { // Turning Auto OFF (this.isAutoFlowing was true)
+    if (this.autoSetByButton) { // If it was at 1.0 due to button and not user drag
       this.weight = 0.0;
     }
-    // Otherwise, the weight remains as it was (or as set by other interactions)
+    // If autoSetByButton is false, it means user dragged the knob, so weight is already user-defined.
+    // No need to change this.weight in that case.
+    this.autoSetByButton = false; // Reset flag
+    this.isAutoFlowing = false;
   }
 
-  // Dispatch the prompt change event
   this.dispatchPromptChange();
 
-  // Dispatch the event with the new isAutoFlowing state
   this.dispatchEvent(
     new CustomEvent('prompt-autoflow-toggled', {
       detail: {
         promptId: this.promptId,
         isAutoFlowing: this.isAutoFlowing, // Use the new state
       },
-      bubbles: true, // Important for event to reach PromptDjMidi
-      composed: true, // Important for event to cross shadow DOM boundary
+      bubbles: true,
+      composed: true,
     })
   );
 }
