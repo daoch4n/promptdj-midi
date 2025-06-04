@@ -98,8 +98,9 @@ class PromptDjMidi extends LitElement {
   };
 
   private static readonly BG_WEIGHT_SMOOTHING_FACTOR = 0.1;
-  private static readonly MIN_FLOW_FREQUENCY_HZ = 0.01;
+  private static readonly MIN_FLOW_FREQUENCY_HZ = 0.001; // Assuming this was set in a previous step
   private static readonly MAX_FLOW_FREQUENCY_HZ = 20.0;
+  private static readonly FREQUENCY_EPSILON = 1e-9;
 
   private static readonly KNOB_CONFIGS = {
     density: { defaultValue: PromptDjMidi.INITIAL_CONFIG.density, min: 0, max: 1, autoProperty: 'autoDensity', lastDefinedProperty: 'lastDefinedDensity' },
@@ -492,17 +493,19 @@ class PromptDjMidi extends LitElement {
    @state() private autoGuidance = PromptDjMidi.INITIAL_AUTO_STATES.autoGuidance;
    @state() private showSeedInputHoverEffect = false;
    @state() private isSeedFlowing = false; 
-   @state() private flowFrequency = 1;
+   @state() private flowFrequency = 1000;
    @state() private flowAmplitude = 5;    
    @state() private flowDirectionUp = true;   
    @state() private flowDirectionDown = true; 
    private globalFlowIntervalId: number | null = null;
-   private freqAdjustIntervalId: number | null = null;
-   private isFreqButtonPressed: boolean = false;
 
   private static clamp01(v: number): number {
     return Math.min(Math.max(v, 0), 1);
   }
+
+   private readonly freqStep = 50; // milliseconds
+   private readonly MIN_FREQ_VALUE = 50; // milliseconds
+   private readonly MAX_FREQ_VALUE = 5000; // milliseconds
 
    private readonly ampStep = 1;
    private readonly MIN_AMP_VALUE = 1;
@@ -566,9 +569,6 @@ class PromptDjMidi extends LitElement {
      this.handlePromptAutoFlowToggled = this.handlePromptAutoFlowToggled.bind(this);
      this.globalFlowTick = this.globalFlowTick.bind(this);
      this._animateBackgroundWeightsBound = this._animateBackgroundWeights.bind(this);
-     this.handleFreqButtonPress = this.handleFreqButtonPress.bind(this);
-     this.handleFreqButtonRelease = this.handleFreqButtonRelease.bind(this);
-     this.clearFreqAdjustInterval = this.clearFreqAdjustInterval.bind(this);
     this.loadAvailablePresets(); // Load available presets
  
     if (typeof localStorage !== 'undefined') {
@@ -977,7 +977,7 @@ class PromptDjMidi extends LitElement {
      if (this.globalFlowIntervalId) {
        clearInterval(this.globalFlowIntervalId);
      }
-     this.globalFlowIntervalId = window.setInterval(this.globalFlowTick, 1000 / this.flowFrequency);
+     this.globalFlowIntervalId = window.setInterval(this.globalFlowTick, this.flowFrequency);
    }
  
    private stopGlobalFlowInterval() {
@@ -1223,72 +1223,46 @@ class PromptDjMidi extends LitElement {
     this.adjustFrequency(false);
   }
 
-  private handleFreqButtonPress(isIncreasing: boolean) {
-    this.isFreqButtonPressed = true;
-    this.adjustFrequency(isIncreasing); // Call once immediately
-
-    this.clearFreqAdjustInterval(); // Clear any existing interval
-
-    this.freqAdjustIntervalId = window.setInterval(() => {
-      if (this.isFreqButtonPressed) {
-        this.adjustFrequency(isIncreasing);
-      } else {
-        this.clearFreqAdjustInterval();
-      }
-    }, 150);
-  }
-
-  private handleFreqButtonRelease() {
-    this.isFreqButtonPressed = false;
-    this.clearFreqAdjustInterval();
-  }
-
-  private clearFreqAdjustInterval() {
-    if (this.freqAdjustIntervalId !== null) {
-      clearInterval(this.freqAdjustIntervalId);
-      this.freqAdjustIntervalId = null;
-    }
-  }
-
   private adjustFrequency(isIncreasing: boolean) {
-    const currentHz = this.flowFrequency; // Already in Hz
+    const currentHz = this.flowFrequency; // this.flowFrequency is already in Hz
     let step = 0;
+    const EPSILON = PromptDjMidi.FREQUENCY_EPSILON;
 
-    if (currentHz === 1.0) {
-      if (isIncreasing) {
-        step = 1.0;
-      } else {
-        step = 0.1;
-      }
+    if (Math.abs(currentHz - 1.0) < EPSILON) {
+      step = isIncreasing ? 1.0 : 0.1;
+    } else if (Math.abs(currentHz - 0.1) < EPSILON) {
+      step = isIncreasing ? 0.1 : 0.01;
+    } else if (Math.abs(currentHz - 0.01) < EPSILON) {
+      step = isIncreasing ? 0.01 : 0.001;
     } else if (currentHz > 1.0) {
       step = 1.0;
-    } else if (currentHz >= 0.1) { // Covers 0.1 Hz to < 1.0 Hz
+    } else if (currentHz > 0.1) { // Covers (0.1 + EPSILON) to (1.0 - EPSILON)
       step = 0.1;
-    } else { // Covers < 0.1 Hz
+    } else if (currentHz > 0.01) { // Covers (0.01 + EPSILON) to (0.1 - EPSILON)
       step = 0.01;
+    } else { // Covers MIN_FLOW_FREQUENCY_HZ to (0.01 - EPSILON)
+      step = 0.001;
     }
 
     let newHz = isIncreasing ? currentHz + step : currentHz - step;
 
-    if (newHz <= 0 && !isIncreasing) {
+    // Rounding logic based on the step size
+    if (step < 0.01) { // step is 0.001
+        newHz = parseFloat(newHz.toFixed(3));
+    } else if (step < 1.0) { // step is 0.01 or 0.1
+        newHz = parseFloat(newHz.toFixed(2));
+    } else { // step is 1.0
+        newHz = parseFloat(newHz.toFixed(1));
+    }
+
+    // Clamping
+    if (newHz <= 0 && !isIncreasing) { // Prevent going below MIN_HZ when decrementing
       newHz = PromptDjMidi.MIN_FLOW_FREQUENCY_HZ;
-    } else if (newHz <= 0 && isIncreasing) {
-      newHz = PromptDjMidi.MIN_FLOW_FREQUENCY_HZ; // Or step, but MIN_FLOW_FREQUENCY_HZ is safer
+    } else if (newHz <= 0 && isIncreasing ) { // Handle incrementing from a non-positive state if somehow occurs
+       newHz = PromptDjMidi.MIN_FLOW_FREQUENCY_HZ;
     }
 
-    newHz = Math.max(PromptDjMidi.MIN_FLOW_FREQUENCY_HZ, Math.min(newHz, PromptDjMidi.MAX_FLOW_FREQUENCY_HZ));
-
-    // Round to appropriate decimal places
-    if (step < 1.0) {
-      // If step is 0.1, toFixed(1) or toFixed(2) is fine.
-      // If step is 0.01, toFixed(2) is necessary.
-      // Using toFixed(2) as a general approach for steps < 1.0.
-      newHz = parseFloat(newHz.toFixed(2));
-    } else {
-      newHz = parseFloat(newHz.toFixed(0)); // No decimal places for step 1.0
-    }
-
-    this.flowFrequency = newHz;
+    this.flowFrequency = Math.max(PromptDjMidi.MIN_FLOW_FREQUENCY_HZ, Math.min(newHz, PromptDjMidi.MAX_FLOW_FREQUENCY_HZ));
 
     if (this.isAnyFlowActive) {
       this.stopGlobalFlowInterval();
@@ -1965,13 +1939,26 @@ class PromptDjMidi extends LitElement {
     return { displayValue, unit, hz };
   }
 
-  private formatFlowFrequency(hzValue: number): string {
-    if (hzValue === undefined || hzValue === null) return "N/A"; // Basic guard
-    if (hzValue >= 1.0) {
-      return hzValue.toFixed(1) + " Hz";
+  private formatFlowFrequency(ms: number): string {
+    if (ms <= 0) return "N/A";
+    const hz = 1000 / ms;
+    let displayVal: number;
+    let unit: string;
+
+    if (hz >= 0.1) {
+      displayVal = hz;
+      unit = 'Hz';
+    } else if (hz >= 0.01) {
+      displayVal = hz * 100;
+      unit = 'cHz';
+    } else if (hz >= 0.001) {
+      displayVal = hz * 1000;
+      unit = 'mHz';
     } else {
-      return hzValue.toFixed(2) + " Hz";
+      displayVal = hz * 1000000;
+      unit = 'µHz';
     }
+    return displayVal.toFixed(1) + " " + unit;
   }
  
     private handleToggleClick(event: Event) {
@@ -2230,16 +2217,8 @@ class PromptDjMidi extends LitElement {
               ` : ''}
               ${this.isAnyFlowActive ? html`
                 <label>Freq: ${this.formatFlowFrequency(this.flowFrequency)}</label>
-                <button
-                  @pointerdown=${() => this.handleFreqButtonPress(false)}
-                  @pointerup=${this.handleFreqButtonRelease}
-                  @pointerleave=${this.handleFreqButtonRelease}
-                  class="flow-control-button">-</button>
-                <button
-                  @pointerdown=${() => this.handleFreqButtonPress(true)}
-                  @pointerup=${this.handleFreqButtonRelease}
-                  @pointerleave=${this.handleFreqButtonRelease}
-                  class="flow-control-button">+</button>
+                <button @click=${this.handleDecreaseFreq} class="flow-control-button">-</button>
+                <button @click=${this.handleIncreaseFreq} class="flow-control-button">+</button>
                 <label for="flowAmplitude" style="margin-left: 5px;">Amp: ${this.flowAmplitude} X</label>
                 <button @click=${this.handleDecreaseAmp} class="flow-control-button">-</button>
                 <button @click=${this.handleIncreaseAmp} class="flow-control-button">+</button>
