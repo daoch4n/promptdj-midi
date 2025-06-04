@@ -313,9 +313,9 @@ class PromptDjMidi extends LitElement {
         gap: 5px;
         align-items: center;
     }
-    #buttons .seed-controls label {
+    #buttons .flow-parameters-group label {
         font-weight: 600;
-        color: #fff;
+        color: #fff !important; /* To ensure visibility over other potential styles */
     }
     #buttons input {
         font-family: 'DS-Digital', cursive;
@@ -377,10 +377,8 @@ class PromptDjMidi extends LitElement {
       background-color: #fff;
       color: #000;
     }
-    #buttons .seed-controls label[for="flowFrequency"],
-    #buttons .seed-controls label[for="flowAmplitude"] {
-      font-weight: 600;
-      color: #fff;
+    #buttons .flow-parameters-group label[for="flowFrequency"],
+    #buttons .flow-parameters-group label[for="flowAmplitude"] {
       margin-left: 5px; 
     }
     #buttons .seed-controls input#flowFrequency,
