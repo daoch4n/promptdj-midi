@@ -1625,7 +1625,8 @@ export class PromptDjMidi extends LitElement {
       autoBpm: this.autoBpm,
       autoTemperature: this.autoTemperature,
       autoTopK: this.autoTopK,
-      autoGuidance: this.autoGuidance
+      autoGuidance: this.autoGuidance,
+      isSeedFlowing: this.isSeedFlowing // Save the state of the main Flow button
     };
     const currentLastDefinedStates = {
       lastDefinedDensity: this.lastDefinedDensity,
@@ -1641,7 +1642,8 @@ export class PromptDjMidi extends LitElement {
       prompts: promptsArray,
       config: currentConfig,
       autoStates: currentAutoStates,
-      lastDefinedStates: currentLastDefinedStates
+      lastDefinedStates: currentLastDefinedStates,
+      isSeedFlowing: this.isSeedFlowing // Also add to the main presetData object
     };
     const presetDataString = JSON.stringify(presetData);
 
@@ -1725,7 +1727,8 @@ export class PromptDjMidi extends LitElement {
     // Validate loadedPresetData structure (basic check)
     if (!loadedPresetData || typeof loadedPresetData !== 'object' ||
         !loadedPresetData.prompts || !loadedPresetData.config ||
-        !loadedPresetData.autoStates || !loadedPresetData.lastDefinedStates) {
+        !loadedPresetData.autoStates || !loadedPresetData.lastDefinedStates ||
+        loadedPresetData.isSeedFlowing === undefined) { // Check for isSeedFlowing
       console.error(`Corrupted preset data for '${this.selectedPreset}' in prompt_presets_v2. Missing essential keys.`);
       return;
     }
@@ -1776,7 +1779,48 @@ export class PromptDjMidi extends LitElement {
     this.calculateKnobAverageExtremeness(); // Update UI related to knob extremeness.
     // calculatePromptWeightedAverage is called by setPrompts
 
+    // Apply auto states to config and manage flow after all states are loaded
+    this._applyLoadedAutoStatesToConfigAndFlow(loadedPresetData.autoStates, loadedPresetData.isSeedFlowing);
+
     console.log(`Preset '${this.selectedPreset}' loaded successfully from prompt_presets_v2.`);
+  }
+
+  private _applyLoadedAutoStatesToConfigAndFlow(loadedAutoStates: typeof PromptDjMidi.INITIAL_AUTO_STATES & { isSeedFlowing?: boolean }, loadedIsSeedFlowing: boolean) {
+    // Apply auto states for knobs
+    const knobKeys = Object.keys(PromptDjMidi.KNOB_CONFIGS) as Array<keyof typeof PromptDjMidi.KNOB_CONFIGS>;
+    let newConfig = { ...this.config };
+
+    for (const knobId of knobKeys) {
+      const config = PromptDjMidi.KNOB_CONFIGS[knobId];
+      const autoProperty = config.autoProperty as keyof (typeof PromptDjMidi.INITIAL_AUTO_STATES);
+      const defaultValue = config.defaultValue;
+
+      if (loadedAutoStates[autoProperty]) {
+        // If auto is ON in the loaded preset, set the config value to its initial auto default
+        newConfig = { ...newConfig, [knobId]: defaultValue };
+      }
+      // If auto is OFF, the value from loadedPresetData.config (already applied) should be used.
+    }
+
+    // Handle BPM separately as its auto default is null
+    if (loadedAutoStates.autoBpm) {
+      newConfig = { ...newConfig, bpm: null };
+    }
+
+    // Update the component's config state
+    this.config = newConfig;
+
+    // Handle isSeedFlowing
+    this.isSeedFlowing = loadedIsSeedFlowing;
+
+    // Start/stop global flow interval based on the combined flow state
+    if (this.isAnyFlowActive) {
+      this.startGlobalFlowInterval();
+    } else {
+      this.stopGlobalFlowInterval();
+    }
+
+    this.requestUpdate(); // Ensure UI reflects the changes
   }
 
   private handleDeletePresetClick() {
