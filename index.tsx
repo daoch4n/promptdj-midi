@@ -113,31 +113,31 @@ export class PromptDjMidi extends LitElement {
     @keyframes rgb-glow {
       0% {
         box-shadow: 0 0 4px #ff0000, 0 0 8px #ff0000;
-        background-color: #4d0000; /* Darker Red */
+        /* background-color: #4d0000; */ /* Darker Red */
       }
       17% {
         box-shadow: 0 0 4px #ff00ff, 0 0 8px #ff00ff;
-        background-color: #4d004d; /* Darker Magenta */
+        /* background-color: #4d004d; */ /* Darker Magenta */
       }
       33% {
         box-shadow: 0 0 4px #0000ff, 0 0 8px #0000ff;
-        background-color: #00004d; /* Darker Blue */
+        /* background-color: #00004d; */ /* Darker Blue */
       }
       50% {
         box-shadow: 0 0 4px #00ffff, 0 0 8px #00ffff;
-        background-color: #004d4d; /* Darker Cyan */
+        /* background-color: #004d4d; */ /* Darker Cyan */
       }
       67% {
         box-shadow: 0 0 4px #00ff00, 0 0 8px #00ff00;
-        background-color: #004d00; /* Darker Green */
+        /* background-color: #004d00; */ /* Darker Green */
       }
       83% {
         box-shadow: 0 0 4px #ffff00, 0 0 8px #ffff00;
-        background-color: #4d4d00; /* Darker Yellow */
+        /* background-color: #4d4d00; */ /* Darker Yellow */
       }
       100% {
         box-shadow: 0 0 4px #ff0000, 0 0 8px #ff0000;
-        background-color: #4d0000; /* Darker Red */
+        /* background-color: #4d0000; */ /* Darker Red */
       }
     }
     :host {
@@ -211,7 +211,7 @@ export class PromptDjMidi extends LitElement {
      margin-top: 8px; padding: 0 5%;
    }
     .advanced-settings-panel .setting .option-button {
-      background-color: #333;
+      background-color: rgba(0, 0, 0, 0.4); /* Consistent black alpha */
       color: #fff;
       border: 1px solid #555;
       border-radius: 4px;
@@ -220,15 +220,15 @@ export class PromptDjMidi extends LitElement {
       cursor: pointer;
       transition: background-color 0.2s, box-shadow 0.2s;
       font-size: 0.9em;
-      margin-top: 5px; 
+      margin-top: 5px;
     }
     .advanced-settings-panel .setting .option-button:hover {
-      background-color: #444;
-      box-shadow: 0 0 5px -1px #007bff; 
+      background-color: rgba(0, 0, 0, 0.5); /* Slightly darker on hover */
+      box-shadow: 0 0 5px -1px #007bff;
     }
     .advanced-settings-panel .setting .option-button.selected {
-      background-color: #0069d9; 
-      border-color: #0056b3; 
+      background-color: rgba(0, 0, 0, 0.4); /* Consistent black alpha */
+      border-color: #0056b3;
       color: #fff;
       font-weight: bold;
     }
@@ -291,7 +291,8 @@ export class PromptDjMidi extends LitElement {
        font-weight: 600;
        cursor: pointer;
        color: #fff;
-       background: #0002;
+       color: #fff;
+       background: rgba(0, 0, 0, 0.4); /* Standardized black alpha */
        -webkit-font-smoothing: antialiased;
        border: 1.5px solid #fff;
        border-radius: 4px;
@@ -323,7 +324,7 @@ export class PromptDjMidi extends LitElement {
     }
     #buttons input {
         font-family: 'DS-Digital', cursive;
-        background: #0002;
+        background: rgba(0, 0, 0, 0.4); /* Standardized black alpha */
         border: 1.5px solid #fff;
         color: #fff;
         border-radius: 4px;
@@ -331,7 +332,7 @@ export class PromptDjMidi extends LitElement {
         padding: 3px 6px;
     }
     #buttons input[type="text"] {
-        width: 18vmin; 
+        width: 18vmin;
     }
     #buttons input[type="number"] {
         width: 18vmin;
@@ -341,7 +342,7 @@ export class PromptDjMidi extends LitElement {
     }
     #buttons .seed-display-value {
       font-family: 'DS-Digital', cursive;
-      background: #0002;
+      background: rgba(0, 0, 0, 0.4); /* Standardized black alpha */
       border: 1.5px solid #fff;
       color: #fff;
       border-radius: 4px;
@@ -357,7 +358,7 @@ export class PromptDjMidi extends LitElement {
       font-weight: 600;
       cursor: default; /* It's an indicator, not a button */
       color: #fff;
-      background: #0002;
+      background: rgba(0, 0, 0, 0.4); /* Standardized black alpha */
       -webkit-font-smoothing: antialiased;
       border: 1.5px solid #fff;
       border-radius: 4px;
@@ -383,7 +384,7 @@ export class PromptDjMidi extends LitElement {
       font-weight: 600;
       cursor: pointer;
       color: #fff;
-      background: #0002;
+      background: rgba(0, 0, 0, 0.4); /* Standardized black alpha */
       -webkit-font-smoothing: antialiased;
       border: 1.5px solid #fff;
       border-radius: 4px;
@@ -396,32 +397,31 @@ export class PromptDjMidi extends LitElement {
     }
     #buttons .flow-parameters-group label[for="flowFrequency"],
     #buttons .flow-parameters-group label[for="flowAmplitude"] {
-      margin-left: 5px; 
+      margin-left: 5px;
     }
     #buttons .seed-controls input#flowFrequency, /* This might be unused after changes */
     #buttons .seed-controls input#flowAmplitude {
       font-family: 'DS-Digital', cursive;
-      background: #0002;
+      background: rgba(0, 0, 0, 0.4); /* Standardized black alpha */
       border: 1.5px solid #fff;
       color: #fff;
       border-radius: 4px;
       font-size: 1rem;
       padding: 3px 6px;
-      width: 10vmin; 
+      width: 10vmin;
     }
     .flow-control-button, .flow-direction-button {
       font: inherit;
       font-weight: 600;
       cursor: pointer;
       color: #fff;
-      background: #0002;
+      background: rgba(0, 0, 0, 0.4); /* Standardized black alpha */
       -webkit-font-smoothing: antialiased;
       border: 1.5px solid #fff;
       border-radius: 4px;
       user-select: none;
       padding: 3px 6px;
       margin-left: 5px;
-    }
     .flow-control-button {
       margin-left: 2px; /* Smaller margin for +/- buttons */
       padding: 1px 4px; /* Slightly smaller padding */
