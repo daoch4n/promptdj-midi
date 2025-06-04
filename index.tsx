@@ -1253,11 +1253,18 @@ class PromptDjMidi extends LitElement {
   private adjustFrequency(isIncreasing: boolean) {
     const currentHz = this.flowFrequency; // Already in Hz
     let step = 0;
-    if (currentHz >= 1.0) {
+
+    if (currentHz === 1.0) {
+      if (isIncreasing) {
+        step = 1.0;
+      } else {
+        step = 0.1;
+      }
+    } else if (currentHz > 1.0) {
       step = 1.0;
-    } else if (currentHz >= 0.1) {
+    } else if (currentHz >= 0.1) { // Covers 0.1 Hz to < 1.0 Hz
       step = 0.1;
-    } else {
+    } else { // Covers < 0.1 Hz
       step = 0.01;
     }
 

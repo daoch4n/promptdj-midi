@@ -378,7 +378,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
         expect(getApiKeyStatusMessage()).toBe('No API Key provided.');
     });
 
-    test('shows "Key entered, will attempt to save." when key entered, not saved, not invalid, no transient message', async () => {
+    test('shows "Key entered, will attempt to save." when key entered, not saved, not invalid, no transient message', async function() {
         element['geminiApiKey'] = 'some-typed-key';
         element['apiKeySavedSuccessfully'] = false;
         element['apiKeyInvalid'] = false;
@@ -494,27 +494,31 @@ describe('PromptDjMidi - Frequency Logic', () => {
     });
 
     // Test Cases: Transitions between step logic
-    test('transitions from 0.1 step to 1.0 step when increasing from 0.95 Hz', () => {
+    test('transitions from 0.1 step to 1.0 step when increasing from 0.95 Hz', async () => {
       element.flowFrequency = 0.95; // Current step is 0.1
-      (element as any).adjustFrequency(true); // Should become 1.05, then step logic for >=1Hz applies to next
-      expect(element.flowFrequency).toBe(1.0); // Corrected based on new logic: 0.95 + 0.1 = 1.05, which is then formatted to 1.0
+      (element as any).adjustFrequency(true); // Should become 1.05
+      await element.updateComplete; // ensure updates are processed if adjustFrequency is async internally for some reason
+      expect(element.flowFrequency).toBe(1.0); // after rounding
     });
 
-    test('transitions from 1.0 step to 0.1 step when decreasing from 1.0 Hz', () => {
+    test('transitions from 1.0 step to 0.1 step when decreasing from 1.0 Hz', async () => {
       element.flowFrequency = 1.0;
       (element as any).adjustFrequency(false); // Should become 0.9
+      await element.updateComplete;
       expect(element.flowFrequency).toBeCloseTo(0.9);
     });
 
-    test('transitions from 0.01 step to 0.1 step when increasing from 0.09 Hz', () => {
+    test('transitions from 0.01 step to 0.1 step when increasing from 0.09 Hz', async () => {
       element.flowFrequency = 0.09; // Current step is 0.01
       (element as any).adjustFrequency(true); // Should become 0.10
+      await element.updateComplete;
       expect(element.flowFrequency).toBeCloseTo(0.10);
     });
 
-    test('transitions from 0.1 step to 0.01 step when decreasing from 0.1 Hz', () => {
+    test('transitions from 0.1 step to 0.01 step when decreasing from 0.1 Hz', async () => {
       element.flowFrequency = 0.1; // Current step is 0.1
       (element as any).adjustFrequency(false); // Should become 0.09
+      await element.updateComplete;
       expect(element.flowFrequency).toBeCloseTo(0.09);
     });
 
@@ -531,20 +535,23 @@ describe('PromptDjMidi - Frequency Logic', () => {
       expect(element.flowFrequency).toBe(MAX_HZ);
     });
 
-    test('clamps to MIN_HZ if decrementing would go lower (e.g. 0.015 -> 0.01)', () => {
+    test('clamps to MIN_HZ if decrementing would go lower (e.g. 0.015 -> 0.01)', async () => {
       element.flowFrequency = MIN_HZ + 0.005; // 0.015, step is 0.01
       (element as any).adjustFrequency(false); // 0.015 - 0.01 = 0.005, which is < MIN_HZ
+      await element.updateComplete;
       expect(element.flowFrequency).toBe(MIN_HZ);
     });
 
-    test('clamps to MAX_HZ if incrementing would go higher (e.g. 19.95 -> 20.0)', () => {
-      element.flowFrequency = MAX_HZ - 0.05; // 19.95, step is 1.0
+    test('clamps to MAX_HZ if incrementing would go higher (e.g. 19.95 -> 20.0)', async () => {
+      element.flowFrequency = MAX_HZ - 0.05; // 19.95, step is 1.0 for increasing
       (element as any).adjustFrequency(true); // 19.95 + 1.0 = 20.95, which is > MAX_HZ
+      await element.updateComplete;
       expect(element.flowFrequency).toBe(MAX_HZ);
     });
-     test('clamps to MAX_HZ when increasing from near MAX_HZ', () => {
+     test('clamps to MAX_HZ when increasing from near MAX_HZ', async () => {
       element.flowFrequency = 19.5; // Step is 1.0
       (element as any).adjustFrequency(true); // 19.5 + 1.0 = 20.5, clamps to 20.0
+      await element.updateComplete;
       expect(element.flowFrequency).toBe(MAX_HZ);
     });
   });
