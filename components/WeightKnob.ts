@@ -13,6 +13,9 @@ const MAX_HALO_SCALE = 2;
 /** The amount of scale to add to the halo based on audio level. */
 const HALO_LEVEL_MODIFIER = 1;
 
+/** How quickly the knob animates to new values. Higher is slower. */
+const ANIMATION_SMOOTHING_FACTOR = 0.1;
+
 /** A knob for adjusting and visualizing prompt weight. */
 @customElement('weight-knob')
 export class WeightKnob extends LitElement {
@@ -47,19 +50,97 @@ export class WeightKnob extends LitElement {
     }
   `;
 
-  @property({ type: Number }) value = 0;
+  // Internal storage for the value property
+  private _value = 0;
+
+  @property({ type: Number })
+  get value(): number {
+    return this._value;
+  }
+
+  set value(newVal: number) {
+    const oldVal = this._value;
+    // Clamp new value between 0 and 2, similar to handlePointerMove
+    newVal = Math.max(0, Math.min(2, newVal));
+    this._value = newVal;
+    this._targetValue = newVal; // Update target value
+
+    if (this._animationFrameId === null) {
+      this._animateKnob(); // Start animation if not already running
+    }
+    this.requestUpdate('value', oldVal);
+  }
+
   @property({ type: String }) color = '#000'; // Color for halo
   @property({ type: Number }) audioLevel = 0; // Used for halo effect
   @property({ type: String }) displayValue = ''; // Optional value to display instead of this.value
+
+  private _currentValue = 0;
+  private _targetValue = 0;
+  private _animationFrameId: number | null = null;
 
   private dragStartPos = 0;
   private dragStartValue = 0;
 
   constructor() {
     super();
+    this._currentValue = this.value;
+    this._targetValue = this.value;
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handlePointerMove = this.handlePointerMove.bind(this);
     this.handlePointerUp = this.handlePointerUp.bind(this);
+  }
+
+  override connectedCallback() {
+    super.connectedCallback();
+    // Initialize _currentValue and _targetValue based on the initial value property.
+    // This is important if the value is set before the element is connected to the DOM.
+    this._currentValue = this.value;
+    this._targetValue = this.value;
+    // If there's a difference (e.g. value set programmatically before connection),
+    // start animating towards it.
+    if (this._currentValue !== this._targetValue && this._animationFrameId === null) {
+       this._animateKnob();
+    }
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._animationFrameId !== null) {
+      cancelAnimationFrame(this._animationFrameId);
+      this._animationFrameId = null;
+    }
+  }
+
+  private _animateKnob() {
+    const difference = this._targetValue - this._currentValue;
+
+    // If the difference is negligible, snap to target and stop animating.
+    if (Math.abs(difference) < 0.001) {
+      this._currentValue = this._targetValue;
+      if (this._animationFrameId !== null) {
+        cancelAnimationFrame(this._animationFrameId);
+        this._animationFrameId = null;
+      }
+      this.requestUpdate(); // Ensure final render with the snapped value.
+      return;
+    }
+
+    // Update currentValue towards targetValue.
+    this._currentValue += difference * ANIMATION_SMOOTHING_FACTOR;
+
+    // Request a re-render because _currentValue changed.
+    this.requestUpdate();
+
+    // Continue animation if not yet at target.
+    // Check again to ensure we don't schedule if we just snapped.
+    if (this._currentValue !== this._targetValue) {
+      this._animationFrameId = requestAnimationFrame(() => this._animateKnob());
+    } else if (this._animationFrameId !== null) {
+      // If we reached targetValue exactly in this step, cancel any scheduled frame.
+      cancelAnimationFrame(this._animationFrameId);
+      this._animationFrameId = null;
+    }
   }
 
   private handlePointerDown(e: PointerEvent) {
@@ -114,22 +195,25 @@ export class WeightKnob extends LitElement {
     const rotationRange = Math.PI * 2 * 0.75;
     const minRot = -rotationRange / 2 - Math.PI / 2;
     const maxRot = rotationRange / 2 - Math.PI / 2;
-    const rot = minRot + (this.value / 2) * (maxRot - minRot);
+    // Use _currentValue for rendering the knob's visual rotation
+    const rot = minRot + (this._currentValue / 2) * (maxRot - minRot);
     const dotStyle = styleMap({
       // The indicator is placed relative to the knob's center (40,40)
       transform: `translate(40px, 40px) rotate(${rot}rad)`,
     });
 
-    const isAutoValue = Math.abs(this.value - 1.0) < 0.001; // Check if value is at the "auto" mark (1.0)
+    // Use _currentValue for auto value check and indicator styling
+    const isAutoValue = Math.abs(this._currentValue - 1.0) < 0.001;
     const indicatorColor = isAutoValue ? '#00FFFF' : '#FFFFFF'; // Cyan for auto, White otherwise
     const indicatorStrokeWidth = isAutoValue ? 3.5 : 3; // Thicker for auto
 
-    let scale = (this.value / 2) * (MAX_HALO_SCALE - MIN_HALO_SCALE);
+    // Use _currentValue for halo scale calculation
+    let scale = (this._currentValue / 2) * (MAX_HALO_SCALE - MIN_HALO_SCALE);
     scale += MIN_HALO_SCALE;
     scale += this.audioLevel * HALO_LEVEL_MODIFIER;
 
     const haloStyle = styleMap({
-      display: this.value > 0 ? 'block' : 'none',
+      display: this._currentValue > 0 ? 'block' : 'none', // Use _currentValue for display logic
       background: this.color,
       transform: `translate(-50%, -50%) scale(${scale})`,
     });
