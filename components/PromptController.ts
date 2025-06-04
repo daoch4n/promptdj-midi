@@ -10,7 +10,7 @@ import type { WeightKnob } from './WeightKnob';
 import type { MidiDispatcher } from '../utils/MidiDispatcher';
 import type { Prompt, ControlChange } from '../types';
 
-const AUTO_ANIMATION_SMOOTHING_FACTOR = 0.02; // For slower animation
+const AUTO_ANIMATION_SMOOTHING_FACTOR = 0.001; // For slower animation
 
 /** A single prompt input associated with a MIDI CC. */
 @customElement('prompt-controller')
