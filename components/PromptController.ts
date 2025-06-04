@@ -10,7 +10,7 @@ import type { WeightKnob } from './WeightKnob';
 import type { MidiDispatcher } from '../utils/MidiDispatcher';
 import type { Prompt, ControlChange } from '../types';
 
-const AUTO_ANIMATION_SMOOTHING_FACTOR = 0.001; // For slower animation
+const AUTO_ANIMATION_SMOOTHING_FACTOR = 0.01; // For slower animation
 
 /** A single prompt input associated with a MIDI CC. */
 @customElement('prompt-controller')
@@ -282,7 +282,10 @@ private toggleAutoFlow() {
     this.isAutoFlowing = true;
   } else { // Turning Auto OFF (this.isAutoFlowing was true)
     if (this.autoSetByButton) { // If it was at 1.0 due to button and not user drag
-      this.weight = 0.0;
+      if (this.weightInput) {
+        this.weightInput.animateToValue(0.0, AUTO_ANIMATION_SMOOTHING_FACTOR);
+      }
+      this.weight = 0.0; // Update PromptController's state
     }
     // If autoSetByButton is false, it means user dragged the knob, so weight is already user-defined.
     // No need to change this.weight in that case.
