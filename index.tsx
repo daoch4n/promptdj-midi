@@ -154,7 +154,7 @@ class PromptDjMidi extends LitElement {
       width: 100%;
       max-width: 1600px;
       height: 100%;
-      padding: 8vmin 5vmin;
+      padding: 8vmin 0 2.5vmin 2.5vmin;
       padding-right: 240px; 
       box-sizing: border-box;
     }
@@ -245,8 +245,8 @@ class PromptDjMidi extends LitElement {
     }
 
    #grid {
-     width: 80vmin;
-     height: 80vmin;
+     width: 100%;
+     height: 100%;
      display: grid;
      grid-template-columns: repeat(8, 1fr);
      gap: 2.5vmin;
