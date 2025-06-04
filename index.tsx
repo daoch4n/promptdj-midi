@@ -473,6 +473,7 @@ class PromptDjMidi extends LitElement {
   @state() private knobAverageExtremeness = 0;
   @state() private transientApiKeyStatusMessage: string | null = null;
   private apiKeyMessageTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  @state() private showApiKeyControls = true;
 
   // Preset UI State
   @state() private presetNameToSave: string = "";
@@ -1137,7 +1138,8 @@ class PromptDjMidi extends LitElement {
       this.setTransientApiKeyStatus("Invalid API Key format");
       this.apiKeyInvalid = true;
       this.apiKeySavedSuccessfully = false;
-      this.handleMainAudioButton();
+      this.showApiKeyControls = true; // Ensure controls are visible for correction
+      // Removed this.handleMainAudioButton(); as per previous step
       return;
     }
 
@@ -1146,7 +1148,8 @@ class PromptDjMidi extends LitElement {
       this.apiKeyInvalid = true; // Or some other state to indicate failure
       this.connectionError = true; // Or some other state to indicate failure
       this.apiKeySavedSuccessfully = false;
-      this.handleMainAudioButton();
+      this.showApiKeyControls = true; // Ensure controls are visible
+      // Removed this.handleMainAudioButton();
       return;
     }
 
@@ -1158,19 +1161,16 @@ class PromptDjMidi extends LitElement {
         this.connectionError = false;
         this.apiKeySavedSuccessfully = false; // Key is cleared, so not "successfully saved"
         this.setTransientApiKeyStatus("API Key Cleared");
+        this.showApiKeyControls = true; // Show controls as no key is active
       } catch (error) {
         // This case is less likely for removeItem, but good to be aware
         console.error('Error removing API key from local storage:', error);
         this.apiKeySavedSuccessfully = false;
+        this.showApiKeyControls = true;
         // Optionally set states to indicate this specific type of error
       }
-      this.handleMainAudioButton();
-      // checkApiKeyStatus will be called by handleMainAudioButton or at the end of this function,
-      // but we want to ensure the transient message for "cleared" is set.
-      // If checkApiKeyStatus is called after this, it might override the transient message
-      // if it decides the key is "loaded" (e.g. if an old key was still in component state, though unlikely here)
-      // Forcing a final checkApiKeyStatus to ensure consistent state after action.
-      this.checkApiKeyStatus(); // This will ensure apiKeySavedSuccessfully is false.
+      // Removed this.handleMainAudioButton();
+      // Removed this.checkApiKeyStatus(); // Call is deferred or handled by caller
       return;
     }
 
@@ -1185,6 +1185,7 @@ class PromptDjMidi extends LitElement {
         success = true;
         this.apiKeySavedSuccessfully = true;
         this.setTransientApiKeyStatus("API Key Saved");
+        this.showApiKeyControls = false; // Hide controls on successful save
       } catch (error) {
         retries++;
         const delay = INITIAL_BACKOFF_DELAY * Math.pow(2, retries - 1);
@@ -1199,6 +1200,7 @@ class PromptDjMidi extends LitElement {
       console.error(`Failed to save API key after ${MAX_RETRIES} attempts.`);
       this.apiKeyInvalid = true;
       this.apiKeySavedSuccessfully = false;
+      this.showApiKeyControls = true; // Ensure controls are visible if save fails
       this.connectionError = true; // Or a more specific error state
     }
     // as checkApiKeyStatus might influence UI related to the button's action.
@@ -1208,6 +1210,7 @@ class PromptDjMidi extends LitElement {
     if (typeof localStorage === 'undefined') {
       console.warn('localStorage is not available. Cannot verify API key status.');
       this.apiKeySavedSuccessfully = false;
+      this.showApiKeyControls = true; // Show controls if localStorage is unavailable
       return;
     }
     try {
@@ -1217,6 +1220,7 @@ class PromptDjMidi extends LitElement {
         if (!this.isValidApiKeyFormat(storedApiKey)) {
           this.apiKeySavedSuccessfully = false;
           this.apiKeyInvalid = true;
+          this.showApiKeyControls = true; // Show controls if stored key is invalid
           // Clear the key from storage if it's invalidly formatted
           try {
             localStorage.removeItem('geminiApiKey');
@@ -1231,32 +1235,32 @@ class PromptDjMidi extends LitElement {
           return; // Stop further checks if format is invalid
         }
 
-        // Stored key has valid format, now proceed with comparisons
+        // Stored key has valid format
+        this.apiKeyInvalid = false; // Key format is valid
         if (this.geminiApiKey && storedApiKey === this.geminiApiKey) {
           this.apiKeySavedSuccessfully = true;
-          this.apiKeyInvalid = false; // Ensure invalid is false if key is valid and matches
+          this.showApiKeyControls = false; // Hide controls if key matches and is valid
           if (this.transientApiKeyStatusMessage === null || !["API Key Saved", "API Key Cleared"].includes(this.transientApiKeyStatusMessage)) {
             this.setTransientApiKeyStatus("API Key Loaded");
           }
           console.log('API key is verified and saved correctly in localStorage.');
         } else if (!this.geminiApiKey) {
           // Stored key is valid, but no key in component state (e.g., loaded on init)
-          // We can consider the stored key "active" in this case, so we update component state.
-          this.geminiApiKey = storedApiKey; // Load it into the component state
-          this.apiKeySavedSuccessfully = true; // It's in storage and now in component
-          this.apiKeyInvalid = false;
+          this.geminiApiKey = storedApiKey;
+          this.apiKeySavedSuccessfully = true;
+          this.showApiKeyControls = false; // Hide controls as a valid key is loaded
            if (this.transientApiKeyStatusMessage === null || !["API Key Saved", "API Key Cleared"].includes(this.transientApiKeyStatusMessage)) {
             this.setTransientApiKeyStatus("API Key Loaded from storage");
           }
           console.log('API key loaded from localStorage into component state.');
         } else { // storedApiKey is valid, this.geminiApiKey is present, but they don't match
           this.apiKeySavedSuccessfully = false;
-          // apiKeyInvalid might be true if geminiApiKey is invalid, or false if it's just a mismatch.
-          // The save process handles geminiApiKey's validity. Here we focus on stored vs component.
+          this.showApiKeyControls = true; // Show controls as current component key is not the one saved
           console.warn('API key in component does not match valid stored API key. Needs re-saving if current key is intended.');
         }
       } else { // No storedApiKey
         this.apiKeySavedSuccessfully = false;
+        this.showApiKeyControls = true; // Show controls if no key in storage
         if (this.geminiApiKey) {
           // Key in component but not in storage - implies it needs to be saved.
           console.log('API key present in component but not in localStorage. Needs saving.');
@@ -1270,6 +1274,7 @@ class PromptDjMidi extends LitElement {
       }
     } catch (error) {
       console.error('Error checking API key status from localStorage:', error);
+      this.showApiKeyControls = true; // Show controls on error
       this.apiKeySavedSuccessfully = false;
     }
   }
@@ -1602,6 +1607,11 @@ class PromptDjMidi extends LitElement {
   private async handleClearApiKeyClick() {
     this.geminiApiKey = null;
     await this.saveApiKeyToLocalStorage();
+    this.requestUpdate();
+  }
+
+  private handleManageApiKeyClick() {
+    this.showApiKeyControls = true;
     this.requestUpdate();
   }
  
@@ -1942,21 +1952,25 @@ class PromptDjMidi extends LitElement {
           ` : ''}
 
           <!-- API Key Controls -->
-          ${this.geminiApiKey ? html`
-            <button @click=${this.handleClearApiKeyClick}>Clear API Key</button>
-          ` : html`
-            <button @click=${this.getApiKey}>Get API Key</button>
-          `}
-          <div class="api-controls">
-            <input
-              type="text"
-              placeholder="Gemini API Key"
-              .value=${this.geminiApiKey || ''}
-              @input=${this.handleApiKeyInputChange}
-            />
-            <button @click=${this.handlePasteApiKeyClick}>Paste API key</button>
-            <button @click=${this.handleSaveApiKeyClick}>Save API Key</button>
-          </div>
+          ${this.showApiKeyControls ? html`
+            ${this.geminiApiKey ? html`
+              <button @click=${this.handleClearApiKeyClick}>Clear API Key</button>
+            ` : html`
+              <button @click=${this.getApiKey}>Get API Key</button>
+            `}
+            <div class="api-controls">
+              <input
+                type="text"
+                placeholder="Gemini API Key"
+                .value=${this.geminiApiKey || ''}
+                @input=${this.handleApiKeyInputChange}
+              />
+              <button @click=${this.handlePasteApiKeyClick}>Paste API key</button>
+              <button @click=${this.handleSaveApiKeyClick}>Save API Key</button>
+            </div>
+          ` : !this.apiKeyInvalid && this.apiKeySavedSuccessfully ? html`
+            <button @click=${this.handleManageApiKeyClick}>API</button>
+          ` : ''}
           <div class="api-status-messages">
             ${this.transientApiKeyStatusMessage ? html`
               <span style="color: lightblue; margin-left: 10px;">${this.transientApiKeyStatusMessage}</span>
