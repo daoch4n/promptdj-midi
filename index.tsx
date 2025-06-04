@@ -1709,6 +1709,36 @@ class PromptDjMidi extends LitElement {
         });
       }
     }
+
+  private formatFlowFrequency(ms: number): string {
+    if (ms <= 0) return 'N/A'; // Or some other appropriate string for invalid input
+
+    const hz = 1000 / ms;
+    let val: number;
+    let unit: string;
+
+    if (hz >= 1) {
+      val = hz;
+      unit = 'Hz';
+    } else if (hz >= 0.1) { // dHz (decihertz)
+      val = hz * 10;
+      unit = 'dHz';
+    } else if (hz >= 0.01) { // cHz (centihertz)
+      val = hz * 100;
+      unit = 'cHz';
+    } else if (hz >= 0.001) { // mHz (millihertz)
+      val = hz * 1000;
+      unit = 'mHz';
+    } else { // µHz (microhertz)
+      val = hz * 1000000;
+      unit = 'µHz';
+    }
+
+    // Format to 1 decimal place only if it's not a whole number
+    const formattedVal = val % 1 === 0 ? val.toString() : val.toFixed(1);
+
+    return `${formattedVal} ${unit}`;
+  }
  
     private handleToggleClick(event: Event) {
       const target = event.currentTarget as HTMLElement;
@@ -1967,15 +1997,15 @@ class PromptDjMidi extends LitElement {
                     .disabled=${this.isSeedFlowing} />
               ` : ''}
               ${this.isAnyFlowActive ? html`
-                <label for="flowFrequency">Frequency</label>
+                <label for="flowFrequency">Frequency: ${this.formatFlowFrequency(this.flowFrequency)}</label>
                 <input
                   type="number"
                   id="flowFrequency"
-                  .value=${this.flowFrequency.toString()}
+                  .value=${this.flowFrequency.toString()} /* Input still controls milliseconds */
                   @input=${this.handleFlowFrequencyChange}
-                  min="100"
+                  min="1" /* Allow finer control down to 1ms */
                 />
-                <label for="flowAmplitude">Amplitude</label>
+                <label for="flowAmplitude">Amplitude: ${this.flowAmplitude} X</label>
                 <input
                   type="number"
                   id="flowAmplitude"
