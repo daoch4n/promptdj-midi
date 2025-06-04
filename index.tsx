@@ -532,7 +532,7 @@ export class PromptDjMidi extends LitElement {
    private _bgWeightsAnimationId: number | null = null;
    private _animateBackgroundWeightsBound = this._animateBackgroundWeights.bind(this);
    private connectionError = true;
-   private readonly maxRetries = 3;
+   private readonly maxRetries = 10;
    private currentRetryAttempt = 0;
 
    private debouncedSaveApiKey = debounce(this.saveApiKeyToLocalStorage, 500);
