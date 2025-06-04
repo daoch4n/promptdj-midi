@@ -52,9 +52,9 @@ export class PlayPauseButton extends LitElement {
 
   private renderSvg() {
     return html` <svg
-      width="140"
-      height="140"
-      viewBox="0 -10 140 150"
+      width="80"
+      height="80"
+      viewBox="0 -5.714285714285714 80 85.71428571428571"
       fill="none"
       xmlns="http://www.w3.org/2000/svg">
       <rect
