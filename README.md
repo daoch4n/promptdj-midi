@@ -1,8 +1,10 @@
 # Prompt DJ MIDI 🎛️ Pro Frontend for [Lyria RealTime](https://deepmind.google/models/lyria/realtime/)
 
+### Generate professional-grade 48kHz stereo audio with Auto Flow
+
 ## Features
-- 🪩 Flow (toggleable realtime seed `fluctuation (both on)` / `🆙` / `down` flow)
 - ✨ Auto (toggleable realtime weights fluctualtion on every knob)
+- 🪩 Flow (toggleable realtime seed `fluctuation (both on)` / `🆙` / `down` flow)
 - 💾 Save / Load Presets
 - ⚙️ Advanced settings panel for granular synthesis control backported from PromptDJ restyled for fancy RGB lookz
 
@@ -12,7 +14,7 @@
 2. In your fork, go to `⚙️ Settings` > `Pages` and set `Build and deployment` > `Source` to `Github Actions`
 3. Go back to fork page, check that `▶️ Actions` are enabled
 4. Update README or push something
-5. Github Action will handle the build and deploy
+5. Github Action will trigger on push and handle the build and deploy
    - 🚀 Check it out at yourusername.github.io/promptdj-midi
 
 ### Run Locally
