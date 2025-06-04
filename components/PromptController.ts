@@ -281,7 +281,7 @@ private toggleAutoFlow() {
   if (!this.isAutoFlowing) { // Turning Auto ON
     if (this.weightInput) {
       this.weightInput.value = 1.0; // Snappy rotation to 1.0
-      this.weightInput.triggerBackgroundAnimation(true); // Start slow fade-in of background
+      this.weightInput.triggerAutoAnimation(true); // Start slow fade-in of background
     }
     this.weight = 1.0;
     this.autoSetByButton = true;
@@ -290,7 +290,7 @@ private toggleAutoFlow() {
     if (this.autoSetByButton) {
       if (this.weightInput) {
         this.weightInput.value = 0.0; // Snappy rotation to 0.0
-        this.weightInput.triggerBackgroundAnimation(false); // Start slow fade-out of background
+        this.weightInput.triggerAutoAnimation(false); // Start slow fade-out of background
       }
       this.weight = 0.0;
     }
