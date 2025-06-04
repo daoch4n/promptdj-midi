@@ -2398,6 +2398,11 @@ export class PromptDjMidi extends LitElement {
               id="presetNameInput"
               .value=${this.presetNameToSave}
               @input=${this.handlePresetNameInputChange}
+              @keydown=${(e: KeyboardEvent) => {
+                if (e.key === 'Enter') {
+                  this.handleSavePresetClick();
+                }
+              }}
               placeholder="Preset Name"
             />
             <button id="savePresetButton" @click=${this.handleSavePresetClick}>Save Preset</button>
