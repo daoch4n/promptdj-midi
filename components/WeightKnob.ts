@@ -400,8 +400,19 @@ export class WeightKnob extends LitElement {
     const indicatorColor = isAutoValue ? '#00FFFF' : '#FFFFFF';
     const indicatorStrokeWidth = isAutoValue ? 3.5 : 3;
 
-    let haloBaseScale = (this._backgroundEffectAlpha / 2) * (MAX_HALO_SCALE - MIN_HALO_SCALE);
+    let normalizedDriverForHaloScale: number;
+    if (this._currentAnimationContext === 'auto') {
+      normalizedDriverForHaloScale = this._backgroundEffectAlpha; // Is already 0-1
+    } else { // 'drag' context
+      // Ensure _currentValue is within 0-2 range for this calculation,
+      // though it should be due to clamping in the setter.
+      const clampedCurrentValue = Math.max(0, Math.min(2, this._currentValue));
+      normalizedDriverForHaloScale = clampedCurrentValue / 2; // Normalize _currentValue (0-2) to 0-1
+    }
+
+    let haloBaseScale = normalizedDriverForHaloScale * (MAX_HALO_SCALE - MIN_HALO_SCALE);
     haloBaseScale += MIN_HALO_SCALE;
+
     const haloDisplayScale = haloBaseScale + (this.audioLevel * HALO_LEVEL_MODIFIER);
 
     const haloStyle = styleMap({
