@@ -205,3 +205,18 @@ body.dragging * {
 #buttons .seed-controls.seed-controls-hoverable input {
     transition: opacity 0.3s ease-in-out; /* so they fade smoothly with the container */
 }
+
+.background-light {
+  position: absolute;
+  width: 15vmin;
+  height: 15vmin;
+  border-radius: 50%;
+  mix-blend-mode: lighten;
+  pointer-events: none;
+  /* The translate(-50%, -50%) part of transform is static for centering */
+  /* We will apply dynamic scale via inline style, so the full transform is set inline. */
+  /* However, if only scale was dynamic, we could have set translate here. */
+  /* For transitions, it's generally good to transition specific properties like opacity and transform (or scale). */
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+  will-change: opacity, transform; /* Hint to the browser for optimization */
+}

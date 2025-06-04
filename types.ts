@@ -10,6 +10,7 @@ export interface Prompt {
   color: string;
   isAutoFlowing?: boolean;
   activatedFromZero?: boolean;
+  backgroundDisplayWeight?: number;
 }
 
 export interface ControlChange {
