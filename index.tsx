@@ -487,6 +487,9 @@ export class PromptDjMidi extends LitElement {
    @state() private autoBrightness = PromptDjMidi.INITIAL_AUTO_STATES.autoBrightness;
    @state() private lastDefinedBpm = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedBpm;
    @state() private autoBpm = PromptDjMidi.INITIAL_AUTO_STATES.autoBpm;
+   @state() private lastDefinedTemperature = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
+   @state() private lastDefinedTopK = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTopK;
+   @state() private lastDefinedGuidance = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedGuidance;
    @state() private autoTemperature = PromptDjMidi.INITIAL_AUTO_STATES.autoTemperature;
    @state() private autoTopK = PromptDjMidi.INITIAL_AUTO_STATES.autoTopK;
    @state() private autoGuidance = PromptDjMidi.INITIAL_AUTO_STATES.autoGuidance;
@@ -509,9 +512,6 @@ export class PromptDjMidi extends LitElement {
    private readonly MAX_AMP_VALUE = 100;
 
    @state() private apiKeyInvalid = false;
-   @state() private lastDefinedTemperature = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
-   @state() private lastDefinedTopK = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTopK;
-   @state() private lastDefinedGuidance = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedGuidance;
 
   @state() private apiKeySavedSuccessfully = false;
   @state() private promptWeightedAverage = 0;
@@ -1907,16 +1907,17 @@ export class PromptDjMidi extends LitElement {
     private _sendPlaybackParametersToSession() {
       if (this.session) {
         const configToSend: {
-            density: number | null | undefined;
-            brightness: number | null | undefined;
-            bpm?: number; // Make bpm optional
-            muteBass: boolean | undefined;
-            muteDrums: boolean | undefined;
-            onlyBassAndDrums: boolean | undefined;
-            scale?: Scale; // Make scale optional
-            temperature: number | null | undefined;
-            guidance: number | null | undefined;
-            seed?: number; // Make seed optional
+            density?: number;
+            brightness?: number;
+            bpm?: number;
+            muteBass?: boolean;
+            muteDrums?: boolean;
+            onlyBassAndDrums?: boolean;
+            scale?: Scale;
+            temperature?: number;
+            topK?: number;
+            guidance?: number;
+            seed?: number;
         } = {
           density: this.config.density,
           brightness: this.config.brightness,
@@ -2535,9 +2536,9 @@ ${this.renderPrompts()}
       const startOn = [...DEFAULT_PROMPTS]
         .sort(() => Math.random() - 0.5)
         .slice(0, 3);
- 
+  
       const prompts = new Map<string, Prompt>();
- 
+  
       for (let i = 0; i < DEFAULT_PROMPTS.length; i++) {
         const promptId = `prompt-${i}`;
         const prompt = DEFAULT_PROMPTS[i];
@@ -2552,16 +2553,16 @@ ${this.renderPrompts()}
           isAutoFlowing: false,
         });
       }
- 
+  
       return prompts;
     }
- 
+  
     static setStoredPrompts(prompts: Map<string, Prompt>) {
       if (typeof localStorage === 'undefined') {
         console.warn('localStorage is not available. Cannot save prompts.');
         return;
       }
-
+  
       const storedPromptsJson = JSON.stringify([...prompts.values()]);
       try {
         localStorage.setItem('prompts', storedPromptsJson);
@@ -2570,8 +2571,9 @@ ${this.renderPrompts()}
         console.error('Error saving prompts to localStorage. This could be due to quota exceeded or security restrictions.', e);
       }
     }
-  }
- 
+    }
+  
+  
   function main(parent: HTMLElement) {
     const midiDispatcher = new MidiDispatcher();
     const initialPrompts = PromptDjMidi.getInitialPrompts();
@@ -2581,5 +2583,5 @@ ${this.renderPrompts()}
     );
     parent.appendChild(pdjMidi);
   }
- 
+  
   main(document.body);
