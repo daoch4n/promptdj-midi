@@ -2551,5 +2551,3 @@ ${this.renderPrompts()}
   }
  
   main(document.body);
-
-[end of index.tsx]
