@@ -22,6 +22,9 @@ export class PlayPauseButton extends LitElement {
     :host(:hover) svg {
       transform: scale(1.2);
     }
+    :host(.pressed) svg {
+      transform: scale(1.35);
+    }
     svg {
       width: 100%;
       height: 100%;
@@ -178,11 +181,19 @@ export class PlayPauseButton extends LitElement {
   }
 
   override render() {
-    return html`${this.renderSvg()}<div class="hitbox" @click=${this.handleClick}></div>`;
+    return html`${this.renderSvg()}<div class="hitbox" @click=${this.handleClick} @pointerdown=${this.handlePointerDown} @pointerup=${this.handlePointerUp} @pointerleave=${this.handlePointerUp}></div>`;
   }
 
   private handleClick() {
     this.dispatchEvent(new CustomEvent('play-pause-click'));
+  }
+
+  private handlePointerDown(e: PointerEvent) {
+    this.classList.add('pressed');
+  }
+
+  private handlePointerUp(e: PointerEvent) {
+    this.classList.remove('pressed');
   }
 }
 
