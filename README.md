@@ -15,7 +15,7 @@
   - `Temperature`
   - `Top K`
   - `Guidance`
-  - `Bass / Drum Solo`
+  - `Bass / Drums Solo`
 
 ### Run Hosted
 
