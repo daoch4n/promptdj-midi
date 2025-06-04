@@ -201,7 +201,7 @@ export class PromptDjMidi extends LitElement {
     }
 
     .advanced-settings-panel .setting weight-knob {
-      width: 100px;
+      width: 41.67%;
       margin: 0 auto; 
     }
  
@@ -432,9 +432,10 @@ export class PromptDjMidi extends LitElement {
     }
 
     play-pause-button {
-      width: 100px;
-      height: 100px;
+      width: 41.67%;
+      height: 41.67%;
       margin: 0 auto 15px auto; 
+      align-self: center;
       display: block;
       cursor: pointer;
     }

@@ -18,8 +18,8 @@ export class PlayPauseButton extends LitElement {
       align-items: center;
       justify-content: center;
       pointer-events: none;
-      width: 80px; /* Changed from 100% to a fixed size */
-      height: 80px; /* Added to ensure square aspect ratio */
+      width: 100%;
+      height: 100%;
     }
     :host(:hover) svg {
       transform: scale(1.2);
