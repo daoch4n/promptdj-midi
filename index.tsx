@@ -63,7 +63,7 @@ const DEFAULT_PROMPTS = [
 
 /** The grid of prompt inputs. */
 @customElement('prompt-dj-midi')
-class PromptDjMidi extends LitElement {
+export class PromptDjMidi extends LitElement {
   // Inside PromptDjMidi class
   private static readonly INITIAL_CONFIG = {
     seed: null as number | null,
@@ -1253,33 +1253,42 @@ class PromptDjMidi extends LitElement {
   private adjustFrequency(isIncreasing: boolean) {
     const currentHz = this.flowFrequency; // Already in Hz
     let step = 0;
-    if (currentHz >= 1.0) {
+
+    if (currentHz > 1.0) {
       step = 1.0;
-    } else if (currentHz >= 0.1) {
+    } else if (currentHz === 1.0) {
+      step = isIncreasing ? 1.0 : 0.1; // Special step for 1.0 Hz
+    } else if (currentHz > 0.1) {
       step = 0.1;
-    } else {
+    } else if (currentHz === 0.1) {
+      step = isIncreasing ? 0.1 : 0.01; // Special step for 0.1 Hz
+    } else { // currentHz < 0.1 Hz and not exactly 0.1
       step = 0.01;
     }
 
     let newHz = isIncreasing ? currentHz + step : currentHz - step;
 
-    if (newHz <= 0 && !isIncreasing) {
+    // Ensure newHz doesn't become 0 or less, clamp to MIN_FLOW_FREQUENCY_HZ
+    if (newHz < PromptDjMidi.MIN_FLOW_FREQUENCY_HZ) {
       newHz = PromptDjMidi.MIN_FLOW_FREQUENCY_HZ;
-    } else if (newHz <= 0 && isIncreasing) {
-      newHz = PromptDjMidi.MIN_FLOW_FREQUENCY_HZ; // Or step, but MIN_FLOW_FREQUENCY_HZ is safer
     }
 
-    newHz = Math.max(PromptDjMidi.MIN_FLOW_FREQUENCY_HZ, Math.min(newHz, PromptDjMidi.MAX_FLOW_FREQUENCY_HZ));
+    // Clamp to MAX_FLOW_FREQUENCY_HZ
+    newHz = Math.min(newHz, PromptDjMidi.MAX_FLOW_FREQUENCY_HZ);
+
 
     // Round to appropriate decimal places
-    if (step < 1.0) {
-      // If step is 0.1, toFixed(1) or toFixed(2) is fine.
-      // If step is 0.01, toFixed(2) is necessary.
-      // Using toFixed(2) as a general approach for steps < 1.0.
-      newHz = parseFloat(newHz.toFixed(2));
+    if (newHz >= 1.0) {
+      newHz = parseFloat(newHz.toFixed(1)); // Handles cases like 0.9 + 0.1 = 1.0 without becoming 1.00
     } else {
-      newHz = parseFloat(newHz.toFixed(0)); // No decimal places for step 1.0
+      // For values < 1.0 Hz, use two decimal places
+      newHz = parseFloat(newHz.toFixed(2));
     }
+    // Ensure it does not become exactly 0 after rounding if it was meant to be MIN_FLOW_FREQUENCY_HZ
+    if (newHz === 0 && currentHz > 0 && !isIncreasing) {
+        newHz = PromptDjMidi.MIN_FLOW_FREQUENCY_HZ;
+    }
+
 
     this.flowFrequency = newHz;
 
