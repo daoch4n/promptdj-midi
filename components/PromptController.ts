@@ -164,10 +164,8 @@ export class PromptController extends LitElement {
         this.dispatchPromptChange();
       } else if (cc === this.cc) {
         this.weight = (value / 127) * 2;
-        // When MIDI updates weight, ensure background snaps too.
-        if (this.weightInput) {
-          this.weightInput.snapBackgroundToCurrentValue();
-        }
+        // The WeightKnob's value setter now handles triggering drag-context animations
+        // when this.weight (and thus weightInput.value) is changed.
         this.dispatchPromptChange();
       }
     });
@@ -268,10 +266,8 @@ private updateWeight() {
     );
   }
 
-  // Ensure background snaps when user drags
-  if (this.weightInput) {
-    this.weightInput.snapBackgroundToCurrentValue();
-  }
+  // The WeightKnob's value setter now handles triggering drag-context animations.
+  // No need to call snapArcAndHaloToCurrentValue() here.
 
   this.weight = newWeight;
   this.dispatchPromptChange();
