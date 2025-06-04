@@ -497,11 +497,13 @@ export class PromptDjMidi extends LitElement {
    @state() private isSeedFlowing = false; 
    @state() private flowFrequency = 1;
    @state() private flowAmplitude = 5;    
-   @state() private flowDirectionUp = true;   
-   @state() private flowDirectionDown = true; 
+   @state() private flowDirectionUp = true;
+   @state() private flowDirectionDown = true;
    private globalFlowIntervalId: number | null = null;
    private freqAdjustIntervalId: number | null = null;
    private isFreqButtonPressed: boolean = false;
+   private ampAdjustIntervalId: number | null = null;
+   private isAmpButtonPressed: boolean = false;
 
   private static clamp01(v: number): number {
     return Math.min(Math.max(v, 0), 1);
@@ -560,8 +562,6 @@ export class PromptDjMidi extends LitElement {
      this.handleIncreaseFreq = this.handleIncreaseFreq.bind(this);
      this.handleDecreaseFreq = this.handleDecreaseFreq.bind(this);
      this.handleFlowAmplitudeChange = this.handleFlowAmplitudeChange.bind(this);
-     this.handleIncreaseAmp = this.handleIncreaseAmp.bind(this);
-     this.handleDecreaseAmp = this.handleDecreaseAmp.bind(this);
      this.toggleFlowDirection = this.toggleFlowDirection.bind(this);
      this.handlePromptAutoFlowToggled = this.handlePromptAutoFlowToggled.bind(this);
      this.globalFlowTick = this.globalFlowTick.bind(this);
@@ -569,6 +569,9 @@ export class PromptDjMidi extends LitElement {
      this.handleFreqButtonPress = this.handleFreqButtonPress.bind(this);
      this.handleFreqButtonRelease = this.handleFreqButtonRelease.bind(this);
      this.clearFreqAdjustInterval = this.clearFreqAdjustInterval.bind(this);
+     this.handleAmpButtonPress = this.handleAmpButtonPress.bind(this);
+     this.handleAmpButtonRelease = this.handleAmpButtonRelease.bind(this);
+     this.clearAmpAdjustInterval = this.clearAmpAdjustInterval.bind(this);
     this.loadAvailablePresets(); // Load available presets
  
     if (typeof localStorage !== 'undefined') {
@@ -1308,19 +1311,46 @@ export class PromptDjMidi extends LitElement {
      }
    }
 
-  private handleIncreaseAmp() {
-    this.flowAmplitude += this.ampStep;
-    this.flowAmplitude = Math.min(this.flowAmplitude, this.MAX_AMP_VALUE);
-    if (this.isAnyFlowActive) {
-      this.stopGlobalFlowInterval();
-      this.startGlobalFlowInterval();
-    }
-    this.requestUpdate();
+  private handleAmpButtonPress(isIncreasing: boolean) {
+    this.isAmpButtonPressed = true;
+    this.adjustAmplitude(isIncreasing); // Call once immediately
+
+    this.clearAmpAdjustInterval(); // Clear any existing interval
+
+    this.ampAdjustIntervalId = window.setInterval(() => {
+      if (this.isAmpButtonPressed) {
+        this.adjustAmplitude(isIncreasing);
+      } else {
+        this.clearAmpAdjustInterval();
+      }
+    }, 150); // Adjust interval as needed for responsiveness
   }
 
-  private handleDecreaseAmp() {
-    this.flowAmplitude -= this.ampStep;
-    this.flowAmplitude = Math.max(this.flowAmplitude, this.MIN_AMP_VALUE);
+  private handleAmpButtonRelease() {
+    this.isAmpButtonPressed = false;
+    this.clearAmpAdjustInterval();
+  }
+
+  private clearAmpAdjustInterval() {
+    if (this.ampAdjustIntervalId !== null) {
+      clearInterval(this.ampAdjustIntervalId);
+      this.ampAdjustIntervalId = null;
+    }
+  }
+
+  private adjustAmplitude(isIncreasing: boolean) {
+    let newAmp = this.flowAmplitude;
+    if (isIncreasing) {
+      newAmp += this.ampStep;
+    } else {
+      newAmp -= this.ampStep;
+    }
+
+    newAmp = Math.min(newAmp, this.MAX_AMP_VALUE);
+    newAmp = Math.max(newAmp, this.MIN_AMP_VALUE);
+
+    this.flowAmplitude = newAmp;
+
     if (this.isAnyFlowActive) {
       this.stopGlobalFlowInterval();
       this.startGlobalFlowInterval();
@@ -2244,8 +2274,16 @@ export class PromptDjMidi extends LitElement {
                   @pointerleave=${this.handleFreqButtonRelease}
                   class="flow-control-button">+</button>
                 <label for="flowAmplitude" style="margin-left: 5px;">Amp: ${this.flowAmplitude} X</label>
-                <button @click=${this.handleDecreaseAmp} class="flow-control-button">-</button>
-                <button @click=${this.handleIncreaseAmp} class="flow-control-button">+</button>
+                <button
+                  @pointerdown=${() => this.handleAmpButtonPress(false)}
+                  @pointerup=${this.handleAmpButtonRelease}
+                  @pointerleave=${this.handleAmpButtonRelease}
+                  class="flow-control-button">-</button>
+                <button
+                  @pointerdown=${() => this.handleAmpButtonPress(true)}
+                  @pointerup=${this.handleAmpButtonRelease}
+                  @pointerleave=${this.handleAmpButtonRelease}
+                  class="flow-control-button">+</button>
               ` : ''}
             </div>
           ` : ''}
