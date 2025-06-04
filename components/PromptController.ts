@@ -10,7 +10,7 @@ import type { WeightKnob } from './WeightKnob';
 import type { MidiDispatcher } from '../utils/MidiDispatcher';
 import type { Prompt, ControlChange } from '../types';
 
-const AUTO_ANIMATION_SMOOTHING_FACTOR = 0.01; // For slower animation
+// const AUTO_ANIMATION_SMOOTHING_FACTOR = 0.01; // No longer used or needed
 
 /** A single prompt input associated with a MIDI CC. */
 @customElement('prompt-controller')
@@ -164,6 +164,10 @@ export class PromptController extends LitElement {
         this.dispatchPromptChange();
       } else if (cc === this.cc) {
         this.weight = (value / 127) * 2;
+        // When MIDI updates weight, ensure background snaps too.
+        if (this.weightInput) {
+          this.weightInput.snapBackgroundToCurrentValue();
+        }
         this.dispatchPromptChange();
       }
     });
@@ -264,32 +268,40 @@ private updateWeight() {
     );
   }
 
+  // Ensure background snaps when user drags
+  if (this.weightInput) {
+    this.weightInput.snapBackgroundToCurrentValue();
+  }
+
   this.weight = newWeight;
   this.dispatchPromptChange();
 }
 
 private toggleLearnMode() {
-this.learnMode = !this.learnMode;
+  this.learnMode = !this.learnMode;
 }
 
 private toggleAutoFlow() {
   if (!this.isAutoFlowing) { // Turning Auto ON
     if (this.weightInput) {
-      this.weightInput.animateToValue(1.0, AUTO_ANIMATION_SMOOTHING_FACTOR);
+      this.weightInput.value = 1.0; // Snappy rotation to 1.0
+      this.weightInput.triggerBackgroundAnimation(true); // Start slow fade-in of background
     }
     this.weight = 1.0;
-    this.autoSetByButton = true; // Auto was set by button
+    this.autoSetByButton = true;
     this.isAutoFlowing = true;
   } else { // Turning Auto OFF (this.isAutoFlowing was true)
-    if (this.autoSetByButton) { // If it was at 1.0 due to button and not user drag
+    if (this.autoSetByButton) {
       if (this.weightInput) {
-        this.weightInput.animateToValue(0.0, AUTO_ANIMATION_SMOOTHING_FACTOR);
+        this.weightInput.value = 0.0; // Snappy rotation to 0.0
+        this.weightInput.triggerBackgroundAnimation(false); // Start slow fade-out of background
       }
-      this.weight = 0.0; // Update PromptController's state
+      this.weight = 0.0;
     }
-    // If autoSetByButton is false, it means user dragged the knob, so weight is already user-defined.
-    // No need to change this.weight in that case.
-    this.autoSetByButton = false; // Reset flag
+    // If autoSetByButton is false, user dragged. Rotation is already where user put it.
+    // The snapBackgroundToCurrentValue in updateWeight would have handled the background.
+
+    this.autoSetByButton = false;
     this.isAutoFlowing = false;
   }
 

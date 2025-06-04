@@ -14,7 +14,9 @@ const MAX_HALO_SCALE = 2;
 const HALO_LEVEL_MODIFIER = 1;
 
 /** How quickly the knob animates to new values. Higher is slower. */
-const DEFAULT_ANIMATION_SMOOTHING_FACTOR = 0.1;
+const DEFAULT_ANIMATION_SMOOTHING_FACTOR = 1.0;
+
+const BACKGROUND_EFFECT_SMOOTHING_FACTOR = 0.01;
 
 /** A knob for adjusting and visualizing prompt weight. */
 @customElement('weight-knob')
@@ -60,22 +62,13 @@ export class WeightKnob extends LitElement {
 
   set value(newVal: number) {
     const oldVal = this._value;
-    const clampedNewVal = Math.max(0, Math.min(2, newVal)); // Clamp
+    const clampedNewVal = Math.max(0, Math.min(2, newVal));
 
-    // Check if this setter call is an echo of animateToValue
-    if (this._deferFactorReset && clampedNewVal === this._targetValue) {
-      this._deferFactorReset = false; // Consume the flag, keep custom smoothing factor
-    } else {
-      // This is a new interaction (drag, different programmatic set) or flag already consumed
-      this._activeSmoothingFactor = DEFAULT_ANIMATION_SMOOTHING_FACTOR;
-      this._deferFactorReset = false; // Ensure flag is off
-    }
-
-    this._value = clampedNewVal; // Update internal value representation
-    this._targetValue = clampedNewVal; // Update target value
+    this._value = clampedNewVal;
+    this._targetValue = clampedNewVal;
 
     if (this._animationFrameId === null) {
-      this._animateKnob(); // Start animation if not already running
+      this._animateKnob();
     }
     this.requestUpdate('value', oldVal);
   }
@@ -87,8 +80,10 @@ export class WeightKnob extends LitElement {
   private _currentValue = 0;
   private _targetValue = 0;
   private _animationFrameId: number | null = null;
-  private _activeSmoothingFactor = DEFAULT_ANIMATION_SMOOTHING_FACTOR;
-  private _deferFactorReset = false;
+
+  private _backgroundEffectAlpha = 0;
+  private _targetBackgroundEffectAlpha = 0;
+  private _backgroundAnimationId: number | null = null;
 
   private dragStartPos = 0;
   private dragStartValue = 0;
@@ -102,22 +97,6 @@ export class WeightKnob extends LitElement {
     this.handlePointerUp = this.handlePointerUp.bind(this);
   }
 
-  public animateToValue(targetValue: number, smoothingFactor?: number) {
-    const clampedValue = Math.max(0, Math.min(2, targetValue)); // Clamp
-    this._value = clampedValue; // Update internal value representation to target
-    this._targetValue = clampedValue; // Set target for animation
-
-    this._activeSmoothingFactor = smoothingFactor || DEFAULT_ANIMATION_SMOOTHING_FACTOR;
-    this._deferFactorReset = true; // Set the flag to defer reset
-
-    if (this._animationFrameId === null) {
-      this._animateKnob(); // Start animation if not already running
-    }
-    // Dispatch an event as the value property is effectively changed
-    this.dispatchEvent(new CustomEvent<number>('input', { detail: this._value }));
-    this.requestUpdate(); // Ensure component re-renders with new state if needed
-  }
-
   override connectedCallback() {
     super.connectedCallback();
     // Initialize _currentValue and _targetValue based on the initial value property.
@@ -129,6 +108,8 @@ export class WeightKnob extends LitElement {
     if (this._currentValue !== this._targetValue && this._animationFrameId === null) {
        this._animateKnob();
     }
+    // Initialize background alpha based on initial value
+    this.snapBackgroundToCurrentValue();
   }
 
   override disconnectedCallback() {
@@ -137,40 +118,87 @@ export class WeightKnob extends LitElement {
       cancelAnimationFrame(this._animationFrameId);
       this._animationFrameId = null;
     }
+    if (this._backgroundAnimationId !== null) {
+      cancelAnimationFrame(this._backgroundAnimationId);
+      this._backgroundAnimationId = null;
+    }
+  }
+
+  public triggerBackgroundAnimation(isFadeIn: boolean): void {
+    this._targetBackgroundEffectAlpha = isFadeIn ? 1.0 : 0.0;
+
+    // If an animation is already in progress, it will pick up the new target.
+    // If not, start one.
+    if (this._backgroundAnimationId === null) {
+      this._animateBackgroundEffect();
+    }
+  }
+
+  public snapBackgroundToCurrentValue(): void {
+    if (this._backgroundAnimationId !== null) {
+      cancelAnimationFrame(this._backgroundAnimationId);
+      this._backgroundAnimationId = null;
+    }
+
+    const newAlpha = this._currentValue > 0.001 ? 1.0 : 0.0;
+    if (this._backgroundEffectAlpha !== newAlpha) {
+      this._backgroundEffectAlpha = newAlpha;
+      this._targetBackgroundEffectAlpha = newAlpha; // Sync target as well
+      this.requestUpdate();
+    }
   }
 
   private _animateKnob() {
     const difference = this._targetValue - this._currentValue;
 
-    // If the difference is negligible, snap to target and stop animating.
-    if (Math.abs(difference) < 0.001) {
-      this._currentValue = this._targetValue;
+    // Since DEFAULT_ANIMATION_SMOOTHING_FACTOR is 1.0,
+    // _currentValue will become _targetValue in one step.
+    // The animation loop is primarily to ensure it happens in the next paint cycle.
+    this._currentValue += difference * DEFAULT_ANIMATION_SMOOTHING_FACTOR;
+
+    if (Math.abs(this._currentValue - this._targetValue) < 0.001) {
+      this._currentValue = this._targetValue; // Ensure exact snap
+    }
+
+    this.requestUpdate();
+
+    if (this._currentValue !== this._targetValue) {
+      // This path should ideally not be taken if factor is 1.0 and snapping works.
+      this._animationFrameId = requestAnimationFrame(() => this._animateKnob());
+    } else {
       if (this._animationFrameId !== null) {
         cancelAnimationFrame(this._animationFrameId);
         this._animationFrameId = null;
       }
-      // Add these lines to reset smoothing factor and deferral flag on completion
-      this._activeSmoothingFactor = DEFAULT_ANIMATION_SMOOTHING_FACTOR;
-      this._deferFactorReset = false;
+    }
+  }
 
-      this.requestUpdate(); // Ensure final render with the snapped value.
+  private _animateBackgroundEffect() {
+    const difference = this._targetBackgroundEffectAlpha - this._backgroundEffectAlpha;
+
+    if (Math.abs(difference) < 0.001) {
+      this._backgroundEffectAlpha = this._targetBackgroundEffectAlpha;
+      if (this._backgroundAnimationId !== null) {
+        cancelAnimationFrame(this._backgroundAnimationId);
+        this._backgroundAnimationId = null;
+      }
+      this.requestUpdate(); // Ensure final render
       return;
     }
 
-    // Update currentValue towards targetValue.
-    this._currentValue += difference * this._activeSmoothingFactor;
-
-    // Request a re-render because _currentValue changed.
+    this._backgroundEffectAlpha += difference * BACKGROUND_EFFECT_SMOOTHING_FACTOR;
     this.requestUpdate();
 
-    // Continue animation if not yet at target.
-    // Check again to ensure we don't schedule if we just snapped.
-    if (this._currentValue !== this._targetValue) {
-      this._animationFrameId = requestAnimationFrame(() => this._animateKnob());
-    } else if (this._animationFrameId !== null) {
-      // If we reached targetValue exactly in this step, cancel any scheduled frame.
-      cancelAnimationFrame(this._animationFrameId);
-      this._animationFrameId = null;
+    // Check if still need to animate, to avoid scheduling a new frame if already at target.
+    // (The Math.abs check above handles snapping, this ensures loop termination)
+    if (this._backgroundEffectAlpha !== this._targetBackgroundEffectAlpha) {
+      this._backgroundAnimationId = requestAnimationFrame(() => this._animateBackgroundEffect());
+    } else {
+      // If it reached target in this step, ensure ID is cleared.
+      if (this._backgroundAnimationId !== null) {
+         cancelAnimationFrame(this._backgroundAnimationId);
+         this._backgroundAnimationId = null;
+      }
     }
   }
 
@@ -180,12 +208,16 @@ export class WeightKnob extends LitElement {
     document.body.classList.add('dragging');
     window.addEventListener('pointermove', this.handlePointerMove);
     window.addEventListener('pointerup', this.handlePointerUp);
+    // When user starts dragging, snap background effect immediately
+    this.snapBackgroundToCurrentValue();
   }
 
   private handlePointerMove(e: PointerEvent) {
     const delta = this.dragStartPos - e.clientY;
     this.value = this.dragStartValue + delta * 0.01;
     this.value = Math.max(0, Math.min(2, this.value));
+    // As user drags, keep background snapped to current value
+    this.snapBackgroundToCurrentValue();
     this.dispatchEvent(new CustomEvent<number>('input', { detail: this.value }));
   }
 
@@ -193,12 +225,17 @@ export class WeightKnob extends LitElement {
     window.removeEventListener('pointermove', this.handlePointerMove);
     window.removeEventListener('pointerup', this.handlePointerUp);
     document.body.classList.remove('dragging');
+    // Optional: if you want a fade-out effect when drag ends and value is 0,
+    // you could call triggerBackgroundAnimation(false) here,
+    // but current logic snaps based on this.value which is fine.
   }
 
   private handleWheel(e: WheelEvent) {
     const delta = e.deltaY;
     this.value = this.value + delta * -0.0025;
     this.value = Math.max(0, Math.min(2, this.value));
+    // Snap background on wheel event as well
+    this.snapBackgroundToCurrentValue();
     this.dispatchEvent(new CustomEvent<number>('input', { detail: this.value }));
   }
 
@@ -238,15 +275,20 @@ export class WeightKnob extends LitElement {
     const indicatorColor = isAutoValue ? '#00FFFF' : '#FFFFFF'; // Cyan for auto, White otherwise
     const indicatorStrokeWidth = isAutoValue ? 3.5 : 3; // Thicker for auto
 
-    // Use _currentValue for halo scale calculation
-    let scale = (this._currentValue / 2) * (MAX_HALO_SCALE - MIN_HALO_SCALE);
-    scale += MIN_HALO_SCALE;
-    scale += this.audioLevel * HALO_LEVEL_MODIFIER;
+    // Use _backgroundEffectAlpha for halo base scale calculation
+    // (this._backgroundEffectAlpha / 2) maps the 0-1 range of alpha
+    // to a 0-0.5 factor, similar to _currentValue / 2 when _currentValue is 1.0
+    let haloBaseScale = (this._backgroundEffectAlpha / 2) * (MAX_HALO_SCALE - MIN_HALO_SCALE);
+    haloBaseScale += MIN_HALO_SCALE;
+
+    // Add audioLevel modifier
+    const haloDisplayScale = haloBaseScale + (this.audioLevel * HALO_LEVEL_MODIFIER);
 
     const haloStyle = styleMap({
-      display: this._currentValue > 0 ? 'block' : 'none', // Use _currentValue for display logic
+      opacity: (this._backgroundEffectAlpha * 0.5).toString(),
+      display: this._backgroundEffectAlpha > 0.001 ? 'block' : 'none', // Use a small threshold for display
       background: this.color,
-      transform: `translate(-50%, -50%) scale(${scale})`,
+      transform: `translate(-50%, -50%) scale(${haloDisplayScale})`,
     });
 
     return html`
