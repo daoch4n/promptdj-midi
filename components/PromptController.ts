@@ -111,8 +111,10 @@ export class PromptController extends LitElement {
       padding: 3px 6px;
     }
     .auto-button.active {
-      background-color: #fff;
-      color: #000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      box-shadow: 0 0 8px 2px var(--knob-color);
+      border-color: var(--knob-color);
     }
     .auto-value-display {
       font-family: 'DS-Digital', cursive;
@@ -321,7 +323,7 @@ private toggleAutoFlow() {
       'learn-mode': this.learnMode,
       'show-cc': this.showCC,
     });
-    return html`<div class=${classes}>
+    return html`<div class=${classes} style="--knob-color: ${this.color};">
       <weight-knob
         id="weight"
         value=${this.weight}
