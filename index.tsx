@@ -1139,8 +1139,27 @@ class PromptDjMidi extends LitElement {
    }
  
   private handleIncreaseFreq() {
-    this.flowFrequency += this.freqStep;
-    this.flowFrequency = Math.min(this.flowFrequency, this.MAX_FREQ_VALUE);
+    const { displayValue: currentDisplayVal, unit: currentUnit, hz: currentHz } = this.getFreqDisplayParts(this.flowFrequency);
+    const displayStep = (currentUnit === 'Hz') ? 1 : 0.1;
+    let newDisplayVal = currentDisplayVal + displayStep;
+
+    let newHz;
+    if (currentUnit === 'Hz') newHz = newDisplayVal;
+    else if (currentUnit === 'dHz') newHz = newDisplayVal / 10;
+    else if (currentUnit === 'cHz') newHz = newDisplayVal / 100;
+    else if (currentUnit === 'mHz') newHz = newDisplayVal / 1000;
+    else if (currentUnit === 'µHz') newHz = newDisplayVal / 1000000;
+    else newHz = currentHz; // Fallback
+
+    const MIN_HZ = 1000 / this.MAX_FREQ_VALUE;
+    const MAX_HZ = 1000 / this.MIN_FREQ_VALUE;
+
+    newHz = Math.max(MIN_HZ, Math.min(newHz, MAX_HZ));
+    if (newHz <= 0) newHz = MIN_HZ;
+
+    let newFlowFrequency = 1000 / newHz;
+    this.flowFrequency = Math.max(this.MIN_FREQ_VALUE, Math.min(Math.round(newFlowFrequency), this.MAX_FREQ_VALUE));
+
     if (this.isAnyFlowActive) {
       this.stopGlobalFlowInterval();
       this.startGlobalFlowInterval();
@@ -1149,8 +1168,27 @@ class PromptDjMidi extends LitElement {
   }
 
   private handleDecreaseFreq() {
-    this.flowFrequency -= this.freqStep;
-    this.flowFrequency = Math.max(this.flowFrequency, this.MIN_FREQ_VALUE);
+    const { displayValue: currentDisplayVal, unit: currentUnit, hz: currentHz } = this.getFreqDisplayParts(this.flowFrequency);
+    const displayStep = (currentUnit === 'Hz') ? 1 : 0.1;
+    let newDisplayVal = currentDisplayVal - displayStep;
+
+    let newHz;
+    if (currentUnit === 'Hz') newHz = newDisplayVal;
+    else if (currentUnit === 'dHz') newHz = newDisplayVal / 10;
+    else if (currentUnit === 'cHz') newHz = newDisplayVal / 100;
+    else if (currentUnit === 'mHz') newHz = newDisplayVal / 1000;
+    else if (currentUnit === 'µHz') newHz = newDisplayVal / 1000000;
+    else newHz = currentHz; // Fallback
+
+    const MIN_HZ = 1000 / this.MAX_FREQ_VALUE;
+    const MAX_HZ = 1000 / this.MIN_FREQ_VALUE;
+
+    newHz = Math.max(MIN_HZ, Math.min(newHz, MAX_HZ));
+    if (newHz <= 0) newHz = MIN_HZ;
+
+    let newFlowFrequency = 1000 / newHz;
+    this.flowFrequency = Math.max(this.MIN_FREQ_VALUE, Math.min(Math.round(newFlowFrequency), this.MAX_FREQ_VALUE));
+
     if (this.isAnyFlowActive) {
       this.stopGlobalFlowInterval();
       this.startGlobalFlowInterval();
@@ -1793,7 +1831,39 @@ class PromptDjMidi extends LitElement {
       }
     }
 
+  private getFreqDisplayParts(ms: number): { displayValue: number, unit: string, hz: number } {
+    if (ms <= 0) return { displayValue: 0, unit: 'Hz', hz: 0 };
+    const hz = 1000 / ms;
+    let val: number;
+    let unit: string;
+
+    if (hz >= 1) {
+      val = hz; unit = 'Hz';
+    } else if (hz >= 0.1) {
+      val = hz * 10; unit = 'dHz';
+    } else if (hz >= 0.01) {
+      val = hz * 100; unit = 'cHz';
+    } else if (hz >= 0.001) {
+      val = hz * 1000; unit = 'mHz';
+    } else {
+      val = hz * 1000000; unit = 'µHz';
+    }
+    return { displayValue: val, unit: unit, hz: hz };
+  }
+
   private formatFlowFrequency(ms: number): string {
+    if (ms <= 0) return 'N/A'; // Or some other appropriate string for invalid input
+
+    // Use getFreqDisplayParts to get the raw value and unit
+    const { displayValue, unit } = this.getFreqDisplayParts(ms);
+
+    // Format to 1 decimal place only if it's not a whole number
+    const formattedVal = displayValue % 1 === 0 ? displayValue.toString() : displayValue.toFixed(1);
+
+    return `${formattedVal} ${unit}`;
+  }
+
+  private formatFlowFrequencyBAK(ms: number): string {
     if (ms <= 0) return 'N/A'; // Or some other appropriate string for invalid input
 
     const hz = 1000 / ms;
