@@ -14,10 +14,11 @@
     "lit": "^3.3.0"
   },
   "devDependencies": {
+    "@open-wc/testing": "^4.0.0",
     "@types/node": "^22.15.29",
+    "jsdom": "^22.1.0",
     "typescript": "~5.7.2",
     "vite": "^6.2.0",
-    "vitest": "^0.34.6",
-    "jsdom": "^22.1.0"
+    "vitest": "^0.34.6"
   }
 }
