@@ -72,11 +72,11 @@ export class PromptController extends LitElement {
         text-overflow: ellipsis;
       }
       &:focus {
-        background: #333; /* Darker background on focus */
+        background: rgba(0, 0, 0, 0.6); /* Darker black alpha on focus */
         border: 0.1vmin solid #fff; /* Subtle white border on focus */
       }
       &:hover:not(:focus) { /* Hover effect when not focused */
-        background: #1a1a1a; /* Slightly lighter background on hover */
+        background: rgba(0, 0, 0, 0.5); /* Slightly darker black alpha on hover */
         color: #eee; /* Slightly darker text on hover */
         box-shadow: 0 0 0.5vmin rgba(255, 255, 255, 0.2); /* Subtle glow on hover */
       }
@@ -104,7 +104,7 @@ export class PromptController extends LitElement {
       font-weight: 600;
       cursor: pointer;
       color: #fff;
-      background: #0002;
+      background: rgba(0, 0, 0, 0.4); /* Standardized black alpha */
       border: 1.5px solid #fff;
       border-radius: 4px;
       user-select: none;
