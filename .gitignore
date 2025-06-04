@@ -30,3 +30,4 @@ dist-ssr
 .roomodes
 
 .env.local
+.aider*
