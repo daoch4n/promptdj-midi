@@ -85,6 +85,9 @@ export class WeightKnob extends LitElement {
   private _targetBackgroundEffectAlpha = 0;
   private _backgroundAnimationId: number | null = null;
 
+  private _arcDisplayValue = 0;
+  private _animatingToArcTargetValue = 0;
+
   private dragStartPos = 0;
   private dragStartValue = 0;
 
@@ -125,6 +128,7 @@ export class WeightKnob extends LitElement {
   }
 
   public triggerBackgroundAnimation(isFadeIn: boolean): void {
+    this._animatingToArcTargetValue = this._targetValue; // Capture target for arc scaling
     this._targetBackgroundEffectAlpha = isFadeIn ? 1.0 : 0.0;
 
     // If an animation is already in progress, it will pick up the new target.
@@ -141,9 +145,24 @@ export class WeightKnob extends LitElement {
     }
 
     const newAlpha = this._currentValue > 0.001 ? 1.0 : 0.0;
+  let needsUpdate = false;
+
     if (this._backgroundEffectAlpha !== newAlpha) {
       this._backgroundEffectAlpha = newAlpha;
       this._targetBackgroundEffectAlpha = newAlpha; // Sync target as well
+    needsUpdate = true;
+  }
+
+  // Snap arc display value to the actual current value of the knob
+  if (this._arcDisplayValue !== this._currentValue) {
+    this._arcDisplayValue = this._currentValue;
+    needsUpdate = true;
+  }
+
+  // Sync _animatingToArcTargetValue to ensure any subsequent slow animation starts from a consistent state
+  this._animatingToArcTargetValue = this._currentValue;
+
+  if (needsUpdate) {
       this.requestUpdate();
     }
   }
@@ -187,6 +206,7 @@ export class WeightKnob extends LitElement {
     }
 
     this._backgroundEffectAlpha += difference * BACKGROUND_EFFECT_SMOOTHING_FACTOR;
+  this._arcDisplayValue = this._animatingToArcTargetValue * this._backgroundEffectAlpha; // Added line
     this.requestUpdate();
 
     // Check if still need to animate, to avoid scheduling a new frame if already at target.
@@ -263,11 +283,13 @@ export class WeightKnob extends LitElement {
     const rotationRange = Math.PI * 2 * 0.75;
     const minRot = -rotationRange / 2 - Math.PI / 2;
     const maxRot = rotationRange / 2 - Math.PI / 2;
-    // Use _currentValue for rendering the knob's visual rotation
-    const rot = minRot + (this._currentValue / 2) * (maxRot - minRot);
+    // Use _arcDisplayValue for rendering the SVG arc's length
+    const rotForArc = minRot + (this._arcDisplayValue / 2) * (maxRot - minRot);
+    // Use _currentValue for rendering the knob's dot indicator rotation (snappy)
+    const rotForDot = minRot + (this._currentValue / 2) * (maxRot - minRot);
     const dotStyle = styleMap({
       // The indicator is placed relative to the knob's center (40,40)
-      transform: `translate(40px, 40px) rotate(${rot}rad)`,
+      transform: `translate(40px, 40px) rotate(${rotForDot}rad)`,
     });
 
     // Use _currentValue for auto value check and indicator styling
@@ -314,7 +336,7 @@ export class WeightKnob extends LitElement {
           stroke-linecap="round" />
         <!-- Path for the value fill - styled with this.color -->
         <path
-          d=${this.describeArc(40, 40, minRot, rot, 34.5)}
+          d=${this.describeArc(40, 40, minRot, rotForArc, 34.5)}
           fill="none"
           stroke=${this.color || '#707070'} /* Use halo color or default grey */
           stroke-width="3" /* Slightly thicker value arc */
