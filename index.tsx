@@ -97,6 +97,8 @@ class PromptDjMidi extends LitElement {
     lastDefinedGuidance: 4.0,
   };
 
+  private static readonly BG_WEIGHT_SMOOTHING_FACTOR = 0.1;
+
   private static readonly KNOB_CONFIGS = {
     density: { defaultValue: PromptDjMidi.INITIAL_CONFIG.density, min: 0, max: 1, autoProperty: 'autoDensity', lastDefinedProperty: 'lastDefinedDensity' },
     brightness: { defaultValue: PromptDjMidi.INITIAL_CONFIG.brightness, min: 0, max: 1, autoProperty: 'autoBrightness', lastDefinedProperty: 'lastDefinedBrightness' },
@@ -494,6 +496,10 @@ class PromptDjMidi extends LitElement {
    @state() private flowDirectionDown = true; 
    private globalFlowIntervalId: number | null = null;
 
+  private static clamp01(v: number): number {
+    return Math.min(Math.max(v, 0), 1);
+  }
+
    private readonly freqStep = 50; // milliseconds
    private readonly MIN_FREQ_VALUE = 50; // milliseconds
    private readonly MAX_FREQ_VALUE = 5000; // milliseconds
@@ -521,6 +527,8 @@ class PromptDjMidi extends LitElement {
   @state() private showPresetControls: boolean = false;
  
    private audioLevelRafId: number | null = null;
+   private _bgWeightsAnimationId: number | null = null;
+   private _animateBackgroundWeightsBound = this._animateBackgroundWeights.bind(this);
    private connectionError = true;
    private readonly maxRetries = 3;
    private currentRetryAttempt = 0;
@@ -539,6 +547,9 @@ class PromptDjMidi extends LitElement {
        if (prompt.activatedFromZero === undefined) { // Added this check
          prompt.activatedFromZero = false;
        }
+       if (prompt.backgroundDisplayWeight === undefined) {
+        prompt.backgroundDisplayWeight = prompt.weight;
+      }
      });
      this.prompts = prompts;
      this.midiDispatcher = midiDispatcher;
@@ -554,6 +565,7 @@ class PromptDjMidi extends LitElement {
      this.toggleFlowDirection = this.toggleFlowDirection.bind(this);
      this.handlePromptAutoFlowToggled = this.handlePromptAutoFlowToggled.bind(this);
      this.globalFlowTick = this.globalFlowTick.bind(this);
+     this._animateBackgroundWeightsBound = this._animateBackgroundWeights.bind(this);
     this.loadAvailablePresets(); // Load available presets
  
     if (typeof localStorage !== 'undefined') {
@@ -738,16 +750,77 @@ class PromptDjMidi extends LitElement {
      const newPrompts = new Map(this.prompts);
      newPrompts.set(promptId, prompt);
  
-     this.setPrompts(newPrompts);
+     this.setPrompts(newPrompts, false);
      this.calculatePromptWeightedAverage();
    }
  
-   private setPrompts(newPrompts: Map<string, Prompt>) {
-     this.prompts = newPrompts;
-     this.requestUpdate();
-     this.dispatchPromptsChange();
-     this.calculatePromptWeightedAverage();
-   }
+  private setPrompts(newPrompts: Map<string, Prompt>, isProgrammaticJump: boolean = false) {
+    this.prompts = newPrompts;
+
+    for (const p of this.prompts.values()) {
+      if (p.backgroundDisplayWeight === undefined) {
+        p.backgroundDisplayWeight = p.weight;
+      }
+    }
+
+    if (isProgrammaticJump) {
+      this._startBackgroundWeightsAnimation();
+    } else {
+      let changed = false;
+      for (const p of this.prompts.values()) {
+        if (p.backgroundDisplayWeight !== p.weight) {
+          p.backgroundDisplayWeight = p.weight;
+          changed = true;
+        }
+      }
+      // if (changed) { // No specific action if only snapping
+      // }
+    }
+
+    this.requestUpdate();
+    this.dispatchPromptsChange();
+    this.calculatePromptWeightedAverage();
+  }
+
+  private _animateBackgroundWeights(): void {
+    let animationStillNeeded = false;
+    let changedInThisFrame = false;
+
+    for (const prompt of this.prompts.values()) {
+      if (prompt.backgroundDisplayWeight === undefined) {
+        prompt.backgroundDisplayWeight = prompt.weight;
+      }
+
+      const diff = prompt.weight - prompt.backgroundDisplayWeight;
+
+      if (Math.abs(diff) < 0.001) {
+        if (prompt.backgroundDisplayWeight !== prompt.weight) {
+           prompt.backgroundDisplayWeight = prompt.weight;
+           changedInThisFrame = true;
+        }
+      } else {
+        prompt.backgroundDisplayWeight += diff * PromptDjMidi.BG_WEIGHT_SMOOTHING_FACTOR;
+        changedInThisFrame = true;
+        animationStillNeeded = true;
+      }
+    }
+
+    if (changedInThisFrame) {
+      this.requestUpdate();
+    }
+
+    if (animationStillNeeded) {
+      this._bgWeightsAnimationId = requestAnimationFrame(this._animateBackgroundWeightsBound);
+    } else {
+      this._bgWeightsAnimationId = null;
+    }
+  }
+
+  private _startBackgroundWeightsAnimation(): void {
+    if (this._bgWeightsAnimationId === null) {
+      this._bgWeightsAnimationId = requestAnimationFrame(this._animateBackgroundWeightsBound);
+    }
+  }
  
    private calculatePromptWeightedAverage(): void {
      let totalWeight = 0;
@@ -890,9 +963,10 @@ class PromptDjMidi extends LitElement {
        if (this.isSeedFlowing) {
             this._sendPlaybackParametersToSession();
        }
-       this.setSessionPrompts(); 
+       this.setPrompts(this.prompts, true);
        this.requestUpdate();
        this.calculatePromptWeightedAverage();
+       this._startBackgroundWeightsAnimation();
      }
    }
  
@@ -910,34 +984,34 @@ class PromptDjMidi extends LitElement {
      }
    }
  
-   private readonly makeBackground = throttle(
-     () => {
-       const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
- 
-       const MAX_WEIGHT = 0.5;
-       const MAX_ALPHA = 0.6;
- 
-       const bg: string[] = [];
- 
-       [...this.prompts.values()].forEach((p, i) => {
-         const alphaPct = clamp01(p.weight / MAX_WEIGHT) * MAX_ALPHA;
-         const alpha = Math.round(alphaPct * 0xff)
-           .toString(16)
-           .padStart(2, '0');
- 
-         const stop = p.weight / 2;
-         const x = (i % 8) / 7;
-         const y = Math.floor(i / 8) / 3;
-         const s = `radial-gradient(circle at ${x * 100}% ${y * 100}%, ${p.color}${alpha} 0px, ${p.color}00 ${stop * 100}%)`;
- 
-         bg.push(s);
-       });
- 
-       return bg.join(', ');
-     },
-     30,
-   );
- 
+  private readonly makeBackground = throttle(
+    () => {
+      // clamp01 is now a static method: PromptDjMidi.clamp01
+      const MAX_WEIGHT = 0.5; // Original constant name and value
+      const MAX_ALPHA = 0.6;  // Original constant name and value
+
+      const bg: string[] = [];
+
+      [...this.prompts.values()].forEach((p, i) => {
+        const displayWeight = p.backgroundDisplayWeight ?? p.weight;
+        const alphaPct = PromptDjMidi.clamp01(displayWeight / MAX_WEIGHT) * MAX_ALPHA;
+        const alpha = Math.round(alphaPct * 0xff)
+          .toString(16)
+          .padStart(2, '0');
+
+        const stop = displayWeight / 2;
+        const x = (i % 8) / 7;
+        const y = Math.floor(i / 8) / 3;
+        const s = `radial-gradient(circle at ${x * 100}% ${y * 100}%, ${p.color}${alpha} 0px, ${p.color}00 ${stop * 100}%)`;
+
+        bg.push(s);
+      });
+
+      return bg.join(', ');
+    },
+    20, // Changed throttle delay from 30 to 20
+  );
+
    private pause() {
      if (this.session) {
        this.session.pause();
@@ -1591,12 +1665,22 @@ class PromptDjMidi extends LitElement {
 
     // Apply Prompts
     const promptsArray = loadedPresetData.prompts as Prompt[];
-    promptsArray.forEach(p => {
+    promptsArray.forEach(p => { // Ensure required fields have defaults if loading older presets
       if (p.isAutoFlowing === undefined) p.isAutoFlowing = false;
-      if (p.activatedFromZero === undefined) p.activatedFromZero = false; // Ensure this too
+      if (p.activatedFromZero === undefined) p.activatedFromZero = false;
+      if (p.backgroundDisplayWeight === undefined) p.backgroundDisplayWeight = p.weight;
     });
     const newPromptsMap = new Map(promptsArray.map(p => [p.promptId, p]));
-    this.setPrompts(newPromptsMap); // This method already handles requestUpdate and dispatches changes
+
+    // Iterate over newPromptsMap to ensure backgroundDisplayWeight is set if somehow missed
+    // (though the loop above should cover it for presets)
+    for (const p of newPromptsMap.values()) {
+      if (p.backgroundDisplayWeight === undefined) {
+        p.backgroundDisplayWeight = p.weight;
+      }
+    }
+
+    this.setPrompts(newPromptsMap, true);
 
     // Apply Config
     // Ensure all keys from INITIAL_CONFIG are present, then override with loadedPresetData.config
@@ -1770,10 +1854,11 @@ class PromptDjMidi extends LitElement {
         newPrompts.set(promptId, {
           ...defaultPrompt,
           weight: 0,
+          backgroundDisplayWeight: 0, // Initialize for reset
           isAutoFlowing: false, // Ensure auto-flow is also reset
         });
       }
-      this.setPrompts(newPrompts); // This will call calculatePromptWeightedAverage
+      this.setPrompts(newPrompts, true);
  
       this.requestUpdate();
  
@@ -2392,6 +2477,7 @@ ${this.renderPrompts()}
           const promptsArray = JSON.parse(storedPromptsJson) as Prompt[];
           promptsArray.forEach(p => {
             if (p.isAutoFlowing === undefined) p.isAutoFlowing = false;
+            if (p.backgroundDisplayWeight === undefined) p.backgroundDisplayWeight = p.weight;
             // Ensure other potentially missing properties also have defaults if necessary in the future
           });
           console.log('Successfully loaded prompts from localStorage.');
@@ -2428,6 +2514,7 @@ ${this.renderPrompts()}
           promptId,
           text,
           weight: startOn.includes(prompt) ? 1 : 0,
+          backgroundDisplayWeight: startOn.includes(prompt) ? 1 : 0,
           cc: i,
           color,
           isAutoFlowing: false,
@@ -2464,3 +2551,5 @@ ${this.renderPrompts()}
   }
  
   main(document.body);
+
+[end of index.tsx]
