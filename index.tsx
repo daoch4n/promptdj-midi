@@ -50,7 +50,7 @@ const DEFAULT_PROMPTS = [
   { color: '#20B2AA', text: 'Ambient' },
   { color: '#FFD700', text: 'Reggae' },
   { color: '#00FA9A', text: 'Jazz Fusion' },
-  { color: '#8B4513', text: 'Folk' },
+  { color: '#32CD32', text: 'Folk' },
   { color: '#DA70D6', text: 'Ethereal Vibes' },
   { color: '#778899', text: 'Cinematic Score' },
   { color: '#1E90FF', text: 'Surf Rock' },
@@ -58,7 +58,7 @@ const DEFAULT_PROMPTS = [
   { color: '#D2B48C', text: 'Acoustic Guitar' },
   { color: '#ff00cc', text: 'Synthwave' },
   { color: '#00ffff', text: 'Trance' },
-  { color: '#8B4513', text: 'String Quartet' },
+  { color: '#00BFFF', text: 'String Quartet' },
 ];
 
 /** The grid of prompt inputs. */
