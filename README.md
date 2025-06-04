@@ -3,10 +3,11 @@
 ### Generate professional-grade 48kHz stereo audio with Auto Flow
 
 ## Features
+- 🎛️ 32 Editable Prompt Knobs (controllable via hardware MIDI devices)
 - ✨ Auto (toggleable realtime weights fluctualtion on every knob)
 - 🪩 Flow (toggleable realtime seed `fluctuation (both on)` / `🆙` / `down` flow)
-- 💾 Save / Load Presets
-- ⚙️ Advanced settings panel for granular synthesis control backported from PromptDJ restyled for fancy RGB lookz
+- 💾 Save / Load Presetstr
+- ⚙️ Advanced settings panel for granular synthesis control backported from PromptDJ and restyled for fancy RGB lookz (`BPM`, `Density`, `Brightness`, `Scale`, `Temperature`, `Top K`, `Guidance`, `Bass / Drum Solo`)
 
 ### Run Hosted
 
