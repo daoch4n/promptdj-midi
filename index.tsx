@@ -1184,7 +1184,7 @@ class PromptDjMidi extends LitElement {
         console.log(`Gemini API key saved to local storage (attempt ${retries + 1}).`);
         success = true;
         this.apiKeySavedSuccessfully = true;
-        this.setTransientApiKeyStatus("API Key Saved");
+        this.setTransientApiKeyStatus("API Key is saved and valid");
         this.showApiKeyControls = false; // Hide controls on successful save
       } catch (error) {
         retries++;
@@ -1986,8 +1986,6 @@ class PromptDjMidi extends LitElement {
               <span style="color: yellow; margin-left: 10px;">No API Key provided.</span>
             ` : this.geminiApiKey && !this.apiKeySavedSuccessfully ? html`
               <span style="color: orange; margin-left: 10px;">API Key entered. Save or start playback to use.</span>
-            ` : this.apiKeySavedSuccessfully && this.geminiApiKey ? html`
-              <span style="color: lightgreen; margin-left: 10px;">API Key is saved and valid.</span>
             ` : ''}
           </div>
 
