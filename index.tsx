@@ -43,6 +43,22 @@ const DEFAULT_PROMPTS = [
   { color: '#d8ff3e', text: 'Neo Soul' },
   { color: '#5200ff', text: 'Trip Hop' },
   { color: '#d9b2ff', text: 'Thrash' },
+  { color: '#FF69B4', text: 'Psychedelic Rock' },
+  { color: '#FFA500', text: 'Lo-fi Hip Hop' },
+  { color: '#00CED1', text: 'House' },
+  { color: '#8A2BE2', text: 'Techno' },
+  { color: '#20B2AA', text: 'Ambient' },
+  { color: '#FFD700', text: 'Reggae' },
+  { color: '#DC143C', text: 'Trap' },
+  { color: '#00FA9A', text: 'Jazz Fusion' },
+  { color: '#8B4513', text: 'Folk' },
+  { color: '#DA70D6', text: 'Ethereal Vocals' },
+  { color: '#778899', text: 'Cinematic Score' },
+  { color: '#ADFF2F', text: 'Glitch' },
+  { color: '#FF8C00', text: 'Afrobeat' },
+  { color: '#1E90FF', text: 'Surf Rock' },
+  { color: '#A9A9A9', text: 'Industrial' },
+  { color: '#D2B48C', text: 'Acoustic Guitar' },
 ];
 
 /** The grid of prompt inputs. */
@@ -232,7 +248,7 @@ class PromptDjMidi extends LitElement {
      width: 80vmin;
      height: 80vmin;
      display: grid;
-     grid-template-columns: repeat(4, 1fr);
+     grid-template-columns: repeat(8, 1fr);
      gap: 2.5vmin;
      margin-top: 0;
    }
@@ -883,8 +899,8 @@ class PromptDjMidi extends LitElement {
            .padStart(2, '0');
  
          const stop = p.weight / 2;
-         const x = (i % 4) / 3;
-         const y = Math.floor(i / 4) / 3;
+         const x = (i % 8) / 7;
+         const y = Math.floor(i / 8) / 3;
          const s = `radial-gradient(circle at ${x * 100}% ${y * 100}%, ${p.color}${alpha} 0px, ${p.color}00 ${stop * 100}%)`;
  
          bg.push(s);
