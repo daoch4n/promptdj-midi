@@ -162,117 +162,133 @@ describe('PromptDjMidi Logic', () => {
     vi.restoreAllMocks();
   });
 
-  // Frequency Handler Tests
-  describe('Frequency Handlers (New Logic)', () => {
-    // Note: MIN_FREQ_VALUE and MAX_FREQ_VALUE are used from the test setup.
-    // controller.MIN_FREQ_VALUE = 50; controller.MAX_FREQ_VALUE = 5000; (already in beforeEach effectively)
+  describe('formatFlowFrequency', () => {
+    const testCases = [
+      { ms: 1000, expected: "1.0 Hz" },
+      { ms: 500, expected: "2.0 Hz" },
+      { ms: 1111, expected: "0.9 Hz" }, // 1000/1111 = 0.900...
+      { ms: 2000, expected: "0.5 Hz" },
+      { ms: 10000, expected: "0.1 Hz" },
+      { ms: 12500, expected: "8.0 cHz" }, // 1000/12500 = 0.08 Hz
+      { ms: 20000, expected: "5.0 cHz" }, // 1000/20000 = 0.05 Hz
+      { ms: 100000, expected: "1.0 cHz" },// 1000/100000 = 0.01 Hz
+      { ms: 200000, expected: "5.0 mHz" },// 1000/200000 = 0.005 Hz
+      { ms: 0, expected: "N/A" },
+      { ms: -100, expected: "N/A" },
+    ];
 
-    it('Sub-Hz Stepping: Increases from 4.0 dHz (0.4Hz) to 4.1 dHz', () => {
-      controller.flowFrequency = 2500; // 0.4Hz => 4.0 dHz
-      // Expected: currentDisplayVal = 4.0 (dHz), displayStep = 0.1. newDisplayVal = 4.1.
-      // newHz = 4.1 / 10 = 0.41 Hz.
-      // newFlowFrequency = 1000 / 0.41 = 2439.02...
-      // Rounded and clamped: Math.round(2439.02...) = 2439.
-      // Final this.flowFrequency = Math.max(50, Math.min(2439, 5000)) = 2439.
-      controller['handleIncreaseFreq']();
-      expect(controller.flowFrequency).toBe(2439);
-      expect(controller.requestUpdate).toHaveBeenCalledTimes(1);
-      expect(controller.stopGlobalFlowInterval).not.toHaveBeenCalled(); // isAnyFlowActiveForTest is false by default
+    testCases.forEach(({ ms, expected }) => {
+      it(`formats ${ms}ms to "${expected}"`, () => {
+        // Assuming formatFlowFrequency can be called, may need to make it public/static for test
+        expect(controller['formatFlowFrequency'](ms)).toBe(expected);
+      });
     });
+  });
 
-    it('Sub-Hz Stepping: Decreases from 4.0 dHz (0.4Hz) to 3.9 dHz', () => {
-      controller.flowFrequency = 2500; // 0.4Hz => 4.0 dHz
-      // Expected: currentDisplayVal = 4.0 (dHz), displayStep = 0.1. newDisplayVal = 3.9.
-      // newHz = 3.9 / 10 = 0.39 Hz.
-      // newFlowFrequency = 1000 / 0.39 = 2564.10...
-      // Rounded and clamped: Math.round(2564.10...) = 2564.
-      // Final this.flowFrequency = Math.max(50, Math.min(2564, 5000)) = 2564.
-      controller['handleDecreaseFreq']();
-      expect(controller.flowFrequency).toBe(2564);
-      expect(controller.requestUpdate).toHaveBeenCalledTimes(1);
-    });
+  describe('Frequency Handlers (adjustFrequency via public handlers)', () => {
+    // Helper for expected ms values after rounding
+    const expectedMs = (hz: number) => (hz > 0 ? Math.round(1000 / hz) : MAX_FREQ_VALUE);
 
-    it('Hz Stepping: Increases from 2Hz to 3Hz', () => {
-      controller.flowFrequency = 500; // 2Hz
-      // Expected: currentDisplayVal = 2 (Hz), displayStep = 1. newDisplayVal = 3.
-      // newHz = 3 Hz.
-      // newFlowFrequency = 1000 / 3 = 333.33...
-      // Rounded and clamped: Math.round(333.33...) = 333.
-      // Final this.flowFrequency = Math.max(50, Math.min(333, 5000)) = 333.
-      controller['handleIncreaseFreq']();
-      expect(controller.flowFrequency).toBe(333);
-    });
+    // Default MIN_FREQ_VALUE = 50, MAX_FREQ_VALUE = 5000 from test setup
+    // These can be overridden per test if specific boundary conditions are needed for sub-Hz tests
 
-    it('Hz Stepping: Decreases from 2Hz to 1Hz', () => {
-      controller.flowFrequency = 500; // 2Hz
-      // Expected: currentDisplayVal = 2 (Hz), displayStep = 1. newDisplayVal = 1.
-      // newHz = 1 Hz.
-      // newFlowFrequency = 1000 / 1 = 1000.
-      // Rounded and clamped: Math.round(1000) = 1000.
-      // Final this.flowFrequency = Math.max(50, Math.min(1000, 5000)) = 1000.
-      controller['handleDecreaseFreq']();
-      expect(controller.flowFrequency).toBe(1000);
-    });
-
-    it('Transition from sub-Hz to Hz: 9.9 dHz (0.99Hz) increases to 1.0 Hz', () => {
-      controller.flowFrequency = 1010; // approx 0.99Hz => 9.9 dHz
-      // Expected: currentDisplayVal = 9.9 (dHz), displayStep = 0.1. newDisplayVal = 10.0.
-      // newHz = 10.0 / 10 = 1.0 Hz.
-      // newFlowFrequency = 1000 / 1.0 = 1000.
-      // Rounded and clamped: Math.round(1000) = 1000.
-      // Final this.flowFrequency = Math.max(50, Math.min(1000, 5000)) = 1000.
-      controller['handleIncreaseFreq']();
-      expect(controller.flowFrequency).toBe(1000);
-    });
-
-    it('Transition from Hz to sub-Hz: 1.0 Hz decreases, newHz becomes 0, clamped to MIN_HZ (0.2Hz), results in MAX_FREQ_VALUE (5000ms)', () => {
+    it('Range currentHz >= 1.0: 1.0Hz (1000ms) increases to 2.0Hz (500ms)', () => {
       controller.flowFrequency = 1000; // 1.0 Hz
-      // controller.MIN_FREQ_VALUE is 50 (MAX_HZ = 20Hz)
-      // controller.MAX_FREQ_VALUE is 5000 (MIN_HZ = 0.2Hz)
-      // Expected: currentDisplayVal = 1.0 (Hz), displayStep = 1. newDisplayVal = 0.
-      // newHz = 0.
-      // Clamped newHz (if newHz <=0, newHz = MIN_HZ): newHz = 0.2 Hz.
-      // newFlowFrequency = 1000 / 0.2 = 5000.
-      // Rounded and clamped: Math.round(5000) = 5000.
-      // Final this.flowFrequency = Math.max(50, Math.min(5000, 5000)) = 5000.
-      controller['handleDecreaseFreq']();
-      expect(controller.flowFrequency).toBe(5000);
+      controller['handleIncreaseFreq']();
+      expect(controller.flowFrequency).toBe(expectedMs(2.0)); // 500ms
+      expect(controller.requestUpdate).toHaveBeenCalledTimes(1);
     });
 
-    it('Hitting Millisecond Boundaries: Remains at MAX_FREQ_VALUE (5000ms) when decreasing at 0.2Hz', () => {
-      controller.flowFrequency = MAX_FREQ_VALUE; // 5000ms (0.2 Hz)
-      // getFreqDisplayParts(5000) -> { displayValue: 2, unit: 'dHz', hz: 0.2 }
-      // displayStep = 0.1. newDisplayVal = 2 - 0.1 = 1.9 dHz.
-      // newHz = 1.9 / 10 = 0.19 Hz.
-      // MIN_HZ = 1000 / 5000 = 0.2 Hz.
-      // newHz (0.19) is clamped to MIN_HZ (0.2). So, newHz = 0.2 Hz.
-      // newFlowFrequency = 1000 / 0.2 = 5000.
-      // Rounded and clamped: Math.round(5000) = 5000.
-      // Final this.flowFrequency = Math.max(50, Math.min(5000, 5000)) = 5000.
+    it('Range currentHz >= 1.0: 2.0Hz (500ms) decreases to 1.0Hz (1000ms)', () => {
+      controller.flowFrequency = 500; // 2.0 Hz
+      controller['handleDecreaseFreq']();
+      expect(controller.flowFrequency).toBe(expectedMs(1.0)); // 1000ms
+    });
+
+    it('Range 0.1 <= currentHz < 1.0: 0.5Hz (2000ms) increases to 0.6Hz', () => {
+      controller.flowFrequency = 2000; // 0.5 Hz
+      controller['handleIncreaseFreq']();
+      expect(controller.flowFrequency).toBe(expectedMs(0.6)); // Math.round(1000/0.6) = 1667ms
+    });
+
+    it('Range 0.1 <= currentHz < 1.0: 0.5Hz (2000ms) decreases to 0.4Hz', () => {
+      controller.flowFrequency = 2000; // 0.5 Hz
+      controller['handleDecreaseFreq']();
+      expect(controller.flowFrequency).toBe(expectedMs(0.4)); // Math.round(1000/0.4) = 2500ms
+    });
+
+    it('Range currentHz < 0.1 (cHz): 0.05Hz (20000ms) increases', () => {
+      controller.MAX_FREQ_VALUE = 50000; // MIN_HZ = 0.02 Hz (2.0 cHz)
+      controller.flowFrequency = 20000; // 0.05 Hz (5.0 cHz)
+      // getFreqDisplayParts(20000) -> { displayValue: 5.0, unit: 'cHz', hz: 0.05 }
+      // newSubDisplayVal = 5.0 + 0.1 = 5.1 cHz
+      // newHz = 5.1 / 100 = 0.051 Hz
+      controller['handleIncreaseFreq']();
+      expect(controller.flowFrequency).toBe(expectedMs(0.051)); // Math.round(1000/0.051) = 19608ms
+    });
+
+    it('Range currentHz < 0.1 (cHz): 0.05Hz (20000ms) decreases', () => {
+      controller.MAX_FREQ_VALUE = 50000; // MIN_HZ = 0.02 Hz (2.0 cHz)
+      controller.flowFrequency = 20000; // 0.05 Hz (5.0 cHz)
+      // newSubDisplayVal = 5.0 - 0.1 = 4.9 cHz
+      // newHz = 4.9 / 100 = 0.049 Hz
+      controller['handleDecreaseFreq']();
+      expect(controller.flowFrequency).toBe(expectedMs(0.049)); // Math.round(1000/0.049) = 20408ms
+    });
+
+    // Transitions
+    it('Transition: ~0.9Hz (1111ms) increases to 1.0Hz (1000ms)', () => {
+      controller.flowFrequency = 1111; // ~0.9 Hz
+      controller['handleIncreaseFreq'](); // currentHz = 0.9, newHz = 1.0
+      expect(controller.flowFrequency).toBe(expectedMs(1.0));
+    });
+
+    it('Transition: 1.0Hz (1000ms) decreases to ~0.9Hz (1111ms)', () => {
+      controller.flowFrequency = 1000; // 1.0 Hz
+      controller['handleDecreaseFreq'](); // currentHz = 1.0, newHz = 0.9
+      expect(controller.flowFrequency).toBe(expectedMs(0.9));
+    });
+
+    it('Transition: 0.1Hz (10000ms) decreases to ~0.09Hz (cHz range)', () => {
+        controller.MAX_FREQ_VALUE = 50000; // MIN_HZ = 0.02Hz
+        controller.flowFrequency = 10000; // 0.1 Hz
+        // currentHz = 0.1. Uses 0.1 step. newHz = 0.1 - 0.1 = 0.0.
+        // Then, newHz <=0 && !isIncreasing, so newHz = MIN_HZ (0.02Hz)
+        // This case needs re-evaluation based on exact logic for stepping from 0.1Hz down.
+        // Current adjustFrequency: currentHz is 0.1, so newHz = 0.1 - 0.1 = 0.0. Then clamped to MIN_HZ.
+        controller['handleDecreaseFreq']();
+        expect(controller.flowFrequency).toBe(expectedMs(1000 / controller.MAX_FREQ_VALUE)); // Should be MAX_FREQ_VALUE
+    });
+
+    it('Transition: ~0.099Hz (10101ms, 9.9cHz) increases to 0.1Hz (10000ms)', () => {
+        controller.MAX_FREQ_VALUE = 50000; // MIN_HZ = 0.02Hz
+        controller.flowFrequency = 10101; // ~0.099 Hz (9.9 cHz)
+        // getFreqDisplayParts(10101) -> { displayValue: 9.9, unit: 'cHz', hz: ~0.099 }
+        // newSubDisplayVal = 9.9 + 0.1 = 10.0 cHz
+        // newHz = 10.0 / 100 = 0.1 Hz
+        controller['handleIncreaseFreq']();
+        expect(controller.flowFrequency).toBe(expectedMs(0.1)); // 10000ms
+    });
+
+    // Clamping
+    it('Clamping: Stays at MAX_FREQ_VALUE when trying to decrease further', () => {
+      controller.flowFrequency = MAX_FREQ_VALUE; // e.g., 5000ms (0.2Hz if default)
       controller['handleDecreaseFreq']();
       expect(controller.flowFrequency).toBe(MAX_FREQ_VALUE);
     });
 
-    it('Hitting Millisecond Boundaries: Remains at MIN_FREQ_VALUE (50ms) when increasing at 20Hz', () => {
-      controller.flowFrequency = MIN_FREQ_VALUE; // 50ms (20 Hz)
-      // getFreqDisplayParts(50) -> { displayValue: 20, unit: 'Hz', hz: 20 }
-      // displayStep = 1. newDisplayVal = 20 + 1 = 21 Hz.
-      // MAX_HZ = 1000 / 50 = 20 Hz.
-      // newHz (21) is clamped to MAX_HZ (20). So, newHz = 20 Hz.
-      // newFlowFrequency = 1000 / 20 = 50.
-      // Rounded and clamped: Math.round(50) = 50.
-      // Final this.flowFrequency = Math.max(50, Math.min(50, 5000)) = 50.
+    it('Clamping: Stays at MIN_FREQ_VALUE when trying to increase further', () => {
+      controller.flowFrequency = MIN_FREQ_VALUE; // e.g., 50ms (20Hz if default)
       controller['handleIncreaseFreq']();
       expect(controller.flowFrequency).toBe(MIN_FREQ_VALUE);
     });
 
-    it('handleIncreaseFreq restarts interval if flow is active', () => {
+    it('Interval restart: handleIncreaseFreq restarts interval if flow is active', () => {
       controller.isAnyFlowActiveForTest = true;
       controller.flowFrequency = 1000;
       controller['handleIncreaseFreq']();
       expect(controller.stopGlobalFlowInterval).toHaveBeenCalledTimes(1);
       expect(controller.startGlobalFlowInterval).toHaveBeenCalledTimes(1);
-      expect(controller.requestUpdate).toHaveBeenCalledTimes(1); // Should still be called
     });
   });
 

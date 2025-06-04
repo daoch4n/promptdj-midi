@@ -1139,54 +1139,46 @@ class PromptDjMidi extends LitElement {
    }
  
   private handleIncreaseFreq() {
-    const { displayValue: currentDisplayVal, unit: currentUnit, hz: currentHz } = this.getFreqDisplayParts(this.flowFrequency);
-    const displayStep = (currentUnit === 'Hz') ? 1 : 0.1;
-    let newDisplayVal = currentDisplayVal + displayStep;
-
-    let newHz;
-    if (currentUnit === 'Hz') newHz = newDisplayVal;
-    else if (currentUnit === 'dHz') newHz = newDisplayVal / 10;
-    else if (currentUnit === 'cHz') newHz = newDisplayVal / 100;
-    else if (currentUnit === 'mHz') newHz = newDisplayVal / 1000;
-    else if (currentUnit === 'µHz') newHz = newDisplayVal / 1000000;
-    else newHz = currentHz; // Fallback
-
-    const MIN_HZ = 1000 / this.MAX_FREQ_VALUE;
-    const MAX_HZ = 1000 / this.MIN_FREQ_VALUE;
-
-    newHz = Math.max(MIN_HZ, Math.min(newHz, MAX_HZ));
-    if (newHz <= 0) newHz = MIN_HZ;
-
-    let newFlowFrequency = 1000 / newHz;
-    this.flowFrequency = Math.max(this.MIN_FREQ_VALUE, Math.min(Math.round(newFlowFrequency), this.MAX_FREQ_VALUE));
-
-    if (this.isAnyFlowActive) {
-      this.stopGlobalFlowInterval();
-      this.startGlobalFlowInterval();
-    }
-    this.requestUpdate();
+    this.adjustFrequency(true);
   }
 
   private handleDecreaseFreq() {
-    const { displayValue: currentDisplayVal, unit: currentUnit, hz: currentHz } = this.getFreqDisplayParts(this.flowFrequency);
-    const displayStep = (currentUnit === 'Hz') ? 1 : 0.1;
-    let newDisplayVal = currentDisplayVal - displayStep;
+    this.adjustFrequency(false);
+  }
 
+  private adjustFrequency(isIncreasing: boolean) {
+    const currentHz = 1000 / this.flowFrequency;
     let newHz;
-    if (currentUnit === 'Hz') newHz = newDisplayVal;
-    else if (currentUnit === 'dHz') newHz = newDisplayVal / 10;
-    else if (currentUnit === 'cHz') newHz = newDisplayVal / 100;
-    else if (currentUnit === 'mHz') newHz = newDisplayVal / 1000;
-    else if (currentUnit === 'µHz') newHz = newDisplayVal / 1000000;
-    else newHz = currentHz; // Fallback
+
+    if (currentHz >= 1.0) {
+      newHz = isIncreasing ? currentHz + 1.0 : currentHz - 1.0;
+    } else if (currentHz >= 0.1) { // 0.1 Hz to 0.99... Hz range
+      let newRawHz = isIncreasing ? currentHz + 0.1 : currentHz - 0.1;
+      newHz = parseFloat(newRawHz.toFixed(2)); // Mitigate floating point errors
+    } else { // currentHz < 0.1 Hz
+      const { displayValue: subDisplayVal, unit: subUnit } = this.getFreqDisplayParts(this.flowFrequency);
+      let newSubDisplayVal = isIncreasing ? subDisplayVal + 0.1 : subDisplayVal - 0.1;
+
+      // Convert newSubDisplayVal back to newHz based on subUnit
+      if (subUnit === 'cHz') newHz = newSubDisplayVal / 100;
+      else if (subUnit === 'mHz') newHz = newSubDisplayVal / 1000;
+      else if (subUnit === 'µHz') newHz = newSubDisplayVal / 1000000;
+      else newHz = currentHz; // Should not happen if getFreqDisplayParts is correct
+
+      // If newSubDisplayVal became very small or negative, newHz might be <= 0
+      // This will be handled by the common clamping logic below
+    }
 
     const MIN_HZ = 1000 / this.MAX_FREQ_VALUE;
     const MAX_HZ = 1000 / this.MIN_FREQ_VALUE;
 
-    newHz = Math.max(MIN_HZ, Math.min(newHz, MAX_HZ));
-    if (newHz <= 0) newHz = MIN_HZ;
+    // Specific clamping for newHz before converting to ms
+    if (newHz <= 0 && !isIncreasing) newHz = MIN_HZ; // If decreasing and hit/went below zero
+    else if (newHz <= 0 && isIncreasing) newHz = MIN_HZ; // If starting at/below zero and increasing
 
-    let newFlowFrequency = 1000 / newHz;
+    newHz = Math.max(MIN_HZ, Math.min(newHz, MAX_HZ));
+
+    let newFlowFrequency = (newHz > 0) ? 1000 / newHz : this.MAX_FREQ_VALUE;
     this.flowFrequency = Math.max(this.MIN_FREQ_VALUE, Math.min(Math.round(newFlowFrequency), this.MAX_FREQ_VALUE));
 
     if (this.isAnyFlowActive) {
@@ -1832,65 +1824,47 @@ class PromptDjMidi extends LitElement {
     }
 
   private getFreqDisplayParts(ms: number): { displayValue: number, unit: string, hz: number } {
-    if (ms <= 0) return { displayValue: 0, unit: 'Hz', hz: 0 };
+    if (ms <= 0) return { displayValue: 0, unit: 'Hz', hz: 0 }; // Should be handled by MIN_FREQ_VALUE
     const hz = 1000 / ms;
-    let val: number;
+    let displayValue: number;
     let unit: string;
 
-    if (hz >= 1) {
-      val = hz; unit = 'Hz';
-    } else if (hz >= 0.1) {
-      val = hz * 10; unit = 'dHz';
-    } else if (hz >= 0.01) {
-      val = hz * 100; unit = 'cHz';
-    } else if (hz >= 0.001) {
-      val = hz * 1000; unit = 'mHz';
-    } else {
-      val = hz * 1000000; unit = 'µHz';
+    if (hz >= 0.1) { // Covers >= 1.0 Hz and 0.1 Hz - 0.9 Hz
+      displayValue = hz; // Raw Hz value for display calculation
+      unit = 'Hz';
+    } else if (hz >= 0.01) { // 0.01 Hz to 0.099 Hz range
+      displayValue = hz * 100;
+      unit = 'cHz';
+    } else if (hz >= 0.001) { // 0.001 Hz to 0.0099 Hz range
+      displayValue = hz * 1000;
+      unit = 'mHz';
+    } else { // Below 0.001 Hz
+      displayValue = hz * 1000000;
+      unit = 'µHz';
     }
-    return { displayValue: val, unit: unit, hz: hz };
+    return { displayValue, unit, hz };
   }
 
   private formatFlowFrequency(ms: number): string {
-    if (ms <= 0) return 'N/A'; // Or some other appropriate string for invalid input
-
-    // Use getFreqDisplayParts to get the raw value and unit
-    const { displayValue, unit } = this.getFreqDisplayParts(ms);
-
-    // Format to 1 decimal place only if it's not a whole number
-    const formattedVal = displayValue % 1 === 0 ? displayValue.toString() : displayValue.toFixed(1);
-
-    return `${formattedVal} ${unit}`;
-  }
-
-  private formatFlowFrequencyBAK(ms: number): string {
-    if (ms <= 0) return 'N/A'; // Or some other appropriate string for invalid input
-
+    if (ms <= 0) return "N/A";
     const hz = 1000 / ms;
-    let val: number;
+    let displayVal: number;
     let unit: string;
 
-    if (hz >= 1) {
-      val = hz;
+    if (hz >= 0.1) {
+      displayVal = hz;
       unit = 'Hz';
-    } else if (hz >= 0.1) { // dHz (decihertz)
-      val = hz * 10;
-      unit = 'dHz';
-    } else if (hz >= 0.01) { // cHz (centihertz)
-      val = hz * 100;
+    } else if (hz >= 0.01) {
+      displayVal = hz * 100;
       unit = 'cHz';
-    } else if (hz >= 0.001) { // mHz (millihertz)
-      val = hz * 1000;
+    } else if (hz >= 0.001) {
+      displayVal = hz * 1000;
       unit = 'mHz';
-    } else { // µHz (microhertz)
-      val = hz * 1000000;
+    } else {
+      displayVal = hz * 1000000;
       unit = 'µHz';
     }
-
-    // Format to 1 decimal place only if it's not a whole number
-    const formattedVal = val % 1 === 0 ? val.toString() : val.toFixed(1);
-
-    return `${formattedVal} ${unit}`;
+    return displayVal.toFixed(1) + " " + unit;
   }
  
     private handleToggleClick(event: Event) {
