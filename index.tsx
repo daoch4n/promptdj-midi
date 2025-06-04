@@ -332,8 +332,21 @@ class PromptDjMidi extends LitElement {
     #buttons input[type="number"] {
         width: 18vmin;
     }
-    #buttons .seed-controls input#seed {
+    #buttons .seed-controls input#seed { /* This will be removed or repurposed if input is gone */
         width: 10vmin;
+    }
+    #buttons .seed-display-value {
+      font-family: 'DS-Digital', cursive;
+      background: #0002;
+      border: 1.5px solid #fff;
+      color: #fff;
+      border-radius: 4px;
+      font-size: 1rem;
+      padding: 3px 6px;
+      margin-left: 5px; /* Match label margin */
+      min-width: 8ch; /* Ensure enough space for "Generating..." */
+      display: inline-block; /* Allow padding and alignment */
+      text-align: center;
     }
     #buttons dsp-overload-indicator {
       /* Copied from #buttons button and adjusted */
@@ -381,7 +394,7 @@ class PromptDjMidi extends LitElement {
     #buttons .flow-parameters-group label[for="flowAmplitude"] {
       margin-left: 5px; 
     }
-    #buttons .seed-controls input#flowFrequency,
+    #buttons .seed-controls input#flowFrequency, /* This might be unused after changes */
     #buttons .seed-controls input#flowAmplitude {
       font-family: 'DS-Digital', cursive;
       background: #0002;
@@ -392,7 +405,7 @@ class PromptDjMidi extends LitElement {
       padding: 3px 6px;
       width: 10vmin; 
     }
-    .flow-direction-button {
+    .flow-control-button, .flow-direction-button {
       font: inherit;
       font-weight: 600;
       cursor: pointer;
@@ -405,7 +418,11 @@ class PromptDjMidi extends LitElement {
       padding: 3px 6px;
       margin-left: 5px;
     }
-    .flow-direction-button.active {
+    .flow-control-button {
+      margin-left: 2px; /* Smaller margin for +/- buttons */
+      padding: 1px 4px; /* Slightly smaller padding */
+    }
+    .flow-control-button.active, .flow-direction-button.active {
       background-color: #fff;
       color: #000;
     }
@@ -477,6 +494,14 @@ class PromptDjMidi extends LitElement {
    @state() private flowDirectionDown = true; 
    private globalFlowIntervalId: number | null = null;
 
+   private readonly freqStep = 50; // milliseconds
+   private readonly MIN_FREQ_VALUE = 50; // milliseconds
+   private readonly MAX_FREQ_VALUE = 5000; // milliseconds
+
+   private readonly ampStep = 1;
+   private readonly MIN_AMP_VALUE = 1;
+   private readonly MAX_AMP_VALUE = 100;
+
    @state() private apiKeyInvalid = false;
    @state() private lastDefinedTemperature = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTemperature;
    @state() private lastDefinedTopK = PromptDjMidi.INITIAL_LAST_DEFINED_STATES.lastDefinedTopK;
@@ -521,7 +546,11 @@ class PromptDjMidi extends LitElement {
      this.updateAudioLevel = this.updateAudioLevel.bind(this);
      this.toggleSeedFlow = this.toggleSeedFlow.bind(this);
      this.handleFlowFrequencyChange = this.handleFlowFrequencyChange.bind(this);
+     this.handleIncreaseFreq = this.handleIncreaseFreq.bind(this);
+     this.handleDecreaseFreq = this.handleDecreaseFreq.bind(this);
      this.handleFlowAmplitudeChange = this.handleFlowAmplitudeChange.bind(this);
+     this.handleIncreaseAmp = this.handleIncreaseAmp.bind(this);
+     this.handleDecreaseAmp = this.handleDecreaseAmp.bind(this);
      this.toggleFlowDirection = this.toggleFlowDirection.bind(this);
      this.handlePromptAutoFlowToggled = this.handlePromptAutoFlowToggled.bind(this);
      this.globalFlowTick = this.globalFlowTick.bind(this);
@@ -1079,7 +1108,21 @@ class PromptDjMidi extends LitElement {
  
    private toggleSeedFlow() {
      this.isSeedFlowing = !this.isSeedFlowing;
-     if (this.isAnyFlowActive) {
+
+    if (this.isSeedFlowing) {
+      // If Flow is ON and seed is currently null (Auto), generate a new seed.
+      if (this.config.seed === null) {
+        this.config = { ...this.config, seed: Math.floor(Math.random() * 1000000) + 1 };
+      }
+    } else {
+      // If Flow is turned OFF, set seed back to null (Auto).
+      this.config = { ...this.config, seed: null };
+    }
+
+    this._sendPlaybackParametersToSession(); // Send updated seed (or null) to backend
+    this.requestUpdate(); // Ensure UI reflects the change
+
+     if (this.isAnyFlowActive) { // This condition now also depends on the updated isSeedFlowing
        this.startGlobalFlowInterval();
      } else {
        this.stopGlobalFlowInterval();
@@ -1095,6 +1138,26 @@ class PromptDjMidi extends LitElement {
      }
    }
  
+  private handleIncreaseFreq() {
+    this.flowFrequency += this.freqStep;
+    this.flowFrequency = Math.min(this.flowFrequency, this.MAX_FREQ_VALUE);
+    if (this.isAnyFlowActive) {
+      this.stopGlobalFlowInterval();
+      this.startGlobalFlowInterval();
+    }
+    this.requestUpdate();
+  }
+
+  private handleDecreaseFreq() {
+    this.flowFrequency -= this.freqStep;
+    this.flowFrequency = Math.max(this.flowFrequency, this.MIN_FREQ_VALUE);
+    if (this.isAnyFlowActive) {
+      this.stopGlobalFlowInterval();
+      this.startGlobalFlowInterval();
+    }
+    this.requestUpdate();
+  }
+
    private handleFlowAmplitudeChange(event: Event) {
      const inputElement = event.target as HTMLInputElement;
      this.flowAmplitude = parseInt(inputElement.value, 10);
@@ -1103,6 +1166,26 @@ class PromptDjMidi extends LitElement {
        this.startGlobalFlowInterval();
      }
    }
+
+  private handleIncreaseAmp() {
+    this.flowAmplitude += this.ampStep;
+    this.flowAmplitude = Math.min(this.flowAmplitude, this.MAX_AMP_VALUE);
+    if (this.isAnyFlowActive) {
+      this.stopGlobalFlowInterval();
+      this.startGlobalFlowInterval();
+    }
+    this.requestUpdate();
+  }
+
+  private handleDecreaseAmp() {
+    this.flowAmplitude -= this.ampStep;
+    this.flowAmplitude = Math.max(this.flowAmplitude, this.MIN_AMP_VALUE);
+    if (this.isAnyFlowActive) {
+      this.stopGlobalFlowInterval();
+      this.startGlobalFlowInterval();
+    }
+    this.requestUpdate();
+  }
  
    private toggleFlowDirection(direction: 'up' | 'down') {
      if (direction === 'up') {
@@ -1838,10 +1921,10 @@ class PromptDjMidi extends LitElement {
      const target = event.target as HTMLInputElement | HTMLSelectElement | WeightKnob;
      const id = target.id;
  
-     if (id === 'seed' && this.isSeedFlowing) {
-       this.isSeedFlowing = false;
-       this.stopGlobalFlowInterval(); // Use global stop
-     }
+     // The specific check for id === 'seed' and this.isSeedFlowing is no longer needed
+     // as the input element with id 'seed' is removed.
+     // The part that handled parsing of the seed input value from a number input
+     // will also no longer be triggered for 'seed'.
  
      if (target instanceof HTMLInputElement && target.type === 'checkbox') {
        const isChecked = target.checked;
@@ -1896,6 +1979,8 @@ class PromptDjMidi extends LitElement {
         }
         this._sendPlaybackParametersToSession(); 
      } else if (target instanceof HTMLInputElement && target.type === 'number') {
+        // This block will no longer be hit for id === 'seed' as that input is gone.
+        // It remains for any other numeric inputs.
         const value = (target as HTMLInputElement).value;
         this.config = { ...this.config, [id]: value === '' ? null : parseFloat(value) };
         this._sendPlaybackParametersToSession(); 
@@ -1987,32 +2072,18 @@ class PromptDjMidi extends LitElement {
                   id="flowDownButton"
                   class="flow-direction-button ${this.flowDirectionDown ? 'active' : ''}"
                   @click=${() => this.toggleFlowDirection('down')}>Down</button>
-                <label for="seed">Seed</label>
-                <input
-                    type="number"
-                    id="seed"
-                    .value=${this.config.seed ?? ''}
-                    @input=${this.handleInputChange}
-                    placeholder="Auto"
-                    .disabled=${this.isSeedFlowing} />
+                <label for="seedDisplay">Seed:</label>
+                <span id="seedDisplay" class="seed-display-value">
+                  ${this.isSeedFlowing ? (this.config.seed ?? 'Generating...') : (this.config.seed === null ? 'Auto' : this.config.seed)}
+                </span>
               ` : ''}
               ${this.isAnyFlowActive ? html`
-                <label for="flowFrequency">Frequency: ${this.formatFlowFrequency(this.flowFrequency)}</label>
-                <input
-                  type="number"
-                  id="flowFrequency"
-                  .value=${this.flowFrequency.toString()} /* Input still controls milliseconds */
-                  @input=${this.handleFlowFrequencyChange}
-                  min="1" /* Allow finer control down to 1ms */
-                />
-                <label for="flowAmplitude">Amplitude: ${this.flowAmplitude} X</label>
-                <input
-                  type="number"
-                  id="flowAmplitude"
-                  .value=${this.flowAmplitude.toString()}
-                  @input=${this.handleFlowAmplitudeChange}
-                  min="1"
-                />
+                <label>Freq: ${this.formatFlowFrequency(this.flowFrequency)}</label>
+                <button @click=${this.handleDecreaseFreq} class="flow-control-button">-</button>
+                <button @click=${this.handleIncreaseFreq} class="flow-control-button">+</button>
+                <label for="flowAmplitude" style="margin-left: 5px;">Amp: ${this.flowAmplitude} X</label>
+                <button @click=${this.handleDecreaseAmp} class="flow-control-button">-</button>
+                <button @click=${this.handleIncreaseAmp} class="flow-control-button">+</button>
               ` : ''}
             </div>
           ` : ''}
