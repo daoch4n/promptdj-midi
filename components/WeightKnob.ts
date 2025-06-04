@@ -60,12 +60,19 @@ export class WeightKnob extends LitElement {
 
   set value(newVal: number) {
     const oldVal = this._value;
-    newVal = Math.max(0, Math.min(2, newVal)); // Clamp
-    this._value = newVal; // Update internal value representation
-    this._targetValue = newVal; // Set target for animation
+    const clampedNewVal = Math.max(0, Math.min(2, newVal)); // Clamp
 
-    // Reset to default smoothing for direct value sets or drags
-    this._activeSmoothingFactor = DEFAULT_ANIMATION_SMOOTHING_FACTOR;
+    // Check if this setter call is an echo of animateToValue
+    if (this._deferFactorReset && clampedNewVal === this._targetValue) {
+      this._deferFactorReset = false; // Consume the flag, keep custom smoothing factor
+    } else {
+      // This is a new interaction (drag, different programmatic set) or flag already consumed
+      this._activeSmoothingFactor = DEFAULT_ANIMATION_SMOOTHING_FACTOR;
+      this._deferFactorReset = false; // Ensure flag is off
+    }
+
+    this._value = clampedNewVal; // Update internal value representation
+    this._targetValue = clampedNewVal; // Update target value
 
     if (this._animationFrameId === null) {
       this._animateKnob(); // Start animation if not already running
@@ -81,6 +88,7 @@ export class WeightKnob extends LitElement {
   private _targetValue = 0;
   private _animationFrameId: number | null = null;
   private _activeSmoothingFactor = DEFAULT_ANIMATION_SMOOTHING_FACTOR;
+  private _deferFactorReset = false;
 
   private dragStartPos = 0;
   private dragStartValue = 0;
@@ -99,15 +107,14 @@ export class WeightKnob extends LitElement {
     this._value = clampedValue; // Update internal value representation to target
     this._targetValue = clampedValue; // Set target for animation
 
-    this._activeSmoothingFactor =
-        smoothingFactor || DEFAULT_ANIMATION_SMOOTHING_FACTOR;
+    this._activeSmoothingFactor = smoothingFactor || DEFAULT_ANIMATION_SMOOTHING_FACTOR;
+    this._deferFactorReset = true; // Set the flag to defer reset
 
     if (this._animationFrameId === null) {
       this._animateKnob(); // Start animation if not already running
     }
     // Dispatch an event as the value property is effectively changed
-    // This is important if PromptController relies on the 'input' event
-    this.dispatchEvent(new CustomEvent<number>('input', {detail: this._value}));
+    this.dispatchEvent(new CustomEvent<number>('input', { detail: this._value }));
     this.requestUpdate(); // Ensure component re-renders with new state if needed
   }
 
@@ -142,6 +149,10 @@ export class WeightKnob extends LitElement {
         cancelAnimationFrame(this._animationFrameId);
         this._animationFrameId = null;
       }
+      // Add these lines to reset smoothing factor and deferral flag on completion
+      this._activeSmoothingFactor = DEFAULT_ANIMATION_SMOOTHING_FACTOR;
+      this._deferFactorReset = false;
+
       this.requestUpdate(); // Ensure final render with the snapped value.
       return;
     }
