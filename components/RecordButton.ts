@@ -31,24 +31,39 @@ export class RecordButton extends LitElement {
     .hitbox {
       pointer-events: all;
       position: absolute;
-      width: 65%; /* Consistent with PlayPauseButton */
+      width: 65%;
       aspect-ratio: 1;
-      top: 50%; /* Adjust for centering */
-      left: 50%; /* Adjust for centering */
-      transform: translate(-50%, -50%); /* Center the hitbox */
+      top: 9%; /* Match PlayPauseButton */
       border-radius: 50%;
       cursor: pointer;
     }
     .base-circle-fill {
       transition: filter 0.3s ease; /* Smooth brightness transition */
     }
+    .loader {
+      stroke: #ffffff;
+      stroke-width: 3;
+      stroke-linecap: round;
+      animation: spin linear 1s infinite;
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(359deg); }
+    }
   `;
 
   private renderRecordSymbol() {
-    const iconColor = this.isRecording ? '#FF0000' : '#808080'; // Red when recording, gray otherwise
+    const iconColor = '#FF0000'; // Always Red
     // For a record button, a simple circle is common.
     // Centered at (70,70) in a 140x140 viewBox. Radius can be adjusted.
     return svg`<circle cx="70" cy="70" r="30" fill="${iconColor}" />`;
+  }
+
+  private renderLoading() {
+    return svg`<path shape-rendering="crispEdges" class="loader" d="M70,74.2L70,74.2c-10.7,0-19.5-8.7-19.5-19.5l0,0c0-10.7,8.7-19.5,19.5-19.5
+            l0,0c10.7,0,19.5,8.7,19.5,19.5l0,0"/>`;
   }
 
   private renderSvg() {
@@ -80,7 +95,7 @@ export class RecordButton extends LitElement {
         fill="#303030"
         class="base-circle-fill"
         shape-rendering="crispEdges" />
-      ${this.renderRecordSymbol()}
+        ${this.isRecording ? this.renderLoading() : this.renderRecordSymbol()}
     </svg>`;
   }
 
