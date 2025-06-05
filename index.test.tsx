@@ -419,13 +419,13 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       expect(element.apiKeyInvalid).toBe(true);
       await element.updateComplete;
       expect(getApiKeyStatusMessage()).toContain(
-        'API Key is invalid or saving failed.',
+        'API Key is invalid or authentication failed.',
       );
 
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION + 1000);
       await element.updateComplete;
       expect(getApiKeyStatusMessage()).toContain(
-        'API Key is invalid or saving failed.',
+        'API Key is invalid or authentication failed.',
       );
     });
 
