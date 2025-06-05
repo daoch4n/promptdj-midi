@@ -10,7 +10,8 @@
     "test": "vitest",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "autolint": "biome check --write ."
+    "autolint": "biome check --write .",
+    "fix": "biome check --fix --unsafe"
   },
   "dependencies": {
     "@google/genai": "^1.0.0",
