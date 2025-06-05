@@ -99,10 +99,17 @@ describe('PromptController', () => {
     expect(controller.isAutoFlowing).toBe(false);
     expect(dispatchPromptChangeSpy).toHaveBeenCalledTimes(1);
 
-    expect(dispatchEventSpy).toHaveBeenCalledTimes(1);
-    const event = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
-    expect(event.type).toBe('prompt-autoflow-toggled');
-    expect(event.detail).toEqual({
+    // Expect dispatchEvent to be called twice: once for prompt-changed, once for prompt-autoflow-toggled
+    expect(dispatchEventSpy).toHaveBeenCalledTimes(2);
+
+    // Find the 'prompt-autoflow-toggled' event among the dispatched events
+    const autoflowToggledEvent = dispatchEventSpy.mock.calls.find(
+      (callArgs: any[]) => (callArgs[0] as CustomEvent).type === 'prompt-autoflow-toggled'
+    )?.[0] as CustomEvent;
+
+    expect(autoflowToggledEvent).toBeDefined();
+    expect(autoflowToggledEvent.type).toBe('prompt-autoflow-toggled');
+    expect(autoflowToggledEvent.detail).toEqual({
       promptId: 'test-prompt',
       isAutoFlowing: false,
     });
