@@ -342,6 +342,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
     });
 
     test('new transient message clears previous one and has its own timeout', async () => {
+      // Use a VALID_API_KEY for the initial localStorage mock to get "API Key Loaded"
       localStorageGetItemSpy.mockReturnValue(VALID_API_KEY);
       if (element.parentNode) element.parentNode.removeChild(element);
       element = new PromptDjMidi(new Map(), mockMidiDispatcher);
