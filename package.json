@@ -12,7 +12,7 @@
   "dependencies": {
     "@google/genai": "^1.0.0",
     "lit": "^3.3.0",
-    "opus-media-recorder": "^0.8.0"
+    "@dmk-dark/opus-media-recorder-fork": "^0.8.0"
   },
   "devDependencies": {
     "@open-wc/testing": "^4.0.0",

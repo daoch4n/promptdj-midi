@@ -8,13 +8,13 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { GoogleGenAI, type LiveMusicSession, type LiveMusicServerMessage, type Scale } from '@google/genai';
-import OpusMediaRecorder from 'opus-media-recorder';
+import OpusMediaRecorder from '@dmk-dark/opus-media-recorder-fork';
 // Attempting Vite-idiomatic asset handling for opus-media-recorder
 // These paths assume opus-media-recorder's assets are in its 'dist' folder.
 // If 'dist' is not present or files are elsewhere, these paths will need adjustment.
-import encoderWorkerPath from 'opus-media-recorder/encoderWorker.umd.js?url';
-import oggOpusEncoderWasmPath from 'opus-media-recorder/OggOpusEncoder.wasm?url';
-import webMOpusEncoderWasmPath from 'opus-media-recorder/WebMOpusEncoder.wasm?url';
+import encoderWorkerPath from '@dmk-dark/opus-media-recorder-fork/encoderWorker.umd.js?url';
+import oggOpusEncoderWasmPath from '@dmk-dark/opus-media-recorder-fork/OggOpusEncoder.wasm?url';
+import webMOpusEncoderWasmPath from '@dmk-dark/opus-media-recorder-fork/WebMOpusEncoder.wasm?url';
 
 import { decode, decodeAudioData } from './utils/audio'
 import { throttle } from './utils/throttle'
@@ -2045,7 +2045,7 @@ export class PromptDjMidi extends LitElement {
       };
 
       if (isOpusPolyfillActive) {
-        this.mediaRecorder = new MediaRecorder(this.audioStream, mediaRecorderOptions, opusWorkerOptions);
+        this.mediaRecorder = new (window as any).MediaRecorder(this.audioStream, mediaRecorderOptions, opusWorkerOptions);
       } else {
         this.mediaRecorder = new MediaRecorder(this.audioStream, mediaRecorderOptions);
       }
