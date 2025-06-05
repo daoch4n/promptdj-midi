@@ -16,15 +16,14 @@ import {
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import { LitElement, css, html, svg } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators.js';
+import { LitElement, css, html } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { AudioAnalyser } from './utils/AudioAnalyser';
 import { MidiDispatcher } from './utils/MidiDispatcher';
 import { decode, decodeAudioData } from './utils/audio';
-import { debounce } from './utils/debounce';
 import { throttle } from './utils/throttle';
 
 import './components/WeightKnob';
@@ -557,7 +556,6 @@ export class PromptDjMidi extends LitElement {
     PromptDjMidi.INITIAL_AUTO_STATES.autoTemperature;
   @state() private autoTopK = PromptDjMidi.INITIAL_AUTO_STATES.autoTopK;
   @state() private autoGuidance = PromptDjMidi.INITIAL_AUTO_STATES.autoGuidance;
-  @state() private showSeedInputHoverEffect = false;
   @state() private isSeedFlowing = false;
   @state() private flowFrequency = 1;
   @state() private flowAmplitude = 5;
@@ -600,7 +598,6 @@ export class PromptDjMidi extends LitElement {
   private mediaStreamDestinationNode: MediaStreamAudioDestinationNode | null =
     null;
 
-  private audioLevelRafId: number | null = null;
   private _bgWeightsAnimationId: number | null = null;
   private _animateBackgroundWeightsBound =
     this._animateBackgroundWeights.bind(this);
@@ -608,7 +605,6 @@ export class PromptDjMidi extends LitElement {
   private readonly maxRetries = 10;
   private currentRetryAttempt = 0;
 
-  private debouncedSaveApiKey = debounce(this.saveApiKeyToLocalStorage, 500);
 
   constructor(prompts: Map<string, Prompt>, midiDispatcher: MidiDispatcher) {
     super();
@@ -761,7 +757,7 @@ export class PromptDjMidi extends LitElement {
               this.nextStartTime += audioBuffer.duration;
             }
           },
-          onerror: (e: ErrorEvent) =>
+          onerror: () =>
             this.handleConnectionIssue('Connection error'),
           onclose: (e: CloseEvent) =>
             this.handleConnectionIssue(`Connection closed (code: ${e.code})`),
@@ -839,7 +835,6 @@ export class PromptDjMidi extends LitElement {
   }, 200);
 
   private updateAudioLevel() {
-    this.audioLevelRafId = requestAnimationFrame(this.updateAudioLevel);
     if (this.audioAnalyser) {
       this.audioLevel = this.audioAnalyser.getCurrentLevel();
     }
@@ -892,11 +887,9 @@ export class PromptDjMidi extends LitElement {
     if (isProgrammaticJump) {
       this._startBackgroundWeightsAnimation();
     } else {
-      let changed = false;
       for (const p of this.prompts.values()) {
         if (p.backgroundDisplayWeight !== p.weight) {
           p.backgroundDisplayWeight = p.weight;
-          changed = true;
         }
       }
       // if (changed) { // No specific action if only snapping
@@ -1342,9 +1335,6 @@ export class PromptDjMidi extends LitElement {
     return this.isSeedFlowing || isAnyPromptAutoFlowing;
   }
 
-  private get isButtonOn() {
-    return this.playbackState === 'playing' || this.playbackState === 'loading';
-  }
 
   private async toggleShowMidi() {
     this.showMidi = !this.showMidi;
@@ -2482,35 +2472,6 @@ export class PromptDjMidi extends LitElement {
     }
   }
 
-  private getFreqDisplayParts(ms: number): {
-    displayValue: number;
-    unit: string;
-    hz: number;
-  } {
-    if (ms <= 0) return { displayValue: 0, unit: 'Hz', hz: 0 }; // Should be handled by MIN_FREQ_VALUE
-    const hz = 1000 / ms;
-    let displayValue: number;
-    let unit: string;
-
-    if (hz >= 0.1) {
-      // Covers >= 1.0 Hz and 0.1 Hz - 0.9 Hz
-      displayValue = hz; // Raw Hz value for display calculation
-      unit = 'Hz';
-    } else if (hz >= 0.01) {
-      // 0.01 Hz to 0.099 Hz range
-      displayValue = hz * 100;
-      unit = 'cHz';
-    } else if (hz >= 0.001) {
-      // 0.001 Hz to 0.0099 Hz range
-      displayValue = hz * 1000;
-      unit = 'mHz';
-    } else {
-      // Below 0.001 Hz
-      displayValue = hz * 1000000;
-      unit = 'µHz';
-    }
-    return { displayValue, unit, hz };
-  }
 
   private formatFlowFrequency(hzValue: number): string {
     if (hzValue === undefined || hzValue === null) return 'N/A'; // Basic guard
