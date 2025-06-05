@@ -8,6 +8,13 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { GoogleGenAI, type LiveMusicSession, type LiveMusicServerMessage, type Scale } from '@google/genai';
+import OpusMediaRecorder from 'opus-media-recorder';
+// Attempting Vite-idiomatic asset handling for opus-media-recorder
+// These paths assume opus-media-recorder's assets are in its 'dist' folder.
+// If 'dist' is not present or files are elsewhere, these paths will need adjustment.
+import encoderWorkerPath from 'opus-media-recorder/dist/encoderWorker.umd.js?url';
+import oggOpusEncoderWasmPath from 'opus-media-recorder/dist/OggOpusEncoder.wasm?url';
+import webMOpusEncoderWasmPath from 'opus-media-recorder/dist/WebMOpusEncoder.wasm?url';
 
 import { decode, decodeAudioData } from './utils/audio'
 import { throttle } from './utils/throttle'
@@ -21,6 +28,7 @@ import type { WeightKnob } from './components/WeightKnob';
 import './components/DJStyleSelector';
 import type { DJStyleSelectorOption } from './components/DJStyleSelector';
 import './components/PlayPauseButton';
+import './components/RecordButton.js'; // Import RecordButton
 import './components/DSPOverloadIndicator.js';
 
 import type { Prompt, PlaybackState } from './types';
@@ -60,6 +68,14 @@ const DEFAULT_PROMPTS = [
   { color: '#00ffff', text: 'Trance' },
   { color: '#00BFFF', text: 'String Quartet' },
 ];
+
+// OpusMediaRecorder options
+const opusWorkerOptions = {
+  encoderWorkerFactory: () => new Worker(encoderWorkerPath), // Omitting { type: 'module' } for broader compatibility
+  OggOpusEncoderWasmPath: oggOpusEncoderWasmPath,
+  WebMOpusEncoderWasmPath: webMOpusEncoderWasmPath,
+};
+let isOpusPolyfillActive = false;
 
 /** The grid of prompt inputs. */
 @customElement('prompt-dj-midi')
@@ -438,6 +454,13 @@ export class PromptDjMidi extends LitElement {
       display: block;
       cursor: pointer;
     }
+    record-button { /* Style for the record button */
+      display: block;
+      margin: 15px auto 15px auto; /* top right bottom left - centers block element */
+      width: 80px; /* Explicitly set width */
+      height: 80px; /* Explicitly set height */
+      cursor: pointer; /* Ensure cursor pointer is visible */
+    }
    .solo-group-header {
      font-weight: bold;
      margin-top: 15px; 
@@ -527,6 +550,13 @@ export class PromptDjMidi extends LitElement {
   @state() private availablePresets: string[] = [];
   @state() private selectedPreset: string = "";
   @state() private showPresetControls: boolean = false;
+
+  // MediaRecorder state variables
+  private mediaRecorder: MediaRecorder | null = null;
+  private audioChunks: Blob[] = [];
+  @state() private isRecordingActive = false;
+  private audioStream: MediaStream | null = null; // Will hold the stream from MediaStreamAudioDestinationNode
+  private mediaStreamDestinationNode: MediaStreamAudioDestinationNode | null = null;
  
    private audioLevelRafId: number | null = null;
    private _bgWeightsAnimationId: number | null = null;
@@ -556,6 +586,14 @@ export class PromptDjMidi extends LitElement {
      this.prompts = prompts;
      this.midiDispatcher = midiDispatcher;
      this.config.seed = Math.floor(Math.random() * 1000000) + 1;
+
+    // Conditional MediaRecorder polyfill assignment
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+      console.log('Opus MediaRecorder polyfill activated.');
+      (window as any).MediaRecorder = OpusMediaRecorder; // Assign to window.MediaRecorder
+      isOpusPolyfillActive = true;
+    }
+
      this.updateAudioLevel = this.updateAudioLevel.bind(this);
      this.toggleSeedFlow = this.toggleSeedFlow.bind(this);
      this.handleFlowFrequencyChange = this.handleFlowFrequencyChange.bind(this);
@@ -1052,7 +1090,12 @@ export class PromptDjMidi extends LitElement {
        this.audioAnalyser = new AudioAnalyser(this.audioContext);
        this.audioAnalyser.node.connect(this.audioContext.destination);
        this.outputNode = this.audioContext.createGain();
-       this.outputNode.connect(this.audioAnalyser.node);
+       this.outputNode.connect(this.audioAnalyser.node); // Connect Gain to Analyser
+
+       // Initialize MediaStreamDestinationNode for recording app audio
+       this.mediaStreamDestinationNode = this.audioContext.createMediaStreamDestination();
+       this.outputNode.connect(this.mediaStreamDestinationNode); // Connect Gain to DestinationNode as well
+
        this.updateAudioLevel();
      }
  
@@ -2437,6 +2480,10 @@ ${this.renderPrompts()}
             .playbackState=${this.playbackState}
             @play-pause-click=${this.handleMainAudioButton}
           ></play-pause-button>
+          <record-button
+            .isRecording=${this.isRecordingActive}
+            @record-click=${this.handleRecordClick}
+          ></record-button>
           <div class="setting">
             <label for="density">Density: <span class="label-value">${(this.config.density ?? 0.5).toFixed(2)}</span></label>
             <weight-knob
@@ -2694,6 +2741,116 @@ ${this.renderPrompts()}
       midiDispatcher,
     );
     parent.appendChild(pdjMidi);
+  }
+  // MediaRecorder methods
+  private async startRecording() {
+    // Ensure audio context and output nodes are ready
+    if (!this.audioContext || !this.outputNode) {
+      console.error('AudioContext or outputNode not initialized. Cannot start recording.');
+      // Attempt to initialize audio if it's not ready (e.g., user clicks record before play)
+      // This assumes `play()` correctly sets up audioContext and outputNode.
+      // Or, consider disabling record button until audio is ready.
+      if (!this.audioReady) {
+         await this.play(); // Try to initialize audio stack via play()
+         if (!this.audioContext || !this.outputNode) {
+            console.error('Failed to initialize audio stack for recording.');
+            this.isRecordingActive = false;
+            this.requestUpdate();
+            return;
+         }
+      }
+    }
+
+    // Initialize MediaStreamDestinationNode if it hasn't been, or if context was recreated
+    if (!this.mediaStreamDestinationNode || this.mediaStreamDestinationNode.context !== this.audioContext) {
+        if (this.audioContext && this.outputNode) {
+            this.mediaStreamDestinationNode = this.audioContext.createMediaStreamDestination();
+            this.outputNode.connect(this.mediaStreamDestinationNode);
+            console.log('Initialized MediaStreamDestinationNode for recording.');
+        } else {
+            console.error('Cannot initialize MediaStreamDestinationNode: AudioContext or outputNode missing.');
+            this.isRecordingActive = false;
+            this.requestUpdate();
+            return;
+        }
+    }
+
+    this.audioStream = this.mediaStreamDestinationNode.stream; // Use the stream from the destination node
+
+    try {
+      const mediaRecorderOptions = {
+        mimeType: 'audio/webm;codecs=opus',
+        audioBitsPerSecond: 256000
+      };
+
+      if (isOpusPolyfillActive) {
+        this.mediaRecorder = new MediaRecorder(this.audioStream, mediaRecorderOptions, opusWorkerOptions);
+      } else {
+        this.mediaRecorder = new MediaRecorder(this.audioStream, mediaRecorderOptions);
+      }
+
+      this.audioChunks = []; // Clear previous chunks
+
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+
+      this.mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(audioBlob);
+        const a = document.createElement('a');
+        document.body.appendChild(a);
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'recording.webm';
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        this.audioChunks = []; // Clear chunks for next recording
+        this.isRecordingActive = false;
+
+        // DO NOT stop tracks on this.audioStream from MediaStreamAudioDestinationNode
+        // this.audioStream = null; // We can nullify our reference, but the node's stream persists.
+
+        this.requestUpdate();
+      };
+
+      this.mediaRecorder.start();
+      this.isRecordingActive = true;
+    } catch (err) {
+      console.error('Failed to start recording with MediaStreamDestination:', err);
+      this.isRecordingActive = false;
+    }
+    this.requestUpdate(); // Ensure UI updates with isRecordingActive
+  }
+
+  private stopRecording() {
+    if (this.mediaRecorder && this.isRecordingActive) {
+      this.mediaRecorder.stop();
+      // isRecordingActive will be set to false in onstop
+    } else {
+      console.log('MediaRecorder not active or not initialized for stopping.');
+      // Ensure UI consistency if called unexpectedly
+      if (this.isRecordingActive) {
+        this.isRecordingActive = false;
+        this.requestUpdate();
+      }
+    }
+  }
+
+  private async handleRecordClick() {
+    if (this.isRecordingActive) {
+      // stopRecording is synchronous in its current implementation
+      // but good practice if it might become async
+      this.stopRecording();
+    } else {
+      await this.startRecording();
+    }
+    // isRecordingActive state is updated within startRecording/stopRecording's onstop
+    // and because it's a @state property, Lit should handle re-rendering the record-button.
   }
   
   main(document.body);
