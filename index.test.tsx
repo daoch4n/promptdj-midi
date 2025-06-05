@@ -650,7 +650,7 @@ describe('PromptDjMidi - Frequency Logic', () => {
 
   describe('formatFlowFrequency', () => {
     const testCases = [
-      { ms: 1000, expected: '1.0 Hz' }, // 1.0 Hz
+      { ms: 1000, expected: '1.00 Hz' }, // Changed from '1.0 Hz' to '1.00 Hz'
       { ms: 500, expected: '2.0 Hz' }, // 2.0 Hz
       { ms: 1111, expected: '0.9 Hz' }, // 1000/1111 = 0.900... Hz
       { ms: 2000, expected: '0.5 Hz' }, // 0.5 Hz
