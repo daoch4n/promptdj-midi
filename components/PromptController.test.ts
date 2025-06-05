@@ -1,11 +1,7 @@
 import { LitElement } from 'lit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PromptController } from './PromptController';
-
-// Mock WeightKnob if it's a dependency that could cause issues
-if (!customElements.get('weight-knob')) {
-  customElements.define('weight-knob', class extends LitElement {});
-}
+import './WeightKnob'; // Import the actual WeightKnob component
 
 describe('PromptController', () => {
   let controller: PromptController;
