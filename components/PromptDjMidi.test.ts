@@ -71,6 +71,13 @@ describe('PromptDjMidi Logic', () => {
   let controller: PromptDjMidi; // Use the actual type
   let mockMidiDispatcher: MockMidiDispatcher;
 
+  // Spies for console methods
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let consoleInfoSpy: ReturnType<typeof vi.spyOn>; // Added
+  let consoleDebugSpy: ReturnType<typeof vi.spyOn>; // Added
+
   // Constants from the class, assuming they are accessible or redefined for test
   const FREQ_STEP = 50;
   const MIN_FREQ_VALUE = 50;
@@ -84,6 +91,13 @@ describe('PromptDjMidi Logic', () => {
     mockMidiDispatcher = new MockMidiDispatcher();
     // Provide a basic Map for prompts
     const initialPrompts = new Map();
+
+    // Suppress all console output during tests
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {}); // Mock info
+    consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {}); // Mock debug
 
     // Instantiate PromptDjMidi directly
     controller = new PromptDjMidi(initialPrompts, mockMidiDispatcher);
@@ -111,7 +125,7 @@ describe('PromptDjMidi Logic', () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.restoreAllMocks(); // This restores all spied methods, including console
   });
 
   describe('formatFlowFrequency', () => {
