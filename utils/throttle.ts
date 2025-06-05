@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 /**
  * Throttles a callback to be called at most once per `delay` milliseconds.
  * Also returns the result of the last "fresh" call...

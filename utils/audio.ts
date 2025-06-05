@@ -1,9 +1,9 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 
-import {Blob} from '@google/genai';
+import { Blob } from '@google/genai';
 
 function encode(bytes) {
   let binary = '';
@@ -71,4 +71,4 @@ async function decodeAudioData(
   return buffer;
 }
 
-export {createBlob, decode, decodeAudioData, encode};
+export { createBlob, decode, decodeAudioData, encode };

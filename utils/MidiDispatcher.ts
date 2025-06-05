@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 import type { ControlChange } from '../types';
 
 /** Simple class for dispatching MIDI CC messages as events. */

@@ -20,7 +20,10 @@ describe('PromptController', () => {
 
     // Spy on internal methods
     // Cast to 'any' to access private methods for testing purposes
-    dispatchPromptChangeSpy = vi.spyOn(controller as any, 'dispatchPromptChange');
+    dispatchPromptChangeSpy = vi.spyOn(
+      controller as any,
+      'dispatchPromptChange',
+    );
     dispatchEventSpy = vi.spyOn(controller, 'dispatchEvent');
   });
 
@@ -44,7 +47,10 @@ describe('PromptController', () => {
     expect(dispatchEventSpy).toHaveBeenCalledTimes(1);
     const event = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
     expect(event.type).toBe('prompt-autoflow-toggled');
-    expect(event.detail).toEqual({ promptId: 'test-prompt', isAutoFlowing: true });
+    expect(event.detail).toEqual({
+      promptId: 'test-prompt',
+      isAutoFlowing: true,
+    });
   });
 
   it('Scenario 2: Auto active (weight 1, isAutoFlowing true) -> toggle to false (weight becomes 0)', () => {
@@ -60,7 +66,10 @@ describe('PromptController', () => {
     expect(dispatchEventSpy).toHaveBeenCalledTimes(1);
     const event = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
     expect(event.type).toBe('prompt-autoflow-toggled');
-    expect(event.detail).toEqual({ promptId: 'test-prompt', isAutoFlowing: false });
+    expect(event.detail).toEqual({
+      promptId: 'test-prompt',
+      isAutoFlowing: false,
+    });
   });
 
   it('Scenario 3: Initial state (weight 0.5, isAutoFlowing false) -> toggle to true', () => {
@@ -76,7 +85,10 @@ describe('PromptController', () => {
     expect(dispatchEventSpy).toHaveBeenCalledTimes(1);
     const event = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
     expect(event.type).toBe('prompt-autoflow-toggled');
-    expect(event.detail).toEqual({ promptId: 'test-prompt', isAutoFlowing: true });
+    expect(event.detail).toEqual({
+      promptId: 'test-prompt',
+      isAutoFlowing: true,
+    });
   });
 
   it('Scenario 4: Auto active (weight 0.7, isAutoFlowing true) -> toggle to false (weight remains 0.7)', () => {
@@ -92,6 +104,9 @@ describe('PromptController', () => {
     expect(dispatchEventSpy).toHaveBeenCalledTimes(1);
     const event = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
     expect(event.type).toBe('prompt-autoflow-toggled');
-    expect(event.detail).toEqual({ promptId: 'test-prompt', isAutoFlowing: false });
+    expect(event.detail).toEqual({
+      promptId: 'test-prompt',
+      isAutoFlowing: false,
+    });
   });
 });

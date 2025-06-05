@@ -10,8 +10,8 @@ const baseConfig = ({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
-      }
-    }
+      },
+    },
   };
 };
 

@@ -1,4 +1,5 @@
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;
@@ -10,7 +11,7 @@ body {
 }
 
 body {
-  font-family: 'DS-Digital', cursive;
+  font-family: "DS-Digital", cursive;
 }
 
 body.dragging {
@@ -23,57 +24,123 @@ body.dragging * {
 
 /* Range Input Styles */
 .advanced-settings-panel .setting input[type="range"] {
-  -webkit-appearance: none; appearance: none; width: 90%; height: 10px;
-  background: #333; border-radius: 5px; outline: none; margin: 10px auto;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 90%;
+  height: 10px;
+  background: #333;
+  border-radius: 5px;
+  outline: none;
+  margin: 10px auto;
 }
-.advanced-settings-panel .setting input[type="range"]::-webkit-slider-runnable-track {
-  width: 100%; height: 8px; cursor: pointer; background: #555;
-  border-radius: 4px; border: 1px solid #222;
+.advanced-settings-panel
+  .setting
+  input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  background: #555;
+  border-radius: 4px;
+  border: 1px solid #222;
 }
 .advanced-settings-panel .setting input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; appearance: none; border: 1px solid #000;
-  height: 20px; width: 10px; border-radius: 3px; background: #ddd;
-  cursor: pointer; margin-top: -7px;
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid #000;
+  height: 20px;
+  width: 10px;
+  border-radius: 3px;
+  background: #ddd;
+  cursor: pointer;
+  margin-top: -7px;
   box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
 }
 .advanced-settings-panel .setting input[type="range"]::-moz-range-track {
-  width: 100%; height: 8px; cursor: pointer; background: #555;
-  border-radius: 4px; border: 1px solid #222;
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  background: #555;
+  border-radius: 4px;
+  border: 1px solid #222;
 }
 .advanced-settings-panel .setting input[type="range"]::-moz-range-thumb {
-  border: 1px solid #000; height: 20px; width: 10px; border-radius: 3px;
-  background: #ddd; cursor: pointer;
+  border: 1px solid #000;
+  height: 20px;
+  width: 10px;
+  border-radius: 3px;
+  background: #ddd;
+  cursor: pointer;
   box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
 }
 
 .advanced-settings-panel .setting .auto-row label,
 .advanced-settings-panel .setting .checkbox-setting label {
-  color: #ccc; font-size: 0.9em; font-weight: normal;
-  position: relative; padding-left: 60px; line-height: 25px; cursor: pointer;
-  margin-left: 0; min-height: 25px; display: inline-flex; align-items: center;
+  color: #ccc;
+  font-size: 0.9em;
+  font-weight: normal;
+  position: relative;
+  padding-left: 60px;
+  line-height: 25px;
+  cursor: pointer;
+  margin-left: 0;
+  min-height: 25px;
+  display: inline-flex;
+  align-items: center;
 }
-.advanced-settings-panel .setting .auto-row span { /* Slider value display */
-  color: #fff; font-size: 0.9em; margin-left: auto; order: 3;
+.advanced-settings-panel .setting .auto-row span {
+  /* Slider value display */
+  color: #fff;
+  font-size: 0.9em;
+  margin-left: auto;
+  order: 3;
 }
-.advanced-settings-panel .setting input[type="checkbox"] { display: none; }
+.advanced-settings-panel .setting input[type="checkbox"] {
+  display: none;
+}
 
 .advanced-settings-panel .setting .auto-row label::before,
-.advanced-settings-panel .setting .checkbox-setting label::before { /* Switch track */
-  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  width: 50px; height: 25px; background-color: #333; border-radius: 15px;
-  transition: background-color 0.3s ease; z-index: 0;
+.advanced-settings-panel .setting .checkbox-setting label::before {
+  /* Switch track */
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 25px;
+  background-color: #333;
+  border-radius: 15px;
+  transition: background-color 0.3s ease;
+  z-index: 0;
 }
 .advanced-settings-panel .setting .auto-row label::after,
-.advanced-settings-panel .setting .checkbox-setting label::after { /* Switch thumb */
-  content: ''; position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
-  width: 21px; height: 21px; background-color: #777; border-radius: 50%;
-  transition: transform 0.3s ease, background-color 0.3s ease; z-index: 1;
+.advanced-settings-panel .setting .checkbox-setting label::after {
+  /* Switch thumb */
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 21px;
+  height: 21px;
+  background-color: #777;
+  border-radius: 50%;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+  z-index: 1;
 }
-.advanced-settings-panel .setting input[type="checkbox"]:checked + label::before {
-  background-color: #00cc00; box-shadow: 0 0 3px #00cc00, 0 0 6px #00cc00;
+.advanced-settings-panel
+  .setting
+  input[type="checkbox"]:checked
+  + label::before {
+  background-color: #00cc00;
+  box-shadow: 0 0 3px #00cc00, 0 0 6px #00cc00;
 }
-.advanced-settings-panel .setting input[type="checkbox"]:checked + label::after {
-  transform: translate(25px, -50%); background-color: #fff;
+.advanced-settings-panel
+  .setting
+  input[type="checkbox"]:checked
+  + label::after {
+  transform: translate(25px, -50%);
+  background-color: #fff;
 }
 
 /* Number Input Styling */
@@ -92,8 +159,12 @@ body.dragging * {
   outline: none;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
-.advanced-settings-panel .setting input[type="number"]::-webkit-inner-spin-button,
-.advanced-settings-panel .setting input[type="number"]::-webkit-outer-spin-button {
+.advanced-settings-panel
+  .setting
+  input[type="number"]::-webkit-inner-spin-button,
+.advanced-settings-panel
+  .setting
+  input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
@@ -139,11 +210,22 @@ body.dragging * {
 /* Ensure checkbox related inputs are fully hidden */
 .advanced-settings-panel .setting .auto-row input[type="checkbox"],
 .advanced-settings-panel .setting .checkbox-setting input[type="checkbox"] {
-  appearance: none; -webkit-appearance: none; background-color: transparent;
-  border: none; padding: 0; margin: 0; display: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: none;
 }
-.advanced-settings-panel .setting .auto-row input[type="checkbox"]:checked::after,
-.advanced-settings-panel .setting .checkbox-setting input[type="checkbox"]:checked::after {
+.advanced-settings-panel
+  .setting
+  .auto-row
+  input[type="checkbox"]:checked::after,
+.advanced-settings-panel
+  .setting
+  .checkbox-setting
+  input[type="checkbox"]:checked::after {
   content: none;
 }
 
@@ -195,15 +277,15 @@ body.dragging * {
 }
 
 #buttons input[type="number"]#seed {
-    /* Check if width needs adjustment; it's currently 18vmin */
-    /* May need to be less if space is tight next to MIDI */
-    /* width: 12vmin; /* Example adjustment */
+  /* Check if width needs adjustment; it's currently 18vmin */
+  /* May need to be less if space is tight next to MIDI */
+  /* width: 12vmin; /* Example adjustment */
 }
 
 /* It might be good to ensure that the .seed-controls label and input also inherit opacity for transition */
 #buttons .seed-controls.seed-controls-hoverable label,
 #buttons .seed-controls.seed-controls-hoverable input {
-    transition: opacity 0.3s ease-in-out; /* so they fade smoothly with the container */
+  transition: opacity 0.3s ease-in-out; /* so they fade smoothly with the container */
 }
 
 .background-light {

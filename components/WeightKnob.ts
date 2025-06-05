@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 import { css, html, LitElement, svg } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -102,7 +102,6 @@ export class WeightKnob extends LitElement {
     this.requestUpdate('value', oldVal);
   }
 
-
   @property({ type: String }) color = '#000';
   @property({ type: Number }) audioLevel = 0;
   @property({ type: String }) displayValue = '';
@@ -150,8 +149,11 @@ export class WeightKnob extends LitElement {
     this._backgroundEffectAlpha = this.value > 0.001 ? 1.0 : 0.0;
     this._targetBackgroundEffectAlpha = this._backgroundEffectAlpha;
 
-    if (this._currentValue !== this._targetValue && this._dotAnimationId === null) {
-       this._animateDot();
+    if (
+      this._currentValue !== this._targetValue &&
+      this._dotAnimationId === null
+    ) {
+      this._animateDot();
     }
     this.snapArcAndHaloToCurrentValue();
   }
@@ -187,13 +189,22 @@ export class WeightKnob extends LitElement {
 
     // Start animations if they aren't already running towards these targets
     // or to ensure they pick up the 'auto' context for smoothing factors.
-    if (this._dotAnimationId === null && this._currentValue !== this._targetValue) {
+    if (
+      this._dotAnimationId === null &&
+      this._currentValue !== this._targetValue
+    ) {
       this._animateDot();
     }
-    if (this._arcAnimationId === null && this._arcDisplayValue !== this._targetArcDisplayValue) {
+    if (
+      this._arcAnimationId === null &&
+      this._arcDisplayValue !== this._targetArcDisplayValue
+    ) {
       this._animateArc();
     }
-    if (this._haloAnimationId === null && this._backgroundEffectAlpha !== this._targetBackgroundEffectAlpha) {
+    if (
+      this._haloAnimationId === null &&
+      this._backgroundEffectAlpha !== this._targetBackgroundEffectAlpha
+    ) {
       this._animateHalo();
     }
   }
@@ -249,22 +260,25 @@ export class WeightKnob extends LitElement {
     if (Math.abs(this._currentValue - this._targetValue) < 0.001) {
       this._currentValue = this._targetValue;
       if (this._dotAnimationId !== null) {
-          cancelAnimationFrame(this._dotAnimationId);
-          this._dotAnimationId = null;
+        cancelAnimationFrame(this._dotAnimationId);
+        this._dotAnimationId = null;
       }
     } else if (this._currentValue !== this._targetValue) {
-       this._dotAnimationId = requestAnimationFrame(() => this._animateDot());
+      this._dotAnimationId = requestAnimationFrame(() => this._animateDot());
     } else {
       if (this._dotAnimationId !== null) {
-          cancelAnimationFrame(this._dotAnimationId);
-          this._dotAnimationId = null;
+        cancelAnimationFrame(this._dotAnimationId);
+        this._dotAnimationId = null;
       }
     }
   }
 
   private _animateArc() {
     const difference = this._targetArcDisplayValue - this._arcDisplayValue;
-    const factor = this._currentAnimationContext === 'auto' ? ARC_AUTO_SMOOTHING_FACTOR : ARC_DRAG_SMOOTHING_FACTOR;
+    const factor =
+      this._currentAnimationContext === 'auto'
+        ? ARC_AUTO_SMOOTHING_FACTOR
+        : ARC_DRAG_SMOOTHING_FACTOR;
 
     if (Math.abs(difference) < 0.001) {
       this._arcDisplayValue = this._targetArcDisplayValue;
@@ -283,15 +297,19 @@ export class WeightKnob extends LitElement {
       this._arcAnimationId = requestAnimationFrame(() => this._animateArc());
     } else {
       if (this._arcAnimationId !== null) {
-         cancelAnimationFrame(this._arcAnimationId);
-         this._arcAnimationId = null;
+        cancelAnimationFrame(this._arcAnimationId);
+        this._arcAnimationId = null;
       }
     }
   }
 
   private _animateHalo() {
-    const difference = this._targetBackgroundEffectAlpha - this._backgroundEffectAlpha;
-    const factor = this._currentAnimationContext === 'auto' ? HALO_AUTO_SMOOTHING_FACTOR : HALO_DRAG_SMOOTHING_FACTOR;
+    const difference =
+      this._targetBackgroundEffectAlpha - this._backgroundEffectAlpha;
+    const factor =
+      this._currentAnimationContext === 'auto'
+        ? HALO_AUTO_SMOOTHING_FACTOR
+        : HALO_DRAG_SMOOTHING_FACTOR;
 
     if (Math.abs(difference) < 0.001) {
       this._backgroundEffectAlpha = this._targetBackgroundEffectAlpha;
@@ -310,12 +328,11 @@ export class WeightKnob extends LitElement {
       this._haloAnimationId = requestAnimationFrame(() => this._animateHalo());
     } else {
       if (this._haloAnimationId !== null) {
-         cancelAnimationFrame(this._haloAnimationId);
-         this._haloAnimationId = null;
+        cancelAnimationFrame(this._haloAnimationId);
+        this._haloAnimationId = null;
       }
     }
   }
-
 
   private handlePointerDown(e: PointerEvent) {
     this.dragStartPos = e.clientY;
@@ -332,9 +349,18 @@ export class WeightKnob extends LitElement {
     this._targetBackgroundEffectAlpha = this._backgroundEffectAlpha;
 
     // Cancel any ongoing animations
-    if (this._dotAnimationId) { cancelAnimationFrame(this._dotAnimationId); this._dotAnimationId = null; }
-    if (this._arcAnimationId) { cancelAnimationFrame(this._arcAnimationId); this._arcAnimationId = null; }
-    if (this._haloAnimationId) { cancelAnimationFrame(this._haloAnimationId); this._haloAnimationId = null; }
+    if (this._dotAnimationId) {
+      cancelAnimationFrame(this._dotAnimationId);
+      this._dotAnimationId = null;
+    }
+    if (this._arcAnimationId) {
+      cancelAnimationFrame(this._arcAnimationId);
+      this._arcAnimationId = null;
+    }
+    if (this._haloAnimationId) {
+      cancelAnimationFrame(this._haloAnimationId);
+      this._haloAnimationId = null;
+    }
 
     this.requestUpdate();
   }
@@ -344,7 +370,9 @@ export class WeightKnob extends LitElement {
     // Directly set the public 'value' property. This will trigger the updated setter.
     this.value = this.dragStartValue + delta * 0.01;
     // DO NOT call snapArcAndHaloToCurrentValue() here anymore. The setter handles it.
-    this.dispatchEvent(new CustomEvent<number>('input', { detail: this._value }));
+    this.dispatchEvent(
+      new CustomEvent<number>('input', { detail: this._value }),
+    );
   }
 
   private handlePointerUp(e: PointerEvent) {
@@ -361,7 +389,9 @@ export class WeightKnob extends LitElement {
     const delta = e.deltaY;
     // Directly set the public 'value' property. This will trigger the updated setter.
     this.value = this._value + delta * -0.0025;
-    this.dispatchEvent(new CustomEvent<number>('input', { detail: this._value }));
+    this.dispatchEvent(
+      new CustomEvent<number>('input', { detail: this._value }),
+    );
   }
 
   private describeArc(
@@ -403,17 +433,20 @@ export class WeightKnob extends LitElement {
     let normalizedDriverForHaloScale: number;
     if (this._currentAnimationContext === 'auto') {
       normalizedDriverForHaloScale = this._backgroundEffectAlpha; // Is already 0-1
-    } else { // 'drag' context
+    } else {
+      // 'drag' context
       // Ensure _currentValue is within 0-2 range for this calculation,
       // though it should be due to clamping in the setter.
       const clampedCurrentValue = Math.max(0, Math.min(2, this._currentValue));
       normalizedDriverForHaloScale = clampedCurrentValue / 2; // Normalize _currentValue (0-2) to 0-1
     }
 
-    let haloBaseScale = normalizedDriverForHaloScale * (MAX_HALO_SCALE - MIN_HALO_SCALE);
+    let haloBaseScale =
+      normalizedDriverForHaloScale * (MAX_HALO_SCALE - MIN_HALO_SCALE);
     haloBaseScale += MIN_HALO_SCALE;
 
-    const haloDisplayScale = haloBaseScale + (this.audioLevel * HALO_LEVEL_MODIFIER);
+    const haloDisplayScale =
+      haloBaseScale + this.audioLevel * HALO_LEVEL_MODIFIER;
 
     const haloStyle = styleMap({
       opacity: (this._backgroundEffectAlpha * 0.5).toString(),
@@ -449,12 +482,12 @@ export class WeightKnob extends LitElement {
       </svg>
     `;
   }
-  
+
   private renderStaticSvg() {
-    const knobBodyColor = "#282828";
-    const knobTopColorBase = "#303030";
-    const knobTopHighlight = "#383838";
-    const tickColor = "#666";
+    const knobBodyColor = '#282828';
+    const knobTopColorBase = '#303030';
+    const knobTopHighlight = '#383838';
+    const tickColor = '#666';
     const numTicks = 5;
     const tickLength = 3;
     const tickRadius = 28;
@@ -487,7 +520,7 @@ export class WeightKnob extends LitElement {
         <circle cx="40" cy="41.5" r="25" fill="${knobBodyColor}" filter="url(#knob-shadow)" />
         <circle cx="40" cy="40" r="25" fill="url(#knobTopGradient)" />
         ${svg`${ticksHtml}`}
-      </svg>`
+      </svg>`;
   }
 }
 

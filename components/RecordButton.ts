@@ -1,13 +1,12 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 import { svg, css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
 @customElement('record-button')
 export class RecordButton extends LitElement {
-
   @property({ type: Boolean }) isRecording = false;
 
   static override styles = css`

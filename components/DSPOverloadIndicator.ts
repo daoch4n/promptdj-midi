@@ -7,7 +7,7 @@ export class DSPOverloadIndicator extends LitElement {
   @property({ type: Number }) currentKnobAverageExtremeness = 0;
 
   // _visible state might not be strictly needed if we query classList, but can be useful for clarity
-  @state() private _visible = false; 
+  @state() private _visible = false;
 
   static styles = css`
     :host {
@@ -63,27 +63,27 @@ export class DSPOverloadIndicator extends LitElement {
           this.setAttribute('animating', ''); // Enable animations
 
           let promptIntensity = Math.max(0, this.currentPromptAverage - 1.0); // Range 0-1 (how much > 1.0)
-          
+
           // Knob extremeness adds to the animation intensity.
           // Max contribution from knob is 0.5 to the factor.
           // Total animationIntensityFactor can go from 0 up to 1.5 (1 from prompt, 0.5 from knob).
-          let animationIntensityFactor = promptIntensity + (this.currentKnobAverageExtremeness * 0.5);
+          let animationIntensityFactor =
+            promptIntensity + this.currentKnobAverageExtremeness * 0.5;
           animationIntensityFactor = Math.min(animationIntensityFactor, 1.5); // Cap at 1.5
 
           // Progress is normalized from 0 to 1 based on this capped factor.
-          const progress = animationIntensityFactor / 1.5; 
+          const progress = animationIntensityFactor / 1.5;
 
           const hue = 60 * (1 - progress); // 60 for yellow (progress=0), 0 for red (progress=1)
           this.style.setProperty('--glow-color', `hsl(${hue}, 100%, 50%)`);
 
           const blinkDuration = Math.max(0.5, 2 - 1.5 * progress); // 2s (progress=0) down to 0.5s (progress=1)
           this.style.setProperty('--blink-duration', `${blinkDuration}s`);
-
         } else {
           // Visible (due to knob extremeness > 0.5) but not animating (because currentPromptAverage <= 1.0)
           this.removeAttribute('animating');
           // Reset to default glow color and blink duration if needed, though they won't apply without 'animating'
-          this.style.setProperty('--glow-color', 'yellow'); 
+          this.style.setProperty('--glow-color', 'yellow');
           this.style.setProperty('--blink-duration', '2s');
         }
       } else {

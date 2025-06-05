@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -176,14 +176,14 @@ export class PromptController extends LitElement {
   override firstUpdated() {
     // contenteditable is applied to textInput so we can "shrink-wrap" to text width
     // It's set here and not render() because Lit doesn't believe it's a valid attribute.
-this.textInput.setAttribute('contenteditable', 'true');
-this.textInput.addEventListener('paste', (e: ClipboardEvent) => {
-  e.preventDefault();
-  const text = e.clipboardData?.getData('text/plain');
-  if (text) {
-    document.execCommand('insertText', false, text);
-  }
-});
+    this.textInput.setAttribute('contenteditable', 'true');
+    this.textInput.addEventListener('paste', (e: ClipboardEvent) => {
+      e.preventDefault();
+      const text = e.clipboardData?.getData('text/plain');
+      if (text) {
+        document.execCommand('insertText', false, text);
+      }
+    });
 
     // contenteditable will do weird things if this is part of the template.
     this.textInput.textContent = this.text;
@@ -237,89 +237,91 @@ this.textInput.addEventListener('paste', (e: ClipboardEvent) => {
     range.selectNodeContents(this.textInput);
     selection.removeAllRanges();
     selection.addRange(range);
-}
-
-private handleKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Enter') {
-    event.preventDefault(); // Prevent newline
-    this.updateText(); // Save text
-    this.textInput.blur(); // Remove focus
   }
-}
 
-private updateWeight() {
-  const newWeight = this.weightInput.value;
+  private handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault(); // Prevent newline
+      this.updateText(); // Save text
+      this.textInput.blur(); // Remove focus
+    }
+  }
 
-  // If Auto mode was active and user drags knob away from 1.0
-  if (this.isAutoFlowing && Math.abs(newWeight - 1.0) > 0.001) {
-    this.isAutoFlowing = false; // Turn off auto mode
-    this.autoSetByButton = false; // User interaction overrides button state
+  private updateWeight() {
+    const newWeight = this.weightInput.value;
 
-    // Dispatch the autoflow toggled event as the state has changed
+    // If Auto mode was active and user drags knob away from 1.0
+    if (this.isAutoFlowing && Math.abs(newWeight - 1.0) > 0.001) {
+      this.isAutoFlowing = false; // Turn off auto mode
+      this.autoSetByButton = false; // User interaction overrides button state
+
+      // Dispatch the autoflow toggled event as the state has changed
+      this.dispatchEvent(
+        new CustomEvent('prompt-autoflow-toggled', {
+          detail: {
+            promptId: this.promptId,
+            isAutoFlowing: this.isAutoFlowing, // Should be false here
+          },
+          bubbles: true,
+          composed: true,
+        }),
+      );
+    }
+
+    // The WeightKnob's value setter now handles triggering drag-context animations.
+    // No need to call snapArcAndHaloToCurrentValue() here.
+
+    this.weight = newWeight;
+    this.dispatchPromptChange();
+  }
+
+  private toggleLearnMode() {
+    this.learnMode = !this.learnMode;
+  }
+
+  private toggleAutoFlow() {
+    if (!this.isAutoFlowing) {
+      // Turning Auto ON
+      if (this.weightInput) {
+        this.weightInput.value = 1.0; // Snappy rotation to 1.0
+        this.weightInput.triggerAutoAnimation(true); // Start slow fade-in of background
+      }
+      this.weight = 1.0;
+      this.autoSetByButton = true;
+      this.isAutoFlowing = true;
+    } else {
+      // Turning Auto OFF (this.isAutoFlowing was true)
+      if (this.autoSetByButton) {
+        if (this.weightInput) {
+          this.weightInput.value = 0.0; // Snappy rotation to 0.0
+          this.weightInput.triggerAutoAnimation(false); // Start slow fade-out of background
+        }
+        this.weight = 0.0;
+      }
+      // If autoSetByButton is false, user dragged. Rotation is already where user put it.
+      // The snapBackgroundToCurrentValue in updateWeight would have handled the background.
+
+      this.autoSetByButton = false;
+      this.isAutoFlowing = false;
+    }
+
+    this.dispatchPromptChange();
+
     this.dispatchEvent(
       new CustomEvent('prompt-autoflow-toggled', {
         detail: {
           promptId: this.promptId,
-          isAutoFlowing: this.isAutoFlowing, // Should be false here
+          isAutoFlowing: this.isAutoFlowing, // Use the new state
         },
         bubbles: true,
         composed: true,
-      })
+      }),
     );
   }
 
-  // The WeightKnob's value setter now handles triggering drag-context animations.
-  // No need to call snapArcAndHaloToCurrentValue() here.
-
-  this.weight = newWeight;
-  this.dispatchPromptChange();
-}
-
-private toggleLearnMode() {
-  this.learnMode = !this.learnMode;
-}
-
-private toggleAutoFlow() {
-  if (!this.isAutoFlowing) { // Turning Auto ON
-    if (this.weightInput) {
-      this.weightInput.value = 1.0; // Snappy rotation to 1.0
-      this.weightInput.triggerAutoAnimation(true); // Start slow fade-in of background
-    }
-    this.weight = 1.0;
-    this.autoSetByButton = true;
-    this.isAutoFlowing = true;
-  } else { // Turning Auto OFF (this.isAutoFlowing was true)
-    if (this.autoSetByButton) {
-      if (this.weightInput) {
-        this.weightInput.value = 0.0; // Snappy rotation to 0.0
-        this.weightInput.triggerAutoAnimation(false); // Start slow fade-out of background
-      }
-      this.weight = 0.0;
-    }
-    // If autoSetByButton is false, user dragged. Rotation is already where user put it.
-    // The snapBackgroundToCurrentValue in updateWeight would have handled the background.
-
-    this.autoSetByButton = false;
-    this.isAutoFlowing = false;
-  }
-
-  this.dispatchPromptChange();
-
-  this.dispatchEvent(
-    new CustomEvent('prompt-autoflow-toggled', {
-      detail: {
-        promptId: this.promptId,
-        isAutoFlowing: this.isAutoFlowing, // Use the new state
-      },
-      bubbles: true,
-      composed: true,
-    })
-  );
-}
-
   override render() {
     const classes = classMap({
-      'prompt': true,
+      prompt: true,
       'learn-mode': this.learnMode,
       'show-cc': this.showCC,
     });

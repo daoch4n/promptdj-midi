@@ -24,7 +24,6 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
   let clipboardReadTextSpy: MockInstance;
   let clearTimeoutSpy: MockInstance;
 
-
   beforeEach(async () => {
     vi.useFakeTimers();
 
@@ -36,25 +35,33 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       off: vi.fn(),
     } as unknown as MidiDispatcher;
 
-    localStorageGetItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
-    localStorageSetItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {});
-    localStorageRemoveItemSpy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {});
+    localStorageGetItemSpy = vi
+      .spyOn(Storage.prototype, 'getItem')
+      .mockReturnValue(null);
+    localStorageSetItemSpy = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {});
+    localStorageRemoveItemSpy = vi
+      .spyOn(Storage.prototype, 'removeItem')
+      .mockImplementation(() => {});
 
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
-
     clipboardReadTextSpy = vi.fn().mockResolvedValue('default-clipboard-text');
     Object.defineProperty(navigator, 'clipboard', {
-      value: { readText: clipboardReadTextSpy, },
-      configurable: true, writable: true,
+      value: { readText: clipboardReadTextSpy },
+      configurable: true,
+      writable: true,
     });
 
     element = new PromptDjMidi(new Map(), mockMidiDispatcher);
 
-    vi.spyOn(element as any, 'handleMainAudioButton').mockImplementation(async () => {});
+    vi.spyOn(element as any, 'handleMainAudioButton').mockImplementation(
+      async () => {},
+    );
 
     document.body.appendChild(element);
     await element.updateComplete;
@@ -70,16 +77,24 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
   });
 
   const getApiKeyStatusMessage = () => {
-    const transientMsgElement = element.shadowRoot?.querySelector('span[style*="lightblue"]');
-    if (transientMsgElement) return transientMsgElement.textContent?.trim() || null;
+    const transientMsgElement = element.shadowRoot?.querySelector(
+      'span[style*="lightblue"]',
+    );
+    if (transientMsgElement)
+      return transientMsgElement.textContent?.trim() || null;
 
-    const redMsgElement = element.shadowRoot?.querySelector('span[style*="red"]');
+    const redMsgElement =
+      element.shadowRoot?.querySelector('span[style*="red"]');
     if (redMsgElement) return redMsgElement.textContent?.trim() || null;
 
-    const yellowMsgElement = element.shadowRoot?.querySelector('span[style*="yellow"]');
+    const yellowMsgElement = element.shadowRoot?.querySelector(
+      'span[style*="yellow"]',
+    );
     if (yellowMsgElement) return yellowMsgElement.textContent?.trim() || null;
 
-    const orangeMsgElement = element.shadowRoot?.querySelector('span[style*="orange"]');
+    const orangeMsgElement = element.shadowRoot?.querySelector(
+      'span[style*="orange"]',
+    );
     if (orangeMsgElement) return orangeMsgElement.textContent?.trim() || null;
 
     return null;
@@ -102,7 +117,9 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
 
       if (element.parentNode) element.parentNode.removeChild(element);
       element = new PromptDjMidi(new Map(), mockMidiDispatcher);
-      vi.spyOn(element as any, 'handleMainAudioButton').mockImplementation(async () => {});
+      vi.spyOn(element as any, 'handleMainAudioButton').mockImplementation(
+        async () => {},
+      );
       document.body.appendChild(element);
       await element.updateComplete;
 
@@ -141,9 +158,14 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       const testKey = 'test-key-retry-success';
       element['geminiApiKey'] = testKey;
 
-      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
-        .mockImplementationOnce(() => { throw new Error('Simulated localStorage error 1'); })
-        .mockImplementationOnce(() => { throw new Error('Simulated localStorage error 2'); })
+      const setItemSpy = vi
+        .spyOn(Storage.prototype, 'setItem')
+        .mockImplementationOnce(() => {
+          throw new Error('Simulated localStorage error 1');
+        })
+        .mockImplementationOnce(() => {
+          throw new Error('Simulated localStorage error 2');
+        })
         .mockImplementationOnce(() => {}); // Success on the third try
 
       await (element as any).saveApiKeyToLocalStorage();
@@ -165,10 +187,14 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
   describe('Debounced Autosave on Input', () => {
     test('input change calls debounced save, shows transient "API Key Saved"', async () => {
       const saveSpy = vi.spyOn(element as any, 'saveApiKeyToLocalStorage');
-      const apiKeyInput = element.shadowRoot?.querySelector('input[type="text"]') as HTMLInputElement;
+      const apiKeyInput = element.shadowRoot?.querySelector(
+        'input[type="text"]',
+      ) as HTMLInputElement;
 
       apiKeyInput.value = 'new-key-debounced';
-      apiKeyInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+      apiKeyInput.dispatchEvent(
+        new Event('input', { bubbles: true, composed: true }),
+      );
 
       expect(saveSpy).not.toHaveBeenCalled(); // Not called immediately
 
@@ -193,18 +219,26 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
 
     test('multiple input changes trigger only one save call, shows transient "API Key Saved"', async () => {
       const saveSpy = vi.spyOn(element as any, 'saveApiKeyToLocalStorage');
-      const apiKeyInput = element.shadowRoot?.querySelector('input[type="text"]') as HTMLInputElement;
+      const apiKeyInput = element.shadowRoot?.querySelector(
+        'input[type="text"]',
+      ) as HTMLInputElement;
 
       apiKeyInput.value = 'key1';
-      apiKeyInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+      apiKeyInput.dispatchEvent(
+        new Event('input', { bubbles: true, composed: true }),
+      );
       vi.advanceTimersByTime(200);
 
       apiKeyInput.value = 'key12';
-      apiKeyInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+      apiKeyInput.dispatchEvent(
+        new Event('input', { bubbles: true, composed: true }),
+      );
       vi.advanceTimersByTime(200);
 
       apiKeyInput.value = 'key123';
-      apiKeyInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+      apiKeyInput.dispatchEvent(
+        new Event('input', { bubbles: true, composed: true }),
+      );
 
       expect(saveSpy).not.toHaveBeenCalled();
 
@@ -232,13 +266,18 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       element['geminiApiKey'] = null;
       element['apiKeyInvalid'] = true;
       await element.updateComplete;
-      pasteButton = element.shadowRoot?.querySelector('.api-controls button') as HTMLButtonElement;
+      pasteButton = element.shadowRoot?.querySelector(
+        '.api-controls button',
+      ) as HTMLButtonElement;
     });
 
     test('successful paste shows transient "API Key Saved"', async () => {
       const pastedKey = 'pasted-key-transient';
       clipboardReadTextSpy.mockResolvedValue(pastedKey);
-      const directSaveSpy = vi.spyOn(element as any, 'saveApiKeyToLocalStorage');
+      const directSaveSpy = vi.spyOn(
+        element as any,
+        'saveApiKeyToLocalStorage',
+      );
 
       pasteButton.click();
       await vi.runAllTimersAsync();
@@ -259,18 +298,26 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
     // Other paste tests (clipboard unavailable, error, empty) remain relevant for behavior,
     // just ensure they don't assert for messages that are now transient or removed.
     test('clipboard API unavailable', async () => {
-      Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
-      const directSaveSpy = vi.spyOn(element as any, 'saveApiKeyToLocalStorage');
+      Object.defineProperty(navigator, 'clipboard', {
+        value: undefined,
+        configurable: true,
+      });
+      const directSaveSpy = vi.spyOn(
+        element as any,
+        'saveApiKeyToLocalStorage',
+      );
       pasteButton.click();
       await element.updateComplete;
-      expect(consoleWarnSpy).toHaveBeenCalledWith('Clipboard API not available or readText not supported.');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Clipboard API not available or readText not supported.',
+      );
       expect(directSaveSpy).not.toHaveBeenCalled();
       expect(getApiKeyStatusMessage()).not.toBe('API Key Saved');
     });
   });
 
   describe('Transient Message Management', () => {
-     test('successful clear displays "API Key Cleared" then clears', async () => {
+    test('successful clear displays "API Key Cleared" then clears', async () => {
       // Have a key first
       element['geminiApiKey'] = 'key-to-be-cleared';
       await (element as any).saveApiKeyToLocalStorage();
@@ -297,7 +344,9 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       localStorageGetItemSpy.mockReturnValue('initial-key');
       if (element.parentNode) element.parentNode.removeChild(element);
       element = new PromptDjMidi(new Map(), mockMidiDispatcher);
-      vi.spyOn(element as any, 'handleMainAudioButton').mockImplementation(async () => {});
+      vi.spyOn(element as any, 'handleMainAudioButton').mockImplementation(
+        async () => {},
+      );
       document.body.appendChild(element);
       await element.updateComplete;
 
@@ -323,13 +372,18 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       expect(element['transientApiKeyStatusMessage']).toBeNull();
       expect(getApiKeyStatusMessage()).toBeNull();
     });
-
   });
 
   describe('Persistent/Static Message Tests (Unaffected by Transient Timeout)', () => {
     test('apiKeyInvalid shows persistent error for localStorage unavailable', async () => {
-      const originalLocalStorage = Object.getOwnPropertyDescriptor(window, 'localStorage');
-      Object.defineProperty(window, 'localStorage', { value: undefined, configurable: true });
+      const originalLocalStorage = Object.getOwnPropertyDescriptor(
+        window,
+        'localStorage',
+      );
+      Object.defineProperty(window, 'localStorage', {
+        value: undefined,
+        configurable: true,
+      });
 
       element['geminiApiKey'] = 'any-key';
       await (element as any).saveApiKeyToLocalStorage();
@@ -337,17 +391,24 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
 
       expect(element['apiKeyInvalid']).toBe(true);
       await element.updateComplete;
-      expect(getApiKeyStatusMessage()).toContain('localStorage not available. API Key cannot be saved.');
+      expect(getApiKeyStatusMessage()).toContain(
+        'localStorage not available. API Key cannot be saved.',
+      );
 
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION + 1000);
       await element.updateComplete;
-      expect(getApiKeyStatusMessage()).toContain('localStorage not available. API Key cannot be saved.');
+      expect(getApiKeyStatusMessage()).toContain(
+        'localStorage not available. API Key cannot be saved.',
+      );
 
-      if(originalLocalStorage) Object.defineProperty(window, 'localStorage', originalLocalStorage);
+      if (originalLocalStorage)
+        Object.defineProperty(window, 'localStorage', originalLocalStorage);
     });
 
     test('apiKeyInvalid shows persistent error for general save failure', async () => {
-      localStorageSetItemSpy.mockImplementation(() => { throw new Error('Save failed'); });
+      localStorageSetItemSpy.mockImplementation(() => {
+        throw new Error('Save failed');
+      });
       element['geminiApiKey'] = 'any-key';
 
       await (element as any).saveApiKeyToLocalStorage();
@@ -355,37 +416,45 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
 
       expect(element['apiKeyInvalid']).toBe(true);
       await element.updateComplete;
-      expect(getApiKeyStatusMessage()).toContain('API Key is invalid or saving failed.');
+      expect(getApiKeyStatusMessage()).toContain(
+        'API Key is invalid or saving failed.',
+      );
 
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION + 1000);
       await element.updateComplete;
-      expect(getApiKeyStatusMessage()).toContain('API Key is invalid or saving failed.');
+      expect(getApiKeyStatusMessage()).toContain(
+        'API Key is invalid or saving failed.',
+      );
     });
 
     test('shows "No API Key provided" when key is empty, not saved, not invalid, and no transient message', async () => {
-        element['geminiApiKey'] = null;
-        element['apiKeySavedSuccessfully'] = false;
-        element['apiKeyInvalid'] = false;
-        element['transientApiKeyStatusMessage'] = null;
-        await element.updateComplete;
-        expect(getApiKeyStatusMessage()).toBe('No API Key provided.');
+      element['geminiApiKey'] = null;
+      element['apiKeySavedSuccessfully'] = false;
+      element['apiKeyInvalid'] = false;
+      element['transientApiKeyStatusMessage'] = null;
+      await element.updateComplete;
+      expect(getApiKeyStatusMessage()).toBe('No API Key provided.');
 
-        vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION + 1000);
-        await element.updateComplete;
-        expect(getApiKeyStatusMessage()).toBe('No API Key provided.');
+      vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION + 1000);
+      await element.updateComplete;
+      expect(getApiKeyStatusMessage()).toBe('No API Key provided.');
     });
 
     test('shows "Key entered, will attempt to save." when key entered, not saved, not invalid, no transient message', async () => {
-        element['geminiApiKey'] = 'some-typed-key';
-        element['apiKeySavedSuccessfully'] = false;
-        element['apiKeyInvalid'] = false;
-        element['transientApiKeyStatusMessage'] = null;
-        await element.updateComplete;
-        expect(getApiKeyStatusMessage()).toBe('Key entered, will attempt to save.');
+      element['geminiApiKey'] = 'some-typed-key';
+      element['apiKeySavedSuccessfully'] = false;
+      element['apiKeyInvalid'] = false;
+      element['transientApiKeyStatusMessage'] = null;
+      await element.updateComplete;
+      expect(getApiKeyStatusMessage()).toBe(
+        'Key entered, will attempt to save.',
+      );
 
-        vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION + 1000);
-        await element.updateComplete;
-        expect(getApiKeyStatusMessage()).toBe('Key entered, will attempt to save.');
+      vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION + 1000);
+      await element.updateComplete;
+      expect(getApiKeyStatusMessage()).toBe(
+        'Key entered, will attempt to save.',
+      );
     });
   });
 });
@@ -435,7 +504,7 @@ describe('PromptDjMidi - Frequency Logic', () => {
       (element as any).adjustFrequency(false);
       expect(element['flowFrequency']).toBe(1.0);
     });
-    
+
     test('increases by 1.0 Hz from 1.0 Hz (1.0 -> 2.0)', () => {
       element['flowFrequency'] = 1.0;
       (element as any).adjustFrequency(true);
@@ -447,7 +516,6 @@ describe('PromptDjMidi - Frequency Logic', () => {
       (element as any).adjustFrequency(false);
       expect(element['flowFrequency']).toBeCloseTo(0.9);
     });
-
 
     // Test Cases: Step Logic (0.1 Hz to < 1 Hz)
     test('increases by 0.1 Hz when current is 0.5 Hz (0.5 -> 0.6)', () => {
@@ -467,7 +535,7 @@ describe('PromptDjMidi - Frequency Logic', () => {
       (element as any).adjustFrequency(true);
       expect(element['flowFrequency']).toBeCloseTo(0.2);
     });
-    
+
     test('decreases by 0.01 Hz from 0.1 Hz (0.1 -> 0.09)', () => {
       element['flowFrequency'] = 0.1;
       (element as any).adjustFrequency(false);
@@ -503,7 +571,7 @@ describe('PromptDjMidi - Frequency Logic', () => {
     test('transitions from 0.01 step to 0.1 step when increasing from 0.09 Hz (0.09 -> 0.10)', () => {
       element['flowFrequency'] = 0.09;
       (element as any).adjustFrequency(true);
-      expect(element['flowFrequency']).toBeCloseTo(0.10);
+      expect(element['flowFrequency']).toBeCloseTo(0.1);
     });
 
     // Test Cases: Clamping
@@ -512,7 +580,7 @@ describe('PromptDjMidi - Frequency Logic', () => {
       (element as any).adjustFrequency(false);
       expect(element['flowFrequency']).toBe(MIN_HZ);
     });
-    
+
     test('does not decrease below MIN_HZ (e.g. trying to go from 0.015 to 0.005, clamps to 0.01)', () => {
       element['flowFrequency'] = MIN_HZ + 0.005; // 0.015, current step is 0.01
       (element as any).adjustFrequency(false); // 0.015 - 0.01 = 0.005, which is < MIN_HZ
@@ -530,7 +598,7 @@ describe('PromptDjMidi - Frequency Logic', () => {
       (element as any).adjustFrequency(true); // 19.5 + 1.0 = 20.5, clamps to 20.0
       expect(element['flowFrequency']).toBe(MAX_HZ);
     });
-    
+
     test('never reaches 0 when decreasing from slightly above MIN_HZ (e.g. 0.01 -> 0.01)', () => {
       element['flowFrequency'] = MIN_HZ; //0.01
       (element as any).adjustFrequency(false);
@@ -542,7 +610,6 @@ describe('PromptDjMidi - Frequency Logic', () => {
       (element as any).adjustFrequency(false);
       expect(element['flowFrequency']).toBe(MIN_HZ);
     });
-
   });
 
   describe('formatFlowFrequency', () => {
@@ -550,29 +617,29 @@ describe('PromptDjMidi - Frequency Logic', () => {
     const MAX_HZ = 20.0;
 
     test('formats >= 1.0 Hz to one decimal place', () => {
-      expect(element['formatFlowFrequency'](1.0)).toBe("1.0 Hz");
-      expect(element['formatFlowFrequency'](1.2)).toBe("1.2 Hz"); // Test for .2 not .20
-      expect(element['formatFlowFrequency'](12.3)).toBe("12.3 Hz");
-      expect(element['formatFlowFrequency'](MAX_HZ)).toBe("20.0 Hz");
+      expect(element['formatFlowFrequency'](1.0)).toBe('1.0 Hz');
+      expect(element['formatFlowFrequency'](1.2)).toBe('1.2 Hz'); // Test for .2 not .20
+      expect(element['formatFlowFrequency'](12.3)).toBe('12.3 Hz');
+      expect(element['formatFlowFrequency'](MAX_HZ)).toBe('20.0 Hz');
     });
 
     test('formats < 1.0 Hz to two decimal places', () => {
-      expect(element['formatFlowFrequency'](0.5)).toBe("0.50 Hz");
-      expect(element['formatFlowFrequency'](0.25)).toBe("0.25 Hz");
-      expect(element['formatFlowFrequency'](0.01)).toBe("0.01 Hz");
-      expect(element['formatFlowFrequency'](MIN_HZ)).toBe("0.01 Hz");
-      expect(element['formatFlowFrequency'](0.99)).toBe("0.99 Hz");
+      expect(element['formatFlowFrequency'](0.5)).toBe('0.50 Hz');
+      expect(element['formatFlowFrequency'](0.25)).toBe('0.25 Hz');
+      expect(element['formatFlowFrequency'](0.01)).toBe('0.01 Hz');
+      expect(element['formatFlowFrequency'](MIN_HZ)).toBe('0.01 Hz');
+      expect(element['formatFlowFrequency'](0.99)).toBe('0.99 Hz');
     });
-    
+
     test('formats values that might result from adjustFrequency rounding', () => {
-      expect(element['formatFlowFrequency'](0.0123)).toBe("0.01 Hz"); // Rounds down
-      expect(element['formatFlowFrequency'](0.999)).toBe("1.0 Hz"); // Rounds up to 1.0 Hz
-      expect(element['formatFlowFrequency'](0.098)).toBe("0.10 Hz"); // Rounds up
+      expect(element['formatFlowFrequency'](0.0123)).toBe('0.01 Hz'); // Rounds down
+      expect(element['formatFlowFrequency'](0.999)).toBe('1.0 Hz'); // Rounds up to 1.0 Hz
+      expect(element['formatFlowFrequency'](0.098)).toBe('0.10 Hz'); // Rounds up
     });
 
     test('handles undefined or null input', () => {
-      expect(element['formatFlowFrequency'](undefined as any)).toBe("N/A");
-      expect(element['formatFlowFrequency'](null as any)).toBe("N/A");
+      expect(element['formatFlowFrequency'](undefined as any)).toBe('N/A');
+      expect(element['formatFlowFrequency'](null as any)).toBe('N/A');
     });
   });
 });

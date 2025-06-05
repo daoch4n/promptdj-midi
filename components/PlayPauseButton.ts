@@ -1,14 +1,13 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 import { svg, css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { PlaybackState } from '../types';
 
 @customElement('play-pause-button')
 export class PlayPauseButton extends LitElement {
-
   @property({ type: String }) playbackState: PlaybackState = 'stopped';
 
   static override styles = css`
@@ -121,6 +120,6 @@ export class PlayPauseButton extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'play-pause-button': PlayPauseButton
+    'play-pause-button': PlayPauseButton;
   }
 }

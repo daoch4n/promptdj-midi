@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 /** Simple class for getting the current audio level. */
 export class AudioAnalyser {
   readonly node: AnalyserNode;
