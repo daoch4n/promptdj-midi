@@ -588,8 +588,8 @@ export class PromptDjMidi extends LitElement {
      this.config.seed = Math.floor(Math.random() * 1000000) + 1;
 
     // Conditional MediaRecorder polyfill assignment
-    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-      console.log('Opus MediaRecorder polyfill activated.');
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+      console.log('Opus MediaRecorder polyfill activated for OGG.'); // Updated log message
       (window as any).MediaRecorder = OpusMediaRecorder; // Assign to window.MediaRecorder
       isOpusPolyfillActive = true;
     }
@@ -2779,7 +2779,7 @@ ${this.renderPrompts()}
 
     try {
       const mediaRecorderOptions = {
-        mimeType: 'audio/webm;codecs=opus',
+        mimeType: 'audio/ogg;codecs=opus',
         audioBitsPerSecond: 256000
       };
 
@@ -2798,13 +2798,13 @@ ${this.renderPrompts()}
       };
 
       this.mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        const audioBlob = new Blob(this.audioChunks, { type: 'audio/ogg' });
         const url = URL.createObjectURL(audioBlob);
         const a = document.createElement('a');
         document.body.appendChild(a);
         a.style.display = 'none';
         a.href = url;
-        a.download = 'recording.webm';
+        a.download = 'recording.ogg';
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
