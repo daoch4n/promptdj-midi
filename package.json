@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
   },
   "dependencies": {
     "@google/genai": "^1.0.0",
@@ -22,9 +24,5 @@
     "vite": "^6.2.0",
     "vitest": "^0.34.6",
     "@biomejs/biome": "^1.8.3"
-  },
-  "scripts": {
-    "lint": "biome lint .",
-    "format": "biome format --write ."
   }
 }
