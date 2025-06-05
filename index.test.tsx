@@ -463,8 +463,17 @@ describe('PromptDjMidi - Frequency Logic', () => {
   let element: PromptDjMidi;
   let mockMidiDispatcher: MidiDispatcher;
 
+  // Helper to convert Hz to MS, rounding as the internal logic might.
+  const hzToMs = (hz: number) => Math.round(1000 / hz);
+  // Helper to convert MS to Hz for assertions.
+  const msToHz = (ms: number) => 1000 / ms;
+
+  // Constants for the actual clamping range of flowFrequency (in MS)
+  // Derived from PromptDjMidi's MIN_FLOW_FREQUENCY_HZ (0.01 Hz) and MAX_FLOW_FREQUENCY_HZ (20.0 Hz)
+  const MIN_FLOW_FREQUENCY_MS = hzToMs(20.0); // 50ms
+  const MAX_FLOW_FREQUENCY_MS = hzToMs(0.01); // 100000ms
+
   beforeEach(async () => {
-    // ... (rest of beforeEach setup remains the same)
     mockMidiDispatcher = {
       getMidiAccess: vi.fn().mockResolvedValue([]),
       activeMidiInputId: null,
@@ -478,163 +487,184 @@ describe('PromptDjMidi - Frequency Logic', () => {
   });
 
   afterEach(() => {
-    // ... (rest of afterEach remains the same)
     if (element.parentNode === document.body) {
       document.body.removeChild(element);
     }
   });
 
   describe('adjustFrequency', () => {
-    const MIN_HZ = 0.01; // Reflects PromptDjMidi.MIN_FLOW_FREQUENCY_HZ
-    const MAX_HZ = 20.0; // Reflects PromptDjMidi.MAX_FLOW_FREQUENCY_HZ
-
     test('initial flowFrequency value', () => {
-      expect(element.flowFrequency).toBe(1); // Default is 1 Hz
+      // Default is 1 Hz, which is 1000ms
+      expect(element.flowFrequency).toBe(1000);
     });
 
-    // Test Cases: Step Logic (>= 1 Hz)
+    // Test Cases: Step Logic (Hz >= 1.0, i.e., ms <= 1000ms)
     test('increases by 1.0 Hz when current > 1.0 Hz (e.g., 1.5 -> 2.5)', () => {
-      element.flowFrequency = 1.5;
+      element.flowFrequency = hzToMs(1.5); // ~667ms
       (element as any).adjustFrequency(true);
-      expect(element.flowFrequency).toBe(2.5);
+      // Expected new Hz is 2.5, which is hzToMs(2.5) = 400ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(2.5);
+      expect(element.flowFrequency).toBe(hzToMs(2.5));
     });
 
     test('decreases by 1.0 Hz when current > 1.0 Hz and not 1.0 (e.g. 2.0 -> 1.0)', () => {
-      element.flowFrequency = 2.0;
+      element.flowFrequency = hzToMs(2.0); // 500ms
       (element as any).adjustFrequency(false);
-      expect(element.flowFrequency).toBe(1.0);
+      // Expected new Hz is 1.0, which is hzToMs(1.0) = 1000ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(1.0);
+      expect(element.flowFrequency).toBe(hzToMs(1.0));
     });
 
     test('increases by 1.0 Hz from 1.0 Hz (1.0 -> 2.0)', () => {
-      element.flowFrequency = 1.0;
+      element.flowFrequency = hzToMs(1.0); // 1000ms
       (element as any).adjustFrequency(true);
-      expect(element.flowFrequency).toBe(2.0);
+      // Expected new Hz is 2.0, which is hzToMs(2.0) = 500ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(2.0);
+      expect(element.flowFrequency).toBe(hzToMs(2.0));
     });
 
     test('decreases by 0.1 Hz from 1.0 Hz (1.0 -> 0.9)', () => {
-      element.flowFrequency = 1.0;
+      element.flowFrequency = hzToMs(1.0); // 1000ms
       (element as any).adjustFrequency(false);
-      expect(element.flowFrequency).toBeCloseTo(0.9);
+      // Expected new Hz is 0.9, which is hzToMs(0.9) = 1111ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(0.9);
+      expect(element.flowFrequency).toBe(hzToMs(0.9));
     });
 
-    // Test Cases: Step Logic (0.1 Hz to < 1 Hz)
+    // Test Cases: Step Logic (0.1 Hz <= Hz < 1.0 Hz, i.e., 1000ms < ms <= 10000ms)
     test('increases by 0.1 Hz when current is 0.5 Hz (0.5 -> 0.6)', () => {
-      element.flowFrequency = 0.5;
+      element.flowFrequency = hzToMs(0.5); // 2000ms
       (element as any).adjustFrequency(true);
-      expect(element.flowFrequency).toBeCloseTo(0.6);
+      // Expected new Hz is 0.6, which is hzToMs(0.6) = 1667ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(0.6);
+      expect(element.flowFrequency).toBe(hzToMs(0.6));
     });
 
     test('decreases by 0.1 Hz when current is 0.6 Hz (0.6 -> 0.5)', () => {
-      element.flowFrequency = 0.6;
+      element.flowFrequency = hzToMs(0.6); // 1667ms
       (element as any).adjustFrequency(false);
-      expect(element.flowFrequency).toBeCloseTo(0.5);
+      // Expected new Hz is 0.5, which is hzToMs(0.5) = 2000ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(0.5);
+      expect(element.flowFrequency).toBe(hzToMs(0.5));
     });
 
     test('increases by 0.1 Hz from 0.1 Hz (0.1 -> 0.2)', () => {
-      element.flowFrequency = 0.1;
+      element.flowFrequency = hzToMs(0.1); // 10000ms
       (element as any).adjustFrequency(true);
-      expect(element.flowFrequency).toBeCloseTo(0.2);
+      // Expected new Hz is 0.2, which is hzToMs(0.2) = 5000ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(0.2);
+      expect(element.flowFrequency).toBe(hzToMs(0.2));
     });
 
     test('decreases by 0.01 Hz from 0.1 Hz (0.1 -> 0.09)', () => {
-      element.flowFrequency = 0.1;
+      element.flowFrequency = hzToMs(0.1); // 10000ms
       (element as any).adjustFrequency(false);
-      expect(element.flowFrequency).toBeCloseTo(0.09);
+      // Expected new Hz is 0.09, which is hzToMs(0.09) = 11111ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(0.09);
+      expect(element.flowFrequency).toBe(hzToMs(0.09));
     });
 
-    // Test Cases: Step Logic (< 0.1 Hz)
+    // Test Cases: Step Logic (Hz < 0.1, i.e., ms > 10000ms)
     test('increases by 0.01 Hz when current is 0.05 Hz (0.05 -> 0.06)', () => {
-      element.flowFrequency = 0.05;
+      element.flowFrequency = hzToMs(0.05); // 20000ms
       (element as any).adjustFrequency(true);
-      expect(element.flowFrequency).toBeCloseTo(0.06);
+      // Expected new Hz is 0.06, which is hzToMs(0.06) = 16667ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(0.06);
+      expect(element.flowFrequency).toBe(hzToMs(0.06));
     });
 
     test('decreases by 0.01 Hz when current is 0.06 Hz (0.06 -> 0.05)', () => {
-      element.flowFrequency = 0.06;
+      element.flowFrequency = hzToMs(0.06); // 16667ms
       (element as any).adjustFrequency(false);
-      expect(element.flowFrequency).toBeCloseTo(0.05);
+      // Expected new Hz is 0.05, which is hzToMs(0.05) = 20000ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(0.05);
+      expect(element.flowFrequency).toBe(hzToMs(0.05));
     });
 
-    test('increases by 0.01 Hz from MIN_HZ (0.01 -> 0.02)', () => {
-      element.flowFrequency = MIN_HZ; // 0.01
+    test('increases by 0.01 Hz from MIN_FLOW_FREQUENCY_HZ (0.01 -> 0.02)', () => {
+      element.flowFrequency = hzToMs(0.01); // 100000ms (MAX_FLOW_FREQUENCY_MS)
       (element as any).adjustFrequency(true);
-      expect(element.flowFrequency).toBeCloseTo(0.02);
+      // Expected new Hz is 0.02, which is hzToMs(0.02) = 50000ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(0.02);
+      expect(element.flowFrequency).toBe(hzToMs(0.02));
     });
 
-    // Test Cases: Transitions between step logic (these are now covered by the direct 1.0 and 0.1 Hz tests)
+    // Test Cases: Transitions between step logic
     test('transitions from 0.1 step to 1.0 step when increasing from 0.9 Hz (0.9 -> 1.0)', () => {
-      element.flowFrequency = 0.9;
+      element.flowFrequency = hzToMs(0.9); // 1111ms
       (element as any).adjustFrequency(true);
-      expect(element.flowFrequency).toBe(1.0);
+      // Expected new Hz is 1.0, which is hzToMs(1.0) = 1000ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(1.0);
+      expect(element.flowFrequency).toBe(hzToMs(1.0));
     });
 
     test('transitions from 0.01 step to 0.1 step when increasing from 0.09 Hz (0.09 -> 0.10)', () => {
-      element.flowFrequency = 0.09;
+      element.flowFrequency = hzToMs(0.09); // 11111ms
       (element as any).adjustFrequency(true);
-      expect(element.flowFrequency).toBeCloseTo(0.1);
+      // Expected new Hz is 0.1, which is hzToMs(0.1) = 10000ms
+      expect(msToHz(element.flowFrequency)).toBeCloseTo(0.1);
+      expect(element.flowFrequency).toBe(hzToMs(0.1));
     });
 
     // Test Cases: Clamping
-    test('does not decrease below MIN_HZ (when at MIN_HZ)', () => {
-      element.flowFrequency = MIN_HZ;
+    test('does not decrease below MAX_FLOW_FREQUENCY_MS (when at MAX_FLOW_FREQUENCY_MS, which is 0.01 Hz)', () => {
+      element.flowFrequency = MAX_FLOW_FREQUENCY_MS; // 100000ms (0.01 Hz)
       (element as any).adjustFrequency(false);
-      expect(element.flowFrequency).toBe(MIN_HZ);
+      expect(element.flowFrequency).toBe(MAX_FLOW_FREQUENCY_MS);
     });
 
-    test('does not decrease below MIN_HZ (e.g. trying to go from 0.015 to 0.005, clamps to 0.01)', () => {
-      element.flowFrequency = MIN_HZ + 0.005; // 0.015, current step is 0.01
-      (element as any).adjustFrequency(false); // 0.015 - 0.01 = 0.005, which is < MIN_HZ
-      expect(element.flowFrequency).toBe(MIN_HZ);
+    test('does not decrease below MAX_FLOW_FREQUENCY_MS (e.g. trying to go from 0.015 Hz to 0.005 Hz, clamps to 0.01 Hz)', () => {
+      // 0.015 Hz is hzToMs(0.015) = 66667ms
+      element.flowFrequency = hzToMs(0.015);
+      (element as any).adjustFrequency(false); // Should try to go to 0.005 Hz, which is 200000ms, but clamps to 100000ms (0.01 Hz)
+      expect(element.flowFrequency).toBe(MAX_FLOW_FREQUENCY_MS);
     });
 
-    test('does not increase above MAX_HZ (when at MAX_HZ)', () => {
-      element.flowFrequency = MAX_HZ;
+    test('does not increase above MIN_FLOW_FREQUENCY_MS (when at MIN_FLOW_FREQUENCY_MS, which is 20 Hz)', () => {
+      element.flowFrequency = MIN_FLOW_FREQUENCY_MS; // 50ms (20 Hz)
       (element as any).adjustFrequency(true);
-      expect(element.flowFrequency).toBe(MAX_HZ);
+      expect(element.flowFrequency).toBe(MIN_FLOW_FREQUENCY_MS);
     });
 
-    test('clamps to MAX_HZ if incrementing would go higher (e.g. 19.5 -> 20.0)', () => {
-      element.flowFrequency = 19.5; // Step is 1.0
-      (element as any).adjustFrequency(true); // 19.5 + 1.0 = 20.5, clamps to 20.0
-      expect(element.flowFrequency).toBe(MAX_HZ);
+    test('clamps to MIN_FLOW_FREQUENCY_MS if incrementing would go higher (e.g. 19.5 Hz -> 20.0 Hz)', () => {
+      // 19.5 Hz is hzToMs(19.5) = 51ms
+      element.flowFrequency = hzToMs(19.5);
+      (element as any).adjustFrequency(true); // Should try to go to 20.5 Hz, which is 49ms, but clamps to 50ms (20 Hz)
+      expect(element.flowFrequency).toBe(MIN_FLOW_FREQUENCY_MS);
     });
 
-    test('never reaches 0 when decreasing from slightly above MIN_HZ (e.g. 0.01 -> 0.01)', () => {
-      element.flowFrequency = MIN_HZ; //0.01
+    test('never reaches 0 when decreasing from slightly above MAX_FLOW_FREQUENCY_MS (e.g. 0.01 Hz -> 0.01 Hz)', () => {
+      element.flowFrequency = hzToMs(0.01); // 100000ms
       (element as any).adjustFrequency(false);
-      expect(element.flowFrequency).toBe(MIN_HZ);
+      expect(element.flowFrequency).toBe(MAX_FLOW_FREQUENCY_MS);
     });
 
-    test('never reaches 0 when decreasing from 0.02 Hz (0.02 -> 0.01)', () => {
-      element.flowFrequency = 0.02;
+    test('never reaches 0 when decreasing from 0.02 Hz (0.02 Hz -> 0.01 Hz)', () => {
+      element.flowFrequency = hzToMs(0.02); // 50000ms
       (element as any).adjustFrequency(false);
-      expect(element.flowFrequency).toBe(MIN_HZ);
+      expect(element.flowFrequency).toBe(MAX_FLOW_FREQUENCY_MS);
     });
   });
 
   describe('formatFlowFrequency', () => {
-    const MIN_HZ = 0.01;
-    const MAX_HZ = 20.0;
+    const testCases = [
+      { ms: 1000, expected: '1.0 Hz' }, // 1.0 Hz
+      { ms: 500, expected: '2.0 Hz' }, // 2.0 Hz
+      { ms: 1111, expected: '0.9 Hz' }, // 1000/1111 = 0.900... Hz
+      { ms: 2000, expected: '0.5 Hz' }, // 0.5 Hz
+      { ms: 10000, expected: '0.1 Hz' }, // 0.1 Hz
+      { ms: 12500, expected: '8.0 cHz' }, // 1000/12500 = 0.08 Hz = 8.0 cHz
+      { ms: 20000, expected: '5.0 cHz' }, // 1000/20000 = 0.05 Hz = 5.0 cHz
+      { ms: 100000, expected: '1.0 cHz' }, // 1000/100000 = 0.01 Hz = 1.0 cHz
+      { ms: 200000, expected: '5.0 mHz' }, // 1000/200000 = 0.005 Hz = 5.0 mHz
+      { ms: 0, expected: 'N/A' },
+      { ms: -100, expected: 'N/A' },
+    ];
 
-    test('formats >= 1.0 Hz to one decimal place', () => {
-      expect(element.formatFlowFrequency(1.0)).toBe('1.0 Hz');
-      expect(element.formatFlowFrequency(1.2)).toBe('1.2 Hz'); // Test for .2 not .20
-      expect(element.formatFlowFrequency(12.3)).toBe('12.3 Hz');
-      expect(element.formatFlowFrequency(MAX_HZ)).toBe('20.0 Hz');
-    });
-
-    test('formats < 1.0 Hz to two decimal places', () => {
-      expect(element.formatFlowFrequency(0.5)).toBe('0.50 Hz');
-      expect(element.formatFlowFrequency(0.25)).toBe('0.25 Hz');
-      expect(element.formatFlowFrequency(0.01)).toBe('0.01 Hz');
-      expect(element.formatFlowFrequency(MIN_HZ)).toBe('0.01 Hz');
-      expect(element.formatFlowFrequency(0.99)).toBe('0.99 Hz');
-    });
-
-    test('formats values that might result from adjustFrequency rounding', () => {
-      expect(element.formatFlowFrequency(0.0123)).toBe('0.01 Hz'); // Rounds down
-      expect(element.formatFlowFrequency(0.999)).toBe('1.0 Hz'); // Rounds up to 1.0 Hz
-      expect(element.formatFlowFrequency(0.098)).toBe('0.10 Hz'); // Rounds up
+    testCases.forEach(({ ms, expected }) => {
+      it(`formats ${ms}ms to "${expected}"`, () => {
+        expect(element.formatFlowFrequency(ms)).toBe(expected);
+      });
     });
 
     test('handles undefined or null input', () => {
