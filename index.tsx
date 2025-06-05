@@ -2885,30 +2885,36 @@ export class PromptDjMidi extends LitElement {
           <!-- API Key Controls -->
           ${
             this.showApiKeyControls
-              ? html`
-            ${
-              this.geminiApiKey
-                ? html`
-              <button @click=${this.handleClearApiKeyClick}>Clear API Key</button>
-            `
-                : html`
-              <button @click=${this.getApiKey}>Get API Key</button>
-            `
-            }
-            <div class="api-controls">
-              <input
-                type="text"
-                placeholder="Gemini API Key"
-                .value=${this.geminiApiKey || ''}
-                @input=${this.handleApiKeyInputChange}
-                @keydown=${(e: KeyboardEvent) => {
-                  if (e.key === 'Enter') {
-                    this.handleSaveApiKeyClick();
-                  }
-                }}
-              />
-              <button @click=${this.handlePasteApiKeyClick}>Paste API key</button>
-              <button @click=${this.handleSaveApiKeyClick}>Save API Key</button>
+? html`
+              <div class="api-controls">
+                <input
+                  type="text"
+                  placeholder="Gemini API Key"
+                  .value=${this.geminiApiKey || ''}
+                  @input=${this.handleApiKeyInputChange}
+                  @keydown=${(e: KeyboardEvent) => {
+                    if (e.key === 'Enter') {
+                      this.handleSaveApiKeyClick();
+                    }
+                  }}
+                />
+                <button @click=${this.handlePasteApiKeyClick}>Paste API key</button>
+                ${
+                  this.geminiApiKey
+                    ? html`
+                  <button @click=${this.handleClearApiKeyClick}>Clear API Key</button>
+                `
+                    : ''
+                }
+                <button @click=${this.handleSaveApiKeyClick}>Save API Key</button>
+              </div>
+              ${
+                !this.geminiApiKey
+                  ? html`
+                <button @click=${this.getApiKey}>Get API Key</button>
+              `
+                  : ''
+              }
             </div>
           `
               : !this.apiKeyInvalid && this.apiKeySavedSuccessfully
