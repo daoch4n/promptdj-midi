@@ -329,12 +329,12 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       // Now clear it
       element.geminiApiKey = null;
       await (element as any).saveApiKeyToLocalStorage();
-      await vi.runAllTimersAsync();
-
+      // Do not advance all timers yet, assert the message immediately after it's set
+      await element.updateComplete; // Ensure LitElement has rendered the new message
       expect(element.transientApiKeyStatusMessage).toBe('API Key Cleared');
-      await element.updateComplete;
       expect(getApiKeyStatusMessage()).toBe('API Key Cleared');
 
+      // Now advance timers to clear the transient message
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
       await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBeNull();
