@@ -69,6 +69,7 @@ if (!global.decodeAudioData) {
 
 describe('PromptDjMidi Logic', () => {
   let controller: PromptDjMidi; // Use the actual type
+  let controllerAny: any; // Added for explicit casting to spy on private methods
   let mockMidiDispatcher: MockMidiDispatcher;
 
   // Spies for console methods
@@ -101,12 +102,13 @@ describe('PromptDjMidi Logic', () => {
 
     // Instantiate PromptDjMidi directly
     controller = new PromptDjMidi(initialPrompts, mockMidiDispatcher);
+    controllerAny = controller as any; // Assign the controller to the 'any' typed variable
 
-    // Spy on methods that are called internally and don't return values but cause side effects
-    vi.spyOn(controller, 'stopGlobalFlowInterval' as any);
-    vi.spyOn(controller, 'startGlobalFlowInterval' as any);
-    vi.spyOn(controller, 'requestUpdate' as any);
-    vi.spyOn(controller, '_sendPlaybackParametersToSession' as any);
+    // Spy on internal methods using the 'any' typed variable
+    vi.spyOn(controllerAny, 'stopGlobalFlowInterval');
+    vi.spyOn(controllerAny, 'startGlobalFlowInterval');
+    vi.spyOn(controllerAny, 'requestUpdate');
+    vi.spyOn(controllerAny, '_sendPlaybackParametersToSession');
 
     // Initialize default states for tests
     controller.flowFrequency = 1.0; // Default is 1.0 Hz
@@ -238,8 +240,8 @@ describe('PromptDjMidi Logic', () => {
       controller.isSeedFlowing = true; // Set to true to activate flow
       controller.flowFrequency = 1.0;
       controller.handleIncreaseFreq();
-      expect(controller.stopGlobalFlowInterval).toHaveBeenCalledTimes(1);
-      expect(controller.startGlobalFlowInterval).toHaveBeenCalledTimes(1);
+      expect(controllerAny.stopGlobalFlowInterval).toHaveBeenCalledTimes(1);
+      expect(controllerAny.startGlobalFlowInterval).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -249,7 +251,7 @@ describe('PromptDjMidi Logic', () => {
       controller.flowAmplitude = 10;
       controller.handleIncreaseAmp();
       expect(controller.flowAmplitude).toBe(10 + AMP_STEP);
-      expect(controller.requestUpdate).toHaveBeenCalled();
+      expect(controllerAny.requestUpdate).toHaveBeenCalled();
     });
 
     it('handleIncreaseAmp respects MAX_AMP_VALUE', () => {
@@ -261,15 +263,15 @@ describe('PromptDjMidi Logic', () => {
     it('handleIncreaseAmp restarts interval if flow is active', () => {
       controller.isSeedFlowing = true; // Set to true to activate flow
       controller.handleIncreaseAmp();
-      expect(controller.stopGlobalFlowInterval).toHaveBeenCalled();
-      expect(controller.startGlobalFlowInterval).toHaveBeenCalled();
+      expect(controllerAny.stopGlobalFlowInterval).toHaveBeenCalled();
+      expect(controllerAny.startGlobalFlowInterval).toHaveBeenCalled();
     });
 
     it('handleDecreaseAmp decreases amplitude correctly', () => {
       controller.flowAmplitude = 10;
       controller.handleDecreaseAmp();
       expect(controller.flowAmplitude).toBe(10 - AMP_STEP);
-      expect(controller.requestUpdate).toHaveBeenCalled();
+      expect(controllerAny.requestUpdate).toHaveBeenCalled();
     });
 
     it('handleDecreaseAmp respects MIN_AMP_VALUE', () => {
@@ -289,10 +291,10 @@ describe('PromptDjMidi Logic', () => {
 
       expect(controller.isSeedFlowing).toBe(true);
       expect(controller.config.seed).toEqual(expect.any(Number));
-      expect(controller._sendPlaybackParametersToSession).toHaveBeenCalled();
-      expect(controller.requestUpdate).toHaveBeenCalled();
-      expect(controller.startGlobalFlowInterval).toHaveBeenCalledTimes(1);
-      expect(controller.stopGlobalFlowInterval).not.toHaveBeenCalled();
+      expect(controllerAny._sendPlaybackParametersToSession).toHaveBeenCalled();
+      expect(controllerAny.requestUpdate).toHaveBeenCalled();
+      expect(controllerAny.startGlobalFlowInterval).toHaveBeenCalledTimes(1);
+      expect(controllerAny.stopGlobalFlowInterval).not.toHaveBeenCalled();
     });
 
     it('Activate Flow: keeps existing seed if not null', () => {
@@ -301,10 +303,10 @@ describe('PromptDjMidi Logic', () => {
       controller.toggleSeedFlow();
       expect(controller.isSeedFlowing).toBe(true);
       expect(controller.config.seed).toBe(12345);
-      expect(controller._sendPlaybackParametersToSession).toHaveBeenCalled();
-      expect(controller.requestUpdate).toHaveBeenCalled();
-      expect(controller.startGlobalFlowInterval).toHaveBeenCalledTimes(1);
-      expect(controller.stopGlobalFlowInterval).not.toHaveBeenCalled();
+      expect(controllerAny._sendPlaybackParametersToSession).toHaveBeenCalled();
+      expect(controllerAny.requestUpdate).toHaveBeenCalled();
+      expect(controllerAny.startGlobalFlowInterval).toHaveBeenCalledTimes(1);
+      expect(controllerAny.stopGlobalFlowInterval).not.toHaveBeenCalled();
     });
 
     it('Deactivate Flow: sets seed to null, calls session, stops interval', () => {
@@ -315,10 +317,10 @@ describe('PromptDjMidi Logic', () => {
 
       expect(controller.isSeedFlowing).toBe(false);
       expect(controller.config.seed).toBeNull();
-      expect(controller._sendPlaybackParametersToSession).toHaveBeenCalled();
-      expect(controller.requestUpdate).toHaveBeenCalled();
-      expect(controller.stopGlobalFlowInterval).toHaveBeenCalledTimes(1);
-      expect(controller.startGlobalFlowInterval).not.toHaveBeenCalled();
+      expect(controllerAny._sendPlaybackParametersToSession).toHaveBeenCalled();
+      expect(controllerAny.requestUpdate).toHaveBeenCalled();
+      expect(controllerAny.stopGlobalFlowInterval).toHaveBeenCalledTimes(1);
+      expect(controllerAny.startGlobalFlowInterval).not.toHaveBeenCalled();
     });
   });
 });
