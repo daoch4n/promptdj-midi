@@ -605,7 +605,6 @@ export class PromptDjMidi extends LitElement {
   private readonly maxRetries = 10;
   private currentRetryAttempt = 0;
 
-
   constructor(prompts: Map<string, Prompt>, midiDispatcher: MidiDispatcher) {
     super();
     prompts.forEach((prompt) => {
@@ -757,8 +756,7 @@ export class PromptDjMidi extends LitElement {
               this.nextStartTime += audioBuffer.duration;
             }
           },
-          onerror: () =>
-            this.handleConnectionIssue('Connection error'),
+          onerror: () => this.handleConnectionIssue('Connection error'),
           onclose: (e: CloseEvent) =>
             this.handleConnectionIssue(`Connection closed (code: ${e.code})`),
         },
@@ -1334,7 +1332,6 @@ export class PromptDjMidi extends LitElement {
     );
     return this.isSeedFlowing || isAnyPromptAutoFlowing;
   }
-
 
   private async toggleShowMidi() {
     this.showMidi = !this.showMidi;
@@ -2471,7 +2468,6 @@ export class PromptDjMidi extends LitElement {
       });
     }
   }
-
 
   private formatFlowFrequency(hzValue: number): string {
     if (hzValue === undefined || hzValue === null) return 'N/A'; // Basic guard

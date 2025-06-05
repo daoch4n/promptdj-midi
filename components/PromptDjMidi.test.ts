@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 // Assuming PromptDjMidi is exported from 'index.tsx' or its own module
 // For this test, we'll need to extract PromptDjMidi to its own file if it's not already.
 // For now, let's assume we can import it. If not, this will be a placeholder.
@@ -17,7 +25,7 @@ const localStorageMock = (() => {
     },
     clear: () => {
       store = {};
-    }
+    },
   };
 })();
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
@@ -51,16 +59,15 @@ if (!global.AudioContext) {
     }),
     resume: vi.fn().mockResolvedValue(undefined),
     createBufferSource: vi.fn().mockReturnValue({
-        connect: vi.fn(),
-        start: vi.fn(),
-        buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      buffer: null,
     }),
   })) as any;
 }
 if (!global.decodeAudioData) {
-    global.decodeAudioData = vi.fn();
+  global.decodeAudioData = vi.fn();
 }
-
 
 // Placeholder for PromptDjMidi class if not directly importable
 let PromptDjMidiClass: any;
@@ -88,17 +95,23 @@ describe('PromptDjMidi Logic', () => {
     try {
       const module = await import('../index'); // Adjust if PromptDjMidi is in its own file
       PromptDjMidiClass = module.PromptDjMidi; // Or default export
-       if (!PromptDjMidiClass) {
+      if (!PromptDjMidiClass) {
         // Attempt to get it from customElements if it's registered there
         PromptDjMidiClass = customElements.get('prompt-dj-midi');
       }
     } catch (e) {
-      console.error("Failed to import PromptDjMidi. Ensure it's exported or tests are structured accordingly.", e);
+      console.error(
+        "Failed to import PromptDjMidi. Ensure it's exported or tests are structured accordingly.",
+        e,
+      );
       // Fallback: create a dummy class to prevent tests from crashing immediately
-      PromptDjMidiClass = class DummyPromptDjMidi { constructor() { console.error("Using DummyPromptDjMidi"); } };
+      PromptDjMidiClass = class DummyPromptDjMidi {
+        constructor() {
+          console.error('Using DummyPromptDjMidi');
+        }
+      };
     }
   });
-
 
   beforeEach(() => {
     localStorageMock.clear(); // Clear localStorage before each test
@@ -108,35 +121,36 @@ describe('PromptDjMidi Logic', () => {
 
     // Instantiate PromptDjMidi - this might fail if not correctly imported/mocked
     if (PromptDjMidiClass?.prototype) {
-        controller = new PromptDjMidiClass(initialPrompts, mockMidiDispatcher);
+      controller = new PromptDjMidiClass(initialPrompts, mockMidiDispatcher);
     } else {
-        // Fallback if class is not loaded, to prevent crashes during tests
-        controller = {
-            flowFrequency: 1000,
-            flowAmplitude: 10,
-            config: { seed: null },
-            isSeedFlowing: false,
-            isAnyFlowActive: false,
-            handleIncreaseFreq: vi.fn(),
-            handleDecreaseFreq: vi.fn(),
-            handleIncreaseAmp: vi.fn(),
-            handleDecreaseAmp: vi.fn(),
-            toggleSeedFlow: vi.fn(),
-            stopGlobalFlowInterval: vi.fn(),
-            startGlobalFlowInterval: vi.fn(),
-            requestUpdate: vi.fn(),
-            _sendPlaybackParametersToSession: vi.fn(),
-            // Add dummy private members if accessed directly (not good practice but for workaround)
-            freqStep: FREQ_STEP,
-            MIN_FREQ_VALUE: MIN_FREQ_VALUE,
-            MAX_FREQ_VALUE: MAX_FREQ_VALUE,
-            ampStep: AMP_STEP,
-            MIN_AMP_VALUE: MIN_AMP_VALUE,
-            MAX_AMP_VALUE: MAX_AMP_VALUE,
-        };
-        console.warn("PromptDjMidi class not loaded, using fallback mock controller for tests.");
+      // Fallback if class is not loaded, to prevent crashes during tests
+      controller = {
+        flowFrequency: 1000,
+        flowAmplitude: 10,
+        config: { seed: null },
+        isSeedFlowing: false,
+        isAnyFlowActive: false,
+        handleIncreaseFreq: vi.fn(),
+        handleDecreaseFreq: vi.fn(),
+        handleIncreaseAmp: vi.fn(),
+        handleDecreaseAmp: vi.fn(),
+        toggleSeedFlow: vi.fn(),
+        stopGlobalFlowInterval: vi.fn(),
+        startGlobalFlowInterval: vi.fn(),
+        requestUpdate: vi.fn(),
+        _sendPlaybackParametersToSession: vi.fn(),
+        // Add dummy private members if accessed directly (not good practice but for workaround)
+        freqStep: FREQ_STEP,
+        MIN_FREQ_VALUE: MIN_FREQ_VALUE,
+        MAX_FREQ_VALUE: MAX_FREQ_VALUE,
+        ampStep: AMP_STEP,
+        MIN_AMP_VALUE: MIN_AMP_VALUE,
+        MAX_AMP_VALUE: MAX_AMP_VALUE,
+      };
+      console.warn(
+        'PromptDjMidi class not loaded, using fallback mock controller for tests.',
+      );
     }
-
 
     // Spy on methods that are called internally and don't return values but cause side effects
     vi.spyOn(controller, 'stopGlobalFlowInterval' as any);
@@ -154,8 +168,9 @@ describe('PromptDjMidi Logic', () => {
     // If it's a getter: vi.spyOn(controller, 'isAnyFlowActive', 'get').mockReturnValue(false);
     // For now, let's assume it's a property or we can mock its behavior as needed per test.
     controller.isAnyFlowActiveForTest = false; // Helper property for tests
-    vi.spyOn(controller, 'isAnyFlowActive', 'get').mockImplementation(() => controller.isAnyFlowActiveForTest);
-
+    vi.spyOn(controller, 'isAnyFlowActive', 'get').mockImplementation(
+      () => controller.isAnyFlowActiveForTest,
+    );
   });
 
   afterEach(() => {
@@ -164,17 +179,17 @@ describe('PromptDjMidi Logic', () => {
 
   describe('formatFlowFrequency', () => {
     const testCases = [
-      { ms: 1000, expected: "1.0 Hz" },
-      { ms: 500, expected: "2.0 Hz" },
-      { ms: 1111, expected: "0.9 Hz" }, // 1000/1111 = 0.900...
-      { ms: 2000, expected: "0.5 Hz" },
-      { ms: 10000, expected: "0.1 Hz" },
-      { ms: 12500, expected: "8.0 cHz" }, // 1000/12500 = 0.08 Hz
-      { ms: 20000, expected: "5.0 cHz" }, // 1000/20000 = 0.05 Hz
-      { ms: 100000, expected: "1.0 cHz" },// 1000/100000 = 0.01 Hz
-      { ms: 200000, expected: "5.0 mHz" },// 1000/200000 = 0.005 Hz
-      { ms: 0, expected: "N/A" },
-      { ms: -100, expected: "N/A" },
+      { ms: 1000, expected: '1.0 Hz' },
+      { ms: 500, expected: '2.0 Hz' },
+      { ms: 1111, expected: '0.9 Hz' }, // 1000/1111 = 0.900...
+      { ms: 2000, expected: '0.5 Hz' },
+      { ms: 10000, expected: '0.1 Hz' },
+      { ms: 12500, expected: '8.0 cHz' }, // 1000/12500 = 0.08 Hz
+      { ms: 20000, expected: '5.0 cHz' }, // 1000/20000 = 0.05 Hz
+      { ms: 100000, expected: '1.0 cHz' }, // 1000/100000 = 0.01 Hz
+      { ms: 200000, expected: '5.0 mHz' }, // 1000/200000 = 0.005 Hz
+      { ms: 0, expected: 'N/A' },
+      { ms: -100, expected: 'N/A' },
     ];
 
     testCases.forEach(({ ms, expected }) => {
@@ -187,7 +202,8 @@ describe('PromptDjMidi Logic', () => {
 
   describe('Frequency Handlers (adjustFrequency via public handlers)', () => {
     // Helper for expected ms values after rounding
-    const expectedMs = (hz: number) => (hz > 0 ? Math.round(1000 / hz) : MAX_FREQ_VALUE);
+    const expectedMs = (hz: number) =>
+      hz > 0 ? Math.round(1000 / hz) : MAX_FREQ_VALUE;
 
     // Default MIN_FREQ_VALUE = 50, MAX_FREQ_VALUE = 5000 from test setup
     // These can be overridden per test if specific boundary conditions are needed for sub-Hz tests
@@ -250,24 +266,26 @@ describe('PromptDjMidi Logic', () => {
     });
 
     it('Transition: 0.1Hz (10000ms) decreases to ~0.09Hz (cHz range)', () => {
-        controller.MAX_FREQ_VALUE = 50000; // MIN_HZ = 0.02Hz
-        controller.flowFrequency = 10000; // 0.1 Hz
-        // currentHz = 0.1. Uses 0.1 step. newHz = 0.1 - 0.1 = 0.0.
-        // Then, newHz <=0 && !isIncreasing, so newHz = MIN_HZ (0.02Hz)
-        // This case needs re-evaluation based on exact logic for stepping from 0.1Hz down.
-        // Current adjustFrequency: currentHz is 0.1, so newHz = 0.1 - 0.1 = 0.0. Then clamped to MIN_HZ.
-        controller.handleDecreaseFreq();
-        expect(controller.flowFrequency).toBe(expectedMs(1000 / controller.MAX_FREQ_VALUE)); // Should be MAX_FREQ_VALUE
+      controller.MAX_FREQ_VALUE = 50000; // MIN_HZ = 0.02Hz
+      controller.flowFrequency = 10000; // 0.1 Hz
+      // currentHz = 0.1. Uses 0.1 step. newHz = 0.1 - 0.1 = 0.0.
+      // Then, newHz <=0 && !isIncreasing, so newHz = MIN_HZ (0.02Hz)
+      // This case needs re-evaluation based on exact logic for stepping from 0.1Hz down.
+      // Current adjustFrequency: currentHz is 0.1, so newHz = 0.1 - 0.1 = 0.0. Then clamped to MIN_HZ.
+      controller.handleDecreaseFreq();
+      expect(controller.flowFrequency).toBe(
+        expectedMs(1000 / controller.MAX_FREQ_VALUE),
+      ); // Should be MAX_FREQ_VALUE
     });
 
     it('Transition: ~0.099Hz (10101ms, 9.9cHz) increases to 0.1Hz (10000ms)', () => {
-        controller.MAX_FREQ_VALUE = 50000; // MIN_HZ = 0.02Hz
-        controller.flowFrequency = 10101; // ~0.099 Hz (9.9 cHz)
-        // getFreqDisplayParts(10101) -> { displayValue: 9.9, unit: 'cHz', hz: ~0.099 }
-        // newSubDisplayVal = 9.9 + 0.1 = 10.0 cHz
-        // newHz = 10.0 / 100 = 0.1 Hz
-        controller.handleIncreaseFreq();
-        expect(controller.flowFrequency).toBe(expectedMs(0.1)); // 10000ms
+      controller.MAX_FREQ_VALUE = 50000; // MIN_HZ = 0.02Hz
+      controller.flowFrequency = 10101; // ~0.099 Hz (9.9 cHz)
+      // getFreqDisplayParts(10101) -> { displayValue: 9.9, unit: 'cHz', hz: ~0.099 }
+      // newSubDisplayVal = 9.9 + 0.1 = 10.0 cHz
+      // newHz = 10.0 / 100 = 0.1 Hz
+      controller.handleIncreaseFreq();
+      expect(controller.flowFrequency).toBe(expectedMs(0.1)); // 10000ms
     });
 
     // Clamping
