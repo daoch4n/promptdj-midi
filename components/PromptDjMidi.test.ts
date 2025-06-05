@@ -107,7 +107,7 @@ describe('PromptDjMidi Logic', () => {
     const initialPrompts = new Map();
 
     // Instantiate PromptDjMidi - this might fail if not correctly imported/mocked
-    if (PromptDjMidiClass && PromptDjMidiClass.prototype) {
+    if (PromptDjMidiClass?.prototype) {
         controller = new PromptDjMidiClass(initialPrompts, mockMidiDispatcher);
     } else {
         // Fallback if class is not loaded, to prevent crashes during tests
@@ -180,7 +180,7 @@ describe('PromptDjMidi Logic', () => {
     testCases.forEach(({ ms, expected }) => {
       it(`formats ${ms}ms to "${expected}"`, () => {
         // Assuming formatFlowFrequency can be called, may need to make it public/static for test
-        expect(controller['formatFlowFrequency'](ms)).toBe(expected);
+        expect(controller.formatFlowFrequency(ms)).toBe(expected);
       });
     });
   });
@@ -194,26 +194,26 @@ describe('PromptDjMidi Logic', () => {
 
     it('Range currentHz >= 1.0: 1.0Hz (1000ms) increases to 2.0Hz (500ms)', () => {
       controller.flowFrequency = 1000; // 1.0 Hz
-      controller['handleIncreaseFreq']();
+      controller.handleIncreaseFreq();
       expect(controller.flowFrequency).toBe(expectedMs(2.0)); // 500ms
       expect(controller.requestUpdate).toHaveBeenCalledTimes(1);
     });
 
     it('Range currentHz >= 1.0: 2.0Hz (500ms) decreases to 1.0Hz (1000ms)', () => {
       controller.flowFrequency = 500; // 2.0 Hz
-      controller['handleDecreaseFreq']();
+      controller.handleDecreaseFreq();
       expect(controller.flowFrequency).toBe(expectedMs(1.0)); // 1000ms
     });
 
     it('Range 0.1 <= currentHz < 1.0: 0.5Hz (2000ms) increases to 0.6Hz', () => {
       controller.flowFrequency = 2000; // 0.5 Hz
-      controller['handleIncreaseFreq']();
+      controller.handleIncreaseFreq();
       expect(controller.flowFrequency).toBe(expectedMs(0.6)); // Math.round(1000/0.6) = 1667ms
     });
 
     it('Range 0.1 <= currentHz < 1.0: 0.5Hz (2000ms) decreases to 0.4Hz', () => {
       controller.flowFrequency = 2000; // 0.5 Hz
-      controller['handleDecreaseFreq']();
+      controller.handleDecreaseFreq();
       expect(controller.flowFrequency).toBe(expectedMs(0.4)); // Math.round(1000/0.4) = 2500ms
     });
 
@@ -223,7 +223,7 @@ describe('PromptDjMidi Logic', () => {
       // getFreqDisplayParts(20000) -> { displayValue: 5.0, unit: 'cHz', hz: 0.05 }
       // newSubDisplayVal = 5.0 + 0.1 = 5.1 cHz
       // newHz = 5.1 / 100 = 0.051 Hz
-      controller['handleIncreaseFreq']();
+      controller.handleIncreaseFreq();
       expect(controller.flowFrequency).toBe(expectedMs(0.051)); // Math.round(1000/0.051) = 19608ms
     });
 
@@ -232,20 +232,20 @@ describe('PromptDjMidi Logic', () => {
       controller.flowFrequency = 20000; // 0.05 Hz (5.0 cHz)
       // newSubDisplayVal = 5.0 - 0.1 = 4.9 cHz
       // newHz = 4.9 / 100 = 0.049 Hz
-      controller['handleDecreaseFreq']();
+      controller.handleDecreaseFreq();
       expect(controller.flowFrequency).toBe(expectedMs(0.049)); // Math.round(1000/0.049) = 20408ms
     });
 
     // Transitions
     it('Transition: ~0.9Hz (1111ms) increases to 1.0Hz (1000ms)', () => {
       controller.flowFrequency = 1111; // ~0.9 Hz
-      controller['handleIncreaseFreq'](); // currentHz = 0.9, newHz = 1.0
+      controller.handleIncreaseFreq(); // currentHz = 0.9, newHz = 1.0
       expect(controller.flowFrequency).toBe(expectedMs(1.0));
     });
 
     it('Transition: 1.0Hz (1000ms) decreases to ~0.9Hz (1111ms)', () => {
       controller.flowFrequency = 1000; // 1.0 Hz
-      controller['handleDecreaseFreq'](); // currentHz = 1.0, newHz = 0.9
+      controller.handleDecreaseFreq(); // currentHz = 1.0, newHz = 0.9
       expect(controller.flowFrequency).toBe(expectedMs(0.9));
     });
 
@@ -256,7 +256,7 @@ describe('PromptDjMidi Logic', () => {
         // Then, newHz <=0 && !isIncreasing, so newHz = MIN_HZ (0.02Hz)
         // This case needs re-evaluation based on exact logic for stepping from 0.1Hz down.
         // Current adjustFrequency: currentHz is 0.1, so newHz = 0.1 - 0.1 = 0.0. Then clamped to MIN_HZ.
-        controller['handleDecreaseFreq']();
+        controller.handleDecreaseFreq();
         expect(controller.flowFrequency).toBe(expectedMs(1000 / controller.MAX_FREQ_VALUE)); // Should be MAX_FREQ_VALUE
     });
 
@@ -266,27 +266,27 @@ describe('PromptDjMidi Logic', () => {
         // getFreqDisplayParts(10101) -> { displayValue: 9.9, unit: 'cHz', hz: ~0.099 }
         // newSubDisplayVal = 9.9 + 0.1 = 10.0 cHz
         // newHz = 10.0 / 100 = 0.1 Hz
-        controller['handleIncreaseFreq']();
+        controller.handleIncreaseFreq();
         expect(controller.flowFrequency).toBe(expectedMs(0.1)); // 10000ms
     });
 
     // Clamping
     it('Clamping: Stays at MAX_FREQ_VALUE when trying to decrease further', () => {
       controller.flowFrequency = MAX_FREQ_VALUE; // e.g., 5000ms (0.2Hz if default)
-      controller['handleDecreaseFreq']();
+      controller.handleDecreaseFreq();
       expect(controller.flowFrequency).toBe(MAX_FREQ_VALUE);
     });
 
     it('Clamping: Stays at MIN_FREQ_VALUE when trying to increase further', () => {
       controller.flowFrequency = MIN_FREQ_VALUE; // e.g., 50ms (20Hz if default)
-      controller['handleIncreaseFreq']();
+      controller.handleIncreaseFreq();
       expect(controller.flowFrequency).toBe(MIN_FREQ_VALUE);
     });
 
     it('Interval restart: handleIncreaseFreq restarts interval if flow is active', () => {
       controller.isAnyFlowActiveForTest = true;
       controller.flowFrequency = 1000;
-      controller['handleIncreaseFreq']();
+      controller.handleIncreaseFreq();
       expect(controller.stopGlobalFlowInterval).toHaveBeenCalledTimes(1);
       expect(controller.startGlobalFlowInterval).toHaveBeenCalledTimes(1);
     });
@@ -296,34 +296,34 @@ describe('PromptDjMidi Logic', () => {
   describe('Amplitude Handlers', () => {
     it('handleIncreaseAmp increases amplitude correctly', () => {
       controller.flowAmplitude = 10;
-      controller['handleIncreaseAmp']();
+      controller.handleIncreaseAmp();
       expect(controller.flowAmplitude).toBe(10 + AMP_STEP);
       expect(controller.requestUpdate).toHaveBeenCalled();
     });
 
     it('handleIncreaseAmp respects MAX_AMP_VALUE', () => {
       controller.flowAmplitude = MAX_AMP_VALUE;
-      controller['handleIncreaseAmp']();
+      controller.handleIncreaseAmp();
       expect(controller.flowAmplitude).toBe(MAX_AMP_VALUE);
     });
 
     it('handleIncreaseAmp restarts interval if flow is active', () => {
       controller.isAnyFlowActiveForTest = true;
-      controller['handleIncreaseAmp']();
+      controller.handleIncreaseAmp();
       expect(controller.stopGlobalFlowInterval).toHaveBeenCalled();
       expect(controller.startGlobalFlowInterval).toHaveBeenCalled();
     });
 
     it('handleDecreaseAmp decreases amplitude correctly', () => {
       controller.flowAmplitude = 10;
-      controller['handleDecreaseAmp']();
+      controller.handleDecreaseAmp();
       expect(controller.flowAmplitude).toBe(10 - AMP_STEP);
       expect(controller.requestUpdate).toHaveBeenCalled();
     });
 
     it('handleDecreaseAmp respects MIN_AMP_VALUE', () => {
       controller.flowAmplitude = MIN_AMP_VALUE;
-      controller['handleDecreaseAmp']();
+      controller.handleDecreaseAmp();
       expect(controller.flowAmplitude).toBe(MIN_AMP_VALUE);
     });
   });
@@ -335,7 +335,7 @@ describe('PromptDjMidi Logic', () => {
       controller.config.seed = null;
       controller.isAnyFlowActiveForTest = false; // Becomes true after isSeedFlowing changes
 
-      controller['toggleSeedFlow'](); // Call the method
+      controller.toggleSeedFlow(); // Call the method
 
       expect(controller.isSeedFlowing).toBe(true);
       expect(controller.config.seed).toEqual(expect.any(Number));
@@ -352,7 +352,7 @@ describe('PromptDjMidi Logic', () => {
     it('Activate Flow: keeps existing seed if not null', () => {
       controller.isSeedFlowing = false;
       controller.config.seed = 12345;
-      controller['toggleSeedFlow']();
+      controller.toggleSeedFlow();
       expect(controller.isSeedFlowing).toBe(true);
       expect(controller.config.seed).toBe(12345); // Should not change
       expect(controller._sendPlaybackParametersToSession).toHaveBeenCalled();
@@ -364,7 +364,7 @@ describe('PromptDjMidi Logic', () => {
       controller.config.seed = 12345;
       controller.isAnyFlowActiveForTest = true; // Becomes false after isSeedFlowing changes
 
-      controller['toggleSeedFlow'](); // Call the method
+      controller.toggleSeedFlow(); // Call the method
 
       expect(controller.isSeedFlowing).toBe(false);
       expect(controller.config.seed).toBeNull();
@@ -395,21 +395,3 @@ if (!customElements.get('play-pause-button')) {
 if (!customElements.get('dsp-overload-indicator')) {
   customElements.define('dsp-overload-indicator', class extends HTMLElement {});
 }
-
-// If PromptDjMidi is registered with customElements.define('prompt-dj-midi', PromptDjMidi)
-// then we could potentially instantiate it using document.createElement after tests begin.
-// However, its constructor expects arguments, which makes that tricky without a wrapper.
-
-// Note: The dynamic import and class instantiation logic is complex due to
-// the way the original index.tsx is structured (instantiating and appending to body).
-// A more testable approach would be to have PromptDjMidi as an exportable LitElement class
-// from its own module, e.g., 'components/PromptDjMidi.ts'.
-// The current test structure tries to accommodate the existing setup but might be fragile.The file `components/PromptDjMidi.test.ts` has been created with the test structure and initial mocks.
-
-However, there's a critical issue noted in the generated test file: `PromptDjMidi` class is instantiated within `index.tsx` and attached to the document, but it's not directly exported. This makes it hard to import and test as a standalone class. The test file includes a placeholder for `PromptDjMidiClass` and a fallback dummy class.
-
-**To make these tests runnable and effective, `PromptDjMidi` needs to be refactored to be an exportable class from its own module (e.g., `components/PromptDjMidi.ts`).**
-
-Assuming this refactoring is outside the current subtask's scope, the generated tests provide a solid template but **will likely fail or not run correctly against the actual `PromptDjMidi` logic** until the class is made importable. The tests are written as if `PromptDjMidiClass` can be successfully imported and instantiated.
-
-Given this significant structural dependency, I will proceed to submit the report with the caveat that the tests depend on `PromptDjMidi` being properly importable. The focus was on generating the test logic as requested.

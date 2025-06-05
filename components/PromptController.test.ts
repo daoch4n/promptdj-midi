@@ -38,7 +38,7 @@ describe('PromptController', () => {
     controller.weight = 0;
     controller.isAutoFlowing = false;
 
-    controller['toggleAutoFlow'](); // Accessing private method for test
+    controller.toggleAutoFlow(); // Accessing private method for test
 
     expect(controller.weight).toBe(1.0);
     expect(controller.isAutoFlowing).toBe(true);
@@ -57,7 +57,7 @@ describe('PromptController', () => {
     controller.weight = 1.0;
     controller.isAutoFlowing = true;
 
-    controller['toggleAutoFlow']();
+    controller.toggleAutoFlow();
 
     expect(controller.weight).toBe(0.0);
     expect(controller.isAutoFlowing).toBe(false);
@@ -76,7 +76,7 @@ describe('PromptController', () => {
     controller.weight = 0.5;
     controller.isAutoFlowing = false;
 
-    controller['toggleAutoFlow']();
+    controller.toggleAutoFlow();
 
     expect(controller.weight).toBe(1.0);
     expect(controller.isAutoFlowing).toBe(true);
@@ -95,7 +95,7 @@ describe('PromptController', () => {
     controller.weight = 0.7;
     controller.isAutoFlowing = true;
 
-    controller['toggleAutoFlow']();
+    controller.toggleAutoFlow();
 
     expect(controller.weight).toBe(0.7);
     expect(controller.isAutoFlowing).toBe(false);

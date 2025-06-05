@@ -93,8 +93,8 @@ export class DJStyleSelector extends LitElement {
               >
                 ${option.label}
               </div>`;
-        } else {
-          return html`
+        }
+        return html`
               <div
                 class="${classes}"
                 style="--glow-color: ${option.color || '#007bff'};"
@@ -102,7 +102,6 @@ export class DJStyleSelector extends LitElement {
               >
                 ${option.label}
               </div>`;
-        }
       })}
     `;
   }

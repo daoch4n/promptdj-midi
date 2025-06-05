@@ -102,11 +102,11 @@ export class PlayPauseButton extends LitElement {
   private renderIcon() {
     if (this.playbackState === 'playing') {
       return this.renderPause();
-    } else if (this.playbackState === 'loading') {
-      return this.renderLoading();
-    } else {
-      return this.renderPlay();
     }
+    if (this.playbackState === 'loading') {
+      return this.renderLoading();
+    }
+    return this.renderPlay();
   }
 
   override render() {

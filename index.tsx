@@ -1633,7 +1633,7 @@ export class PromptDjMidi extends LitElement {
         this.showApiKeyControls = false; // Hide controls on successful save
       } catch (error) {
         retries++;
-        const delay = INITIAL_BACKOFF_DELAY * Math.pow(2, retries - 1);
+        const delay = INITIAL_BACKOFF_DELAY * 2 ** (retries - 1);
         console.warn(
           `Attempt ${retries} to save API key failed. Retrying in ${delay}ms...`,
           error,
@@ -2192,7 +2192,7 @@ export class PromptDjMidi extends LitElement {
       this.selectedPreset = ''; // Reset dropdown to default
     } catch (saveError) {
       console.error(
-        `Error saving updated presets to localStorage (prompt_presets_v2) after deletion.`,
+        'Error saving updated presets to localStorage (prompt_presets_v2) after deletion.',
         saveError,
       );
     }
@@ -2515,10 +2515,9 @@ export class PromptDjMidi extends LitElement {
   private formatFlowFrequency(hzValue: number): string {
     if (hzValue === undefined || hzValue === null) return 'N/A'; // Basic guard
     if (hzValue >= 1.0) {
-      return hzValue.toFixed(1) + ' Hz';
-    } else {
-      return hzValue.toFixed(2) + ' Hz';
+      return `${hzValue.toFixed(1)} Hz`;
     }
+    return `${hzValue.toFixed(2)} Hz`;
   }
 
   private handleToggleClick(event: Event) {
