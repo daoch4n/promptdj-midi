@@ -75,13 +75,13 @@ describe('PromptDjMidi Logic', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-  let consoleInfoSpy: ReturnType<typeof vi.spyOn>; // Added
-  let consoleDebugSpy: ReturnType<typeof vi.spyOn>; // Added
+  let consoleInfoSpy: ReturnType<typeof vi.spyOn>;
+  let consoleDebugSpy: ReturnType<typeof vi.spyOn>;
 
   // Constants from the class, assuming they are accessible or redefined for test
-  const FREQ_STEP = 50;
-  const MIN_FREQ_VALUE = 50;
-  const MAX_FREQ_VALUE = 5000;
+  // These reflect the actual values used in index.tsx's PromptDjMidi
+  const MIN_FLOW_FREQUENCY_HZ = 0.01;
+  const MAX_FLOW_FREQUENCY_HZ = 20.0;
   const AMP_STEP = 1;
   const MIN_AMP_VALUE = 1;
   const MAX_AMP_VALUE = 100;
@@ -96,8 +96,8 @@ describe('PromptDjMidi Logic', () => {
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {}); // Mock info
-    consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {}); // Mock debug
+    consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
 
     // Instantiate PromptDjMidi directly
     controller = new PromptDjMidi(initialPrompts, mockMidiDispatcher);
@@ -109,16 +109,13 @@ describe('PromptDjMidi Logic', () => {
     vi.spyOn(controller, '_sendPlaybackParametersToSession' as any);
 
     // Initialize default states for tests
-    controller.flowFrequency = 1000;
+    controller.flowFrequency = 1.0; // Default is 1.0 Hz
     controller.flowAmplitude = 10;
     controller.config = { ...controller.config, seed: null }; // Ensure seed is null initially
     controller.isSeedFlowing = false;
 
     // Set the internal constants on the controller for testing specific ranges/clamping
     // Cast to any to allow setting private/protected members for test if needed.
-    (controller as any).freqStep = FREQ_STEP;
-    (controller as any).MIN_FREQ_VALUE = MIN_FREQ_VALUE;
-    (controller as any).MAX_FREQ_VALUE = MAX_FREQ_VALUE;
     (controller as any).ampStep = AMP_STEP;
     (controller as any).MIN_AMP_VALUE = MIN_AMP_VALUE;
     (controller as any).MAX_AMP_VALUE = MAX_AMP_VALUE;
@@ -130,115 +127,116 @@ describe('PromptDjMidi Logic', () => {
 
   describe('formatFlowFrequency', () => {
     const testCases = [
-      { ms: 1000, expected: '1.0 Hz' },
-      { ms: 500, expected: '2.0 Hz' },
-      { ms: 1111, expected: '0.9 Hz' }, // 1000/1111 = 0.900...
-      { ms: 2000, expected: '0.5 Hz' },
-      { ms: 10000, expected: '0.1 Hz' },
-      { ms: 12500, expected: '8.0 cHz' }, // 1000/12500 = 0.08 Hz
-      { ms: 20000, expected: '5.0 cHz' }, // 1000/20000 = 0.05 Hz
-      { ms: 100000, expected: '1.0 cHz' }, // 1000/100000 = 0.01 Hz
-      { ms: 200000, expected: '5.0 mHz' }, // 1000/200000 = 0.005 Hz
-      { ms: 0, expected: 'N/A' },
-      { ms: -100, expected: 'N/A' },
+      { hz: 1.0, expected: '1.0 Hz' },
+      { hz: 2.0, expected: '2.0 Hz' },
+      { hz: 0.90009, expected: '0.90 Hz' }, // 1000/1111 = 0.900... Hz -> 0.90 Hz
+      { hz: 0.5, expected: '0.50 Hz' },
+      { hz: 0.1, expected: '0.10 Hz' },
+      { hz: 0.08, expected: '0.08 Hz' },
+      { hz: 0.05, expected: '0.05 Hz' },
+      { hz: 0.01, expected: '0.01 Hz' },
+      { hz: 0.005, expected: '0.01 Hz' }, // toFixed(2) rounds up
+      { hz: 0, expected: 'N/A' },
+      { hz: -100, expected: 'N/A' },
     ];
 
-    testCases.forEach(({ ms, expected }) => {
-      it(`formats ${ms}ms to "${expected}"`, () => {
-        expect(controller.formatFlowFrequency(ms)).toBe(expected);
+    testCases.forEach(({ hz, expected }) => {
+      it(`formats ${hz}Hz to "${expected}"`, () => {
+        expect(controller.formatFlowFrequency(hz)).toBe(expected);
       });
     });
   });
 
   describe('Frequency Handlers (adjustFrequency via public handlers)', () => {
-    // Helper for expected ms values after rounding
-    const expectedMs = (hz: number) =>
-      hz > 0 ? Math.round(1000 / hz) : (controller as any).MAX_FREQ_VALUE;
-
-    it('Range currentHz >= 1.0: 1.0Hz (1000ms) increases to 2.0Hz (500ms)', () => {
-      controller.flowFrequency = 1000; // 1.0 Hz
+    it('Range currentHz > 1.0: 1.5Hz increases to 2.5Hz', () => {
+      controller.flowFrequency = 1.5;
       controller.handleIncreaseFreq();
-      expect(controller.flowFrequency).toBe(expectedMs(2.0)); // 500ms
+      expect(controller.flowFrequency).toBe(2.5);
       expect(controller.requestUpdate).toHaveBeenCalledTimes(1);
     });
 
-    it('Range currentHz >= 1.0: 2.0Hz (500ms) decreases to 1.0Hz (1000ms)', () => {
-      controller.flowFrequency = 500; // 2.0 Hz
+    it('Range currentHz > 1.0: 2.0Hz decreases to 1.0Hz', () => {
+      controller.flowFrequency = 2.0;
       controller.handleDecreaseFreq();
-      expect(controller.flowFrequency).toBe(expectedMs(1.0)); // 1000ms
+      expect(controller.flowFrequency).toBe(1.0);
     });
 
-    it('Range 0.1 <= currentHz < 1.0: 0.5Hz (2000ms) increases to 0.6Hz', () => {
-      controller.flowFrequency = 2000; // 0.5 Hz
+    it('Range currentHz = 1.0: 1.0Hz increases to 2.0Hz', () => {
+      controller.flowFrequency = 1.0;
       controller.handleIncreaseFreq();
-      expect(controller.flowFrequency).toBe(expectedMs(0.6)); // Math.round(1000/0.6) = 1667ms
+      expect(controller.flowFrequency).toBe(2.0);
     });
 
-    it('Range 0.1 <= currentHz < 1.0: 0.5Hz (2000ms) decreases to 0.4Hz', () => {
-      controller.flowFrequency = 2000; // 0.5 Hz
+    it('Range currentHz = 1.0: 1.0Hz decreases to 0.9Hz', () => {
+      controller.flowFrequency = 1.0;
       controller.handleDecreaseFreq();
-      expect(controller.flowFrequency).toBe(expectedMs(0.4)); // Math.round(1000/0.4) = 2500ms
+      expect(controller.flowFrequency).toBe(0.9);
     });
 
-    it('Range currentHz < 0.1 (cHz): 0.05Hz (20000ms) increases', () => {
-      (controller as any).MAX_FREQ_VALUE = 50000; // Temporarily override for this test
-      controller.flowFrequency = 20000; // 0.05 Hz (5.0 cHz)
+    it('Range 0.1 < currentHz < 1.0: 0.5Hz increases to 0.6Hz', () => {
+      controller.flowFrequency = 0.5;
       controller.handleIncreaseFreq();
-      expect(controller.flowFrequency).toBe(expectedMs(0.051)); // Math.round(1000/0.051) = 19608ms
+      expect(controller.flowFrequency).toBe(0.6);
     });
 
-    it('Range currentHz < 0.1 (cHz): 0.05Hz (20000ms) decreases', () => {
-      (controller as any).MAX_FREQ_VALUE = 50000; // Temporarily override for this test
-      controller.flowFrequency = 20000; // 0.05 Hz (5.0 cHz)
+    it('Range 0.1 < currentHz < 1.0: 0.5Hz decreases to 0.4Hz', () => {
+      controller.flowFrequency = 0.5;
       controller.handleDecreaseFreq();
-      expect(controller.flowFrequency).toBe(expectedMs(0.049)); // Math.round(1000/0.049) = 20408ms
+      expect(controller.flowFrequency).toBe(0.4);
     });
 
-    // Transitions
-    it('Transition: ~0.9Hz (1111ms) increases to 1.0Hz (1000ms)', () => {
-      controller.flowFrequency = 1111; // ~0.9 Hz
+    it('Range currentHz = 0.1: 0.1Hz increases to 0.2Hz', () => {
+      controller.flowFrequency = 0.1;
       controller.handleIncreaseFreq();
-      expect(controller.flowFrequency).toBe(expectedMs(1.0));
+      expect(controller.flowFrequency).toBe(0.2);
     });
 
-    it('Transition: 1.0Hz (1000ms) decreases to ~0.9Hz (1111ms)', () => {
-      controller.flowFrequency = 1000; // 1.0 Hz
+    it('Range currentHz = 0.1: 0.1Hz decreases to 0.01Hz', () => {
+      controller.flowFrequency = 0.1;
       controller.handleDecreaseFreq();
-      expect(controller.flowFrequency).toBe(expectedMs(0.9));
+      expect(controller.flowFrequency).toBe(0.01);
     });
 
-    it('Transition: 0.1Hz (10000ms) decreases to ~0.09Hz (cHz range)', () => {
-      (controller as any).MAX_FREQ_VALUE = 50000; // Temporarily override for this test
-      controller.flowFrequency = 10000; // 0.1 Hz
-      controller.handleDecreaseFreq();
-      expect(controller.flowFrequency).toBe(
-        expectedMs(1000 / (controller as any).MAX_FREQ_VALUE),
-      );
-    });
-
-    it('Transition: ~0.099Hz (10101ms, 9.9cHz) increases to 0.1Hz (10000ms)', () => {
-      (controller as any).MAX_FREQ_VALUE = 50000; // Temporarily override for this test
-      controller.flowFrequency = 10101; // ~0.099 Hz (9.9 cHz)
+    it('Range currentHz < 0.1: 0.05Hz increases to 0.06Hz', () => {
+      controller.flowFrequency = 0.05;
       controller.handleIncreaseFreq();
-      expect(controller.flowFrequency).toBe(expectedMs(0.1)); // 10000ms
+      expect(controller.flowFrequency).toBe(0.06);
+    });
+
+    it('Range currentHz < 0.1: 0.05Hz decreases to 0.04Hz', () => {
+      controller.flowFrequency = 0.05;
+      controller.handleDecreaseFreq();
+      expect(controller.flowFrequency).toBe(0.04);
     });
 
     // Clamping
-    it('Clamping: Stays at MAX_FREQ_VALUE when trying to decrease further', () => {
-      controller.flowFrequency = (controller as any).MAX_FREQ_VALUE;
+    it('Clamping: Does not decrease below MIN_FLOW_FREQUENCY_HZ (0.01 Hz)', () => {
+      controller.flowFrequency = MIN_FLOW_FREQUENCY_HZ;
       controller.handleDecreaseFreq();
-      expect(controller.flowFrequency).toBe((controller as any).MAX_FREQ_VALUE);
+      expect(controller.flowFrequency).toBe(MIN_FLOW_FREQUENCY_HZ);
     });
 
-    it('Clamping: Stays at MIN_FREQ_VALUE when trying to increase further', () => {
-      controller.flowFrequency = (controller as any).MIN_FREQ_VALUE;
+    it('Clamping: Decreasing from 0.02 Hz clamps to 0.01 Hz', () => {
+      controller.flowFrequency = 0.02;
+      controller.handleDecreaseFreq();
+      expect(controller.flowFrequency).toBe(MIN_FLOW_FREQUENCY_HZ);
+    });
+
+    it('Clamping: Does not increase above MAX_FLOW_FREQUENCY_HZ (20.0 Hz)', () => {
+      controller.flowFrequency = MAX_FLOW_FREQUENCY_HZ;
       controller.handleIncreaseFreq();
-      expect(controller.flowFrequency).toBe((controller as any).MIN_FREQ_VALUE);
+      expect(controller.flowFrequency).toBe(MAX_FLOW_FREQUENCY_HZ);
+    });
+
+    it('Clamping: Increasing from 19.5 Hz clamps to 20.0 Hz', () => {
+      controller.flowFrequency = 19.5;
+      controller.handleIncreaseFreq();
+      expect(controller.flowFrequency).toBe(MAX_FLOW_FREQUENCY_HZ);
     });
 
     it('Interval restart: handleIncreaseFreq restarts interval if flow is active', () => {
       controller.isSeedFlowing = true; // Set to true to activate flow
-      controller.flowFrequency = 1000;
+      controller.flowFrequency = 1.0;
       controller.handleIncreaseFreq();
       expect(controller.stopGlobalFlowInterval).toHaveBeenCalledTimes(1);
       expect(controller.startGlobalFlowInterval).toHaveBeenCalledTimes(1);
