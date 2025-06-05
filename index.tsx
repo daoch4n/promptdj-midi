@@ -1,31 +1,31 @@
+import OpusMediaRecorder from '@dmk-dark/opus-media-recorder-fork';
+import oggOpusEncoderWasmPath from '@dmk-dark/opus-media-recorder-fork/OggOpusEncoder.wasm?url';
+import webMOpusEncoderWasmPath from '@dmk-dark/opus-media-recorder-fork/WebMOpusEncoder.wasm?url';
+// Attempting Vite-idiomatic asset handling for opus-media-recorder
+// These paths assume opus-media-recorder's assets are in its 'dist' folder.
+// If 'dist' is not present or files are elsewhere, these paths will need adjustment.
+import encoderWorkerPath from '@dmk-dark/opus-media-recorder-fork/encoderWorker.umd.js?url';
+import {
+  GoogleGenAI,
+  type LiveMusicServerMessage,
+  type LiveMusicSession,
+  type Scale,
+} from '@google/genai';
 /**
  * @fileoverview Control real time music with a MIDI controller
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import { css, html, LitElement, svg } from 'lit';
+import { LitElement, css, html, svg } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
-import { styleMap } from 'lit/directives/style-map.js';
 import { classMap } from 'lit/directives/class-map.js';
-import {
-  GoogleGenAI,
-  type LiveMusicSession,
-  type LiveMusicServerMessage,
-  type Scale,
-} from '@google/genai';
-import OpusMediaRecorder from '@dmk-dark/opus-media-recorder-fork';
-// Attempting Vite-idiomatic asset handling for opus-media-recorder
-// These paths assume opus-media-recorder's assets are in its 'dist' folder.
-// If 'dist' is not present or files are elsewhere, these paths will need adjustment.
-import encoderWorkerPath from '@dmk-dark/opus-media-recorder-fork/encoderWorker.umd.js?url';
-import oggOpusEncoderWasmPath from '@dmk-dark/opus-media-recorder-fork/OggOpusEncoder.wasm?url';
-import webMOpusEncoderWasmPath from '@dmk-dark/opus-media-recorder-fork/WebMOpusEncoder.wasm?url';
+import { styleMap } from 'lit/directives/style-map.js';
 
-import { decode, decodeAudioData } from './utils/audio';
-import { throttle } from './utils/throttle';
-import { debounce } from './utils/debounce';
 import { AudioAnalyser } from './utils/AudioAnalyser';
 import { MidiDispatcher } from './utils/MidiDispatcher';
+import { decode, decodeAudioData } from './utils/audio';
+import { debounce } from './utils/debounce';
+import { throttle } from './utils/throttle';
 
 import './components/WeightKnob';
 import './components/PromptController';
@@ -36,7 +36,7 @@ import './components/PlayPauseButton';
 import './components/RecordButton.js'; // Import RecordButton
 import './components/DSPOverloadIndicator.js';
 
-import type { Prompt, PlaybackState } from './types';
+import type { PlaybackState, Prompt } from './types';
 
 const DEFAULT_PROMPTS = [
   { color: '#9900ff', text: 'Bossa Nova' },
@@ -565,9 +565,9 @@ export class PromptDjMidi extends LitElement {
   @state() private flowDirectionDown = true;
   private globalFlowIntervalId: number | null = null;
   private freqAdjustIntervalId: number | null = null;
-  private isFreqButtonPressed: boolean = false;
+  private isFreqButtonPressed = false;
   private ampAdjustIntervalId: number | null = null;
-  private isAmpButtonPressed: boolean = false;
+  private isAmpButtonPressed = false;
 
   private static clamp01(v: number): number {
     return Math.min(Math.max(v, 0), 1);
@@ -587,10 +587,10 @@ export class PromptDjMidi extends LitElement {
   @state() private showApiKeyControls = true;
 
   // Preset UI State
-  @state() private presetNameToSave: string = '';
+  @state() private presetNameToSave = '';
   @state() private availablePresets: string[] = [];
-  @state() private selectedPreset: string = '';
-  @state() private showPresetControls: boolean = false;
+  @state() private selectedPreset = '';
+  @state() private showPresetControls = false;
 
   // MediaRecorder state variables
   private mediaRecorder: MediaRecorder | null = null;
@@ -879,7 +879,7 @@ export class PromptDjMidi extends LitElement {
 
   private setPrompts(
     newPrompts: Map<string, Prompt>,
-    isProgrammaticJump: boolean = false,
+    isProgrammaticJump = false,
   ) {
     this.prompts = newPrompts;
 
@@ -984,7 +984,7 @@ export class PromptDjMidi extends LitElement {
       if (isAuto) {
         extremenessValues.push(0);
       } else {
-        let currentValue = this.config[knobId] as number | null;
+        const currentValue = this.config[knobId] as number | null;
         // If still null for some reason (e.g. other knobs if they could be null), treat as default (0 extremeness)
         if (currentValue === null) {
           extremenessValues.push(0);
@@ -1383,7 +1383,7 @@ export class PromptDjMidi extends LitElement {
 
   private handleFlowFrequencyChange(event: Event) {
     const inputElement = event.target as HTMLInputElement;
-    this.flowFrequency = parseInt(inputElement.value, 10);
+    this.flowFrequency = Number.parseInt(inputElement.value, 10);
     if (this.isAnyFlowActive) {
       this.stopGlobalFlowInterval();
       this.startGlobalFlowInterval();
@@ -1454,10 +1454,10 @@ export class PromptDjMidi extends LitElement {
 
     // Round to appropriate decimal places
     if (newHz >= 1.0) {
-      newHz = parseFloat(newHz.toFixed(1)); // Handles cases like 0.9 + 0.1 = 1.0 without becoming 1.00
+      newHz = Number.parseFloat(newHz.toFixed(1)); // Handles cases like 0.9 + 0.1 = 1.0 without becoming 1.00
     } else {
       // For values < 1.0 Hz, use two decimal places
-      newHz = parseFloat(newHz.toFixed(2));
+      newHz = Number.parseFloat(newHz.toFixed(2));
     }
     // Ensure it does not become exactly 0 after rounding if it was meant to be MIN_FLOW_FREQUENCY_HZ
     if (newHz === 0 && currentHz > 0 && !isIncreasing) {
@@ -1475,7 +1475,7 @@ export class PromptDjMidi extends LitElement {
 
   private handleFlowAmplitudeChange(event: Event) {
     const inputElement = event.target as HTMLInputElement;
-    this.flowAmplitude = parseInt(inputElement.value, 10);
+    this.flowAmplitude = Number.parseInt(inputElement.value, 10);
     if (this.isAnyFlowActive) {
       this.stopGlobalFlowInterval();
       this.startGlobalFlowInterval();
@@ -1759,10 +1759,7 @@ export class PromptDjMidi extends LitElement {
     }
   }
 
-  private setTransientApiKeyStatus(
-    message: string | null,
-    duration: number = 2500,
-  ) {
+  private setTransientApiKeyStatus(message: string | null, duration = 2500) {
     if (this.apiKeyMessageTimeoutId !== null) {
       clearTimeout(this.apiKeyMessageTimeoutId);
     }
@@ -2671,7 +2668,7 @@ export class PromptDjMidi extends LitElement {
       } else if (id === 'temperature') {
         const minTemp = 0;
         const maxTemp = 3;
-        const newTemp = parseFloat(
+        const newTemp = Number.parseFloat(
           ((knobValue / 2) * (maxTemp - minTemp) + minTemp).toFixed(1),
         );
         this.lastDefinedTemperature = newTemp;
@@ -2689,7 +2686,7 @@ export class PromptDjMidi extends LitElement {
       } else if (id === 'guidance') {
         const minGuidance = 0;
         const maxGuidance = 6;
-        const newGuidance = parseFloat(
+        const newGuidance = Number.parseFloat(
           ((knobValue / 2) * (maxGuidance - minGuidance) + minGuidance).toFixed(
             1,
           ),
@@ -2705,7 +2702,7 @@ export class PromptDjMidi extends LitElement {
       const value = (target as HTMLInputElement).value;
       this.config = {
         ...this.config,
-        [id]: value === '' ? null : parseFloat(value),
+        [id]: value === '' ? null : Number.parseFloat(value),
       };
       this._sendPlaybackParametersToSession();
     } else if (event instanceof CustomEvent && event.detail !== undefined) {

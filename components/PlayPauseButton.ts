@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import { svg, css, html, LitElement } from 'lit';
+import { LitElement, css, html, svg } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { PlaybackState } from '../types';
 

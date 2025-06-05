@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PromptController } from './PromptController';
 import { LitElement } from 'lit';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { PromptController } from './PromptController';
 
 // Mock WeightKnob if it's a dependency that could cause issues
 if (!customElements.get('weight-knob')) {

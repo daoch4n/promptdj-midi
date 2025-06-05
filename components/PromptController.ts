@@ -2,13 +2,13 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import { css, html, LitElement } from 'lit';
+import { LitElement, css, html } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
-import type { WeightKnob } from './WeightKnob';
+import type { ControlChange, Prompt } from '../types';
 import type { MidiDispatcher } from '../utils/MidiDispatcher';
-import type { Prompt, ControlChange } from '../types';
+import type { WeightKnob } from './WeightKnob';
 
 // const AUTO_ANIMATION_SMOOTHING_FACTOR = 0.01; // No longer used or needed
 

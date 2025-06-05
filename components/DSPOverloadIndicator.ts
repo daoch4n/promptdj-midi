@@ -1,4 +1,4 @@
-import { LitElement, html, css, PropertyValues } from 'lit';
+import { LitElement, type PropertyValues, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 @customElement('dsp-overload-indicator')
@@ -62,7 +62,7 @@ export class DSPOverloadIndicator extends LitElement {
         if (this.currentPromptAverage > 1.0) {
           this.setAttribute('animating', ''); // Enable animations
 
-          let promptIntensity = Math.max(0, this.currentPromptAverage - 1.0); // Range 0-1 (how much > 1.0)
+          const promptIntensity = Math.max(0, this.currentPromptAverage - 1.0); // Range 0-1 (how much > 1.0)
 
           // Knob extremeness adds to the animation intensity.
           // Max contribution from knob is 0.5 to the factor.

@@ -1,8 +1,8 @@
-import { html, fixture, nextFrame } from '@open-wc/testing';
+import { fixture, html, nextFrame } from '@open-wc/testing';
 import './index'; // Assuming 'index.ts' registers 'prompt-dj-midi'
+import type { MockInstance } from 'vitest';
 import { PromptDjMidi } from './index';
-import { MidiDispatcher } from './utils/MidiDispatcher';
-import { MockInstance } from 'vitest';
+import type { MidiDispatcher } from './utils/MidiDispatcher';
 
 const TRANSIENT_MESSAGE_DURATION = 2500;
 

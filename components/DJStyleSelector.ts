@@ -1,4 +1,4 @@
-import { css, html, LitElement } from 'lit';
+import { LitElement, css, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { map } from 'lit/directives/map.js';
 
@@ -50,7 +50,7 @@ export class DJStyleSelector extends LitElement {
   options: DJStyleSelectorOption[] = [];
 
   @property({ type: String })
-  value: string = '';
+  value = '';
 
   private _handleOptionClick(optionValue: string) {
     this.value = optionValue;
