@@ -2885,7 +2885,7 @@ export class PromptDjMidi extends LitElement {
           <!-- API Key Controls -->
           ${
             this.showApiKeyControls
-? html`
+              ? html`
               <div class="api-controls">
                 <input
                   type="text"
