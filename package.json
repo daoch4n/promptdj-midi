@@ -20,6 +20,11 @@
     "jsdom": "^22.1.0",
     "typescript": "~5.7.2",
     "vite": "^6.2.0",
-    "vitest": "^0.34.6"
+    "vitest": "^0.34.6",
+    "@biomejs/biome": "^1.8.3"
+  },
+  "scripts": {
+    "lint": "biome lint .",
+    "format": "biome format --write ."
   }
 }
