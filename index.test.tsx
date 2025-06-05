@@ -5,6 +5,7 @@ import { PromptDjMidi } from './index';
 import type { MidiDispatcher } from './utils/MidiDispatcher';
 
 const TRANSIENT_MESSAGE_DURATION = 2500;
+const VALID_API_KEY = 'AIzaSyTestKeyForPromptDjMidiLength39'; // 39 characters, starts with AIzaSy
 
 describe('PromptDjMidi - API Key Management with Transient Messages', () => {
   let element: PromptDjMidi;
@@ -112,7 +113,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
     });
 
     test('initial load - API key exists, shows transient "API Key Loaded", then no persistent success message', async () => {
-      const testKey = 'verified-key';
+      const testKey = VALID_API_KEY;
       localStorageGetItemSpy.mockReturnValue(testKey);
 
       if (element.parentNode) element.parentNode.removeChild(element);
@@ -138,7 +139,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
 
   describe('Direct Save Operations (e.g., via paste or future explicit save button)', () => {
     test('successful direct save displays "API Key Saved" then clears', async () => {
-      element.geminiApiKey = 'test-key';
+      element.geminiApiKey = VALID_API_KEY;
       // Direct call to save, not via debounce
       await (element as any).saveApiKeyToLocalStorage();
       await vi.runAllTimersAsync(); // Ensure all async operations within save complete
@@ -155,7 +156,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
     });
 
     test('API key saving succeeds after retries, shows transient "API Key Saved"', async () => {
-      const testKey = 'test-key-retry-success';
+      const testKey = VALID_API_KEY;
       element.geminiApiKey = testKey;
 
       const setItemSpy = vi
@@ -191,7 +192,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
         'input[type="text"]',
       ) as HTMLInputElement;
 
-      apiKeyInput.value = 'new-key-debounced';
+      apiKeyInput.value = VALID_API_KEY;
       apiKeyInput.dispatchEvent(
         new Event('input', { bubbles: true, composed: true }),
       );
@@ -223,19 +224,19 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
         'input[type="text"]',
       ) as HTMLInputElement;
 
-      apiKeyInput.value = 'key1';
+      apiKeyInput.value = VALID_API_KEY.substring(0, 10);
       apiKeyInput.dispatchEvent(
         new Event('input', { bubbles: true, composed: true }),
       );
       vi.advanceTimersByTime(200);
 
-      apiKeyInput.value = 'key12';
+      apiKeyInput.value = VALID_API_KEY.substring(0, 20);
       apiKeyInput.dispatchEvent(
         new Event('input', { bubbles: true, composed: true }),
       );
       vi.advanceTimersByTime(200);
 
-      apiKeyInput.value = 'key123';
+      apiKeyInput.value = VALID_API_KEY;
       apiKeyInput.dispatchEvent(
         new Event('input', { bubbles: true, composed: true }),
       );
@@ -272,7 +273,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
     });
 
     test('successful paste shows transient "API Key Saved"', async () => {
-      const pastedKey = 'pasted-key-transient';
+      const pastedKey = VALID_API_KEY;
       clipboardReadTextSpy.mockResolvedValue(pastedKey);
       const directSaveSpy = vi.spyOn(
         element as any,
@@ -319,7 +320,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
   describe('Transient Message Management', () => {
     test('successful clear displays "API Key Cleared" then clears', async () => {
       // Have a key first
-      element.geminiApiKey = 'key-to-be-cleared';
+      element.geminiApiKey = VALID_API_KEY;
       await (element as any).saveApiKeyToLocalStorage();
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION); // Let "API Key Saved" clear
       await element.updateComplete;
@@ -341,7 +342,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
     });
 
     test('new transient message clears previous one and has its own timeout', async () => {
-      localStorageGetItemSpy.mockReturnValue('initial-key');
+      localStorageGetItemSpy.mockReturnValue(VALID_API_KEY);
       if (element.parentNode) element.parentNode.removeChild(element);
       element = new PromptDjMidi(new Map(), mockMidiDispatcher);
       vi.spyOn(element as any, 'handleMainAudioButton').mockImplementation(
@@ -354,7 +355,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
 
       vi.advanceTimersByTime(1000);
 
-      element.geminiApiKey = 'new-saved-key';
+      element.geminiApiKey = VALID_API_KEY; // Re-setting to trigger save
       await (element as any).saveApiKeyToLocalStorage();
       await vi.runAllTimersAsync();
 
@@ -385,7 +386,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
         configurable: true,
       });
 
-      element.geminiApiKey = 'any-key';
+      element.geminiApiKey = VALID_API_KEY;
       await (element as any).saveApiKeyToLocalStorage();
       await vi.runAllTimersAsync();
 
@@ -409,7 +410,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       localStorageSetItemSpy.mockImplementation(() => {
         throw new Error('Save failed');
       });
-      element.geminiApiKey = 'any-key';
+      element.geminiApiKey = VALID_API_KEY;
 
       await (element as any).saveApiKeyToLocalStorage();
       await vi.runAllTimersAsync();
@@ -441,7 +442,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
     });
 
     test('shows "Key entered, will attempt to save." when key entered, not saved, not invalid, no transient message', async () => {
-      element.geminiApiKey = 'some-typed-key';
+      element.geminiApiKey = VALID_API_KEY.substring(0, 10); // Partially entered key
       element.apiKeySavedSuccessfully = false;
       element.apiKeyInvalid = false;
       element.transientApiKeyStatusMessage = null;
