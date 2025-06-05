@@ -449,13 +449,13 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       element.transientApiKeyStatusMessage = null;
       await element.updateComplete;
       expect(getApiKeyStatusMessage()).toBe(
-        'Key entered, will attempt to save.',
+        'API Key entered. Save or start playback to use.',
       );
 
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION + 1000);
       await element.updateComplete;
       expect(getApiKeyStatusMessage()).toBe(
-        'Key entered, will attempt to save.',
+        'API Key entered. Save or start playback to use.',
       );
     });
   });
