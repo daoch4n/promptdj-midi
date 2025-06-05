@@ -52,6 +52,8 @@ describe('PromptController', () => {
   it('Scenario 2: Auto active (weight 1, isAutoFlowing true) -> toggle to false (weight becomes 0)', () => {
     controller.weight = 1.0;
     controller.isAutoFlowing = true;
+    // Set autoSetByButton to true as a precondition for weight to become 0.0
+    (controller as any).autoSetByButton = true; 
 
     controller.toggleAutoFlow();
 
