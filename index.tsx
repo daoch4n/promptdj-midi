@@ -32,7 +32,7 @@ import type { WeightKnob } from './components/WeightKnob';
 import './components/DJStyleSelector';
 import type { DJStyleSelectorOption } from './components/DJStyleSelector';
 import './components/PlayPauseButton';
-import './components/RecordButton.js'; // Import RecordButton
+import './components/RecordButton.ts'; // Import RecordButton
 import './components/DSPOverloadIndicator.js';
 
 import type { PlaybackState, Prompt } from './types';
