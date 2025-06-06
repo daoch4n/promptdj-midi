@@ -483,6 +483,7 @@ export class PromptDjMidi extends LitElement {
     .playback-controls {
       display: flex;
       flex-direction: row;
+      flex-wrap: nowrap;
       justify-content: center;
       align-items: center;
       gap: 10px;
@@ -495,8 +496,8 @@ export class PromptDjMidi extends LitElement {
       cursor: pointer;
     }
     record-button { /* Style for the record button */
-      width: 80px; /* Explicitly set width */
-      height: 80px; /* Explicitly set height */
+      width: 100px; /* Match play button width */
+      height: 100px; /* Match play button height */
       cursor: pointer; /* Ensure cursor pointer is visible */
     }
    .solo-group-header {
