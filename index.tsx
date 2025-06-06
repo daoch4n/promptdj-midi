@@ -494,11 +494,15 @@ export class PromptDjMidi extends LitElement {
       width: 100px;
       height: 100px;
       cursor: pointer;
+      flex-shrink: 0;
+      box-sizing: border-box;
     }
     record-button { /* Style for the record button */
       width: 100px; /* Match play button width */
       height: 100px; /* Match play button height */
       cursor: pointer; /* Ensure cursor pointer is visible */
+      flex-shrink: 0;
+      box-sizing: border-box;
     }
    .solo-group-header {
      font-weight: bold;
