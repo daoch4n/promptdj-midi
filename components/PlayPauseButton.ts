@@ -12,7 +12,6 @@ export class PlayPauseButton extends LitElement {
 
   static override styles = css`
     :host {
-      position: relative;
       display: inline-flex;
       align-items: center;
       justify-content: center;
