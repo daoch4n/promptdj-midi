@@ -78,8 +78,11 @@ export class DSPOverloadIndicator extends LitElement {
       const promptAvg = this.currentPromptAverage;
       const knobExt = this.currentKnobAverageExtremeness;
 
-      // Determine visibility
-      this._visible = promptAvg > 0.5 || knobExt > 0.5;
+      // Calculate a combined overload factor
+      const overloadFactor = Math.max(promptAvg, knobExt) * 2;
+
+      // Determine visibility based on the combined overload factor
+      this._visible = overloadFactor > 0.5;
 
       let calculatedColor = 'white'; // Default, will be overridden if visible
       let calculatedBlinkDuration = '2s';
@@ -87,42 +90,36 @@ export class DSPOverloadIndicator extends LitElement {
       let shouldCycleRgb = false;
       let rgbCycleSpeed = 1.0; // Default speed for RGB cycle
 
-      if (promptAvg > 0.5) {
+      // Apply thresholds based on the combined overload factor
+      if (overloadFactor > 0.5) {
         calculatedColor = 'green';
       }
-      if (promptAvg > 0.75) {
+      if (overloadFactor > 0.75) {
         calculatedColor = 'yellow';
         calculatedBlinkDuration = '1.5s';
         shouldAnimateBlink = true;
       }
-      if (promptAvg > 1.0) {
+      if (overloadFactor > 1.0) {
         calculatedColor = 'red';
         calculatedBlinkDuration = '1s';
         shouldAnimateBlink = true;
       }
-      if (promptAvg > 1.25) {
+      if (overloadFactor > 1.25) {
         calculatedColor = 'purple';
         calculatedBlinkDuration = '0.7s';
         shouldAnimateBlink = true;
       }
-      if (promptAvg > 1.5) {
+      if (overloadFactor > 1.5) {
         calculatedColor = 'magenta'; // This color is for the threshold, but RGB cycle takes over visual
         shouldCycleRgb = true;
-        // Calculate speed: faster as promptAvg goes from 1.5 to 2.0
-        const minSpeed = 0.2; // Fastest speed (e.g., at promptAvg = 2.0)
-        const maxSpeed = 1.0; // Slowest speed (e.g., at promptAvg = 1.5)
-        const range = 2.0 - 1.5; // Range of promptAvg for this effect (0.5)
-        const normalizedOverload = Math.min(1, Math.max(0, (promptAvg - 1.5) / range)); // 0 to 1
+        // Calculate speed: faster as overloadFactor goes from 1.5 to 2.0
+        const minSpeed = 0.2; // Fastest speed (e.g., at overloadFactor = 2.0)
+        const maxSpeed = 1.0; // Slowest speed (e.g., at overloadFactor = 1.5)
+        const range = 2.0 - 1.5; // Range of overloadFactor for this effect (0.5)
+        const normalizedOverload = Math.min(1, Math.max(0, (overloadFactor - 1.5) / range)); // 0 to 1
         rgbCycleSpeed = maxSpeed - (normalizedOverload * (maxSpeed - minSpeed));
         calculatedBlinkDuration = `${rgbCycleSpeed}s`; // Blink speed matches RGB cycle speed
         shouldAnimateBlink = true; // Always blink when RGB cycling
-      }
-
-      // If knobExtremeness is high but promptAvg is low, still show yellow and blink
-      if (knobExt > 0.5 && promptAvg <= 0.75) { // If promptAvg is not already causing blinking
-        calculatedColor = 'yellow';
-        calculatedBlinkDuration = '2s';
-        shouldAnimateBlink = true;
       }
 
       // Apply states and attributes
