@@ -594,6 +594,8 @@ export class PromptDjMidi extends LitElement {
   // DSP Overload Indicator State
   @state() private dspOverloadIndicatorColor = 'yellow';
   @state() private dspOverloadBlinkDuration = '2s';
+  private _audioLevelAnimationId: number | null = null;
+  private _animateAudioLevelBound = this._animateAudioLevel.bind(this);
 
   // Preset UI State
   @state() private presetNameToSave = '';
@@ -644,7 +646,6 @@ export class PromptDjMidi extends LitElement {
       isOpusPolyfillActive = true;
     }
 
-    this.updateAudioLevel = this.updateAudioLevel.bind(this);
     this.toggleSeedFlow = this.toggleSeedFlow.bind(this);
     this.handleFlowFrequencyChange = this.handleFlowFrequencyChange.bind(this);
     this.handleIncreaseFreq = this.handleIncreaseFreq.bind(this);
@@ -680,6 +681,24 @@ export class PromptDjMidi extends LitElement {
       });
     }
     this.checkApiKeyStatus();
+  }
+
+  private _animateAudioLevel(): void {
+    this.updateAudioLevel();
+    this._audioLevelAnimationId = requestAnimationFrame(this._animateAudioLevelBound);
+  }
+
+  private _startAudioLevelAnimation(): void {
+    if (this._audioLevelAnimationId === null) {
+      this._audioLevelAnimationId = requestAnimationFrame(this._animateAudioLevelBound);
+    }
+  }
+
+  private _stopAudioLevelAnimation(): void {
+    if (this._audioLevelAnimationId !== null) {
+      cancelAnimationFrame(this._audioLevelAnimationId);
+      this._audioLevelAnimationId = null;
+    }
   }
 
   private isValidApiKeyFormat(apiKey: string): boolean {
@@ -1224,6 +1243,7 @@ export class PromptDjMidi extends LitElement {
         this.audioContext.currentTime + 0.1,
       );
     }
+    this._stopAudioLevelAnimation(); // Stop the audio level animation loop
     this.nextStartTime = 0;
     if (this.audioContext) {
       this.outputNode = this.audioContext.createGain();
@@ -1257,12 +1277,11 @@ export class PromptDjMidi extends LitElement {
       this.mediaStreamDestinationNode =
         this.audioContext.createMediaStreamDestination();
       this.outputNode.connect(this.mediaStreamDestinationNode); // Connect Gain to DestinationNode as well
-
-      this.updateAudioLevel();
     }
 
     this.audioContext.resume();
     this.audioReady = true;
+    this._startAudioLevelAnimation(); // Start the audio level animation loop
     if (this.session) {
       this.session.play();
     }
@@ -1288,6 +1307,7 @@ export class PromptDjMidi extends LitElement {
         this.audioContext.currentTime + 0.1,
       );
     }
+    this._stopAudioLevelAnimation(); // Stop the audio level animation loop
     this.nextStartTime = 0;
   }
 
