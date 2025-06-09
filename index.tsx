@@ -1045,15 +1045,6 @@ export class PromptDjMidi extends LitElement {
       frequencyContribution +
       amplitudeContribution;
 
-    if (
-      this.promptWeightedAverage >= promptAverageCritical ||
-      this.knobAverageExtremeness >= knobExtremenessCritical ||
-      combinedFactor >= combinedFactorThreshold
-    ) {
-      console.warn('DSP Overload detected! Resetting all parameters.');
-      console.warn('Critical DSP Overload! Resetting parameters.');
-      this.resetAll();
-    }
   }
 
   private globalFlowTick(): void {
