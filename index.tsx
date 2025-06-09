@@ -1418,10 +1418,8 @@ export class PromptDjMidi extends LitElement {
 
     if (currentHz >= 5.0) {
       step = 1.0;
-    } else if (currentHz >= 3.0 && currentHz < 5.0) {
+    } else if (currentHz >= 2.0 && currentHz < 5.0) {
       step = 0.5;
-    } else if (currentHz >= 2.0) {
-      step = 1.0;
     } else if (currentHz >= 1.0 && currentHz < 2.0) {
       step = 0.2;
     } else if (currentHz > 0.1) {
