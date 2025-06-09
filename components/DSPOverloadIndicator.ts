@@ -84,55 +84,34 @@ export class DSPOverloadIndicator extends LitElement {
       // Determine visibility based on the combined overload factor
       this._visible = overloadFactor > 0.5;
 
-      let calculatedColor = 'green'; // Default to green when visible
-      let calculatedBlinkDuration = '2s';
-      let shouldAnimateBlink = false;
-      let shouldCycleRgb = false;
-      let rgbCycleSpeed = 1.0; // Default speed for RGB cycle
-
       if (this._visible) {
-        shouldAnimateBlink = true; // If visible, it should blink
-
-        for (const config of DSPOverloadIndicator.OVERLOAD_THRESHOLDS) {
-          if (overloadFactor > config.threshold) {
-            calculatedColor = config.color;
-            calculatedBlinkDuration = config.blinkDuration;
-            shouldCycleRgb = config.rgbCycling || false;
-
-            if (shouldCycleRgb && config.rgbCycleSpeedMin !== undefined && config.rgbCycleSpeedMax !== undefined) {
-              // Calculate speed: faster as overloadFactor goes from config.threshold to 2.0 (max possible)
-              const rangeForSpeedCalc = 2.0 - config.threshold;
-              const normalizedOverload = Math.min(1, Math.max(0, (overloadFactor - config.threshold) / rangeForSpeedCalc));
-              rgbCycleSpeed = config.rgbCycleSpeedMax - (normalizedOverload * (config.rgbCycleSpeedMax - config.rgbCycleSpeedMin));
-              calculatedBlinkDuration = `${rgbCycleSpeed}s`; // Blink speed matches RGB cycle speed
-            }
-            break; // Found the highest applicable threshold, apply its settings and break
-          }
-        }
-      }
-
-      // Apply states and attributes
-      if (this._visible) {
+        // Overload is active, so always animate with RGB cycling and blinking
         this.classList.add('is-visible');
-        if (shouldAnimateBlink) {
-          this.setAttribute('animating', '');
-        } else {
-          this.removeAttribute('animating');
-        }
-        if (shouldCycleRgb) {
-          this.setAttribute('rgb-cycling', '');
-        } else {
-          this.removeAttribute('rgb-cycling');
-        }
-        this.style.setProperty('--indicator-color', calculatedColor);
-        this.style.setProperty('--blink-duration', calculatedBlinkDuration);
-        this.style.setProperty('--rgb-cycle-speed', `${rgbCycleSpeed}s`);
+        this.setAttribute('animating', ''); // Always animate blink
+        this.setAttribute('rgb-cycling', ''); // Always RGB cycle
+
+        // Calculate speed: faster as overloadFactor increases from 0.5 to 2.0
+        // Min speed (fastest) at overloadFactor = 2.0 (0.2s)
+        // Max speed (slowest) at overloadFactor = 0.5 (1.0s)
+        const minOverload = 0.5;
+        const maxOverload = 2.0;
+        const minSpeed = 0.2; // Fastest cycle/blink
+        const maxSpeed = 1.0; // Slowest cycle/blink
+
+        // Normalize overloadFactor from [0.5, 2.0] to [0, 1]
+        const normalizedOverload = Math.min(1, Math.max(0, (overloadFactor - minOverload) / (maxOverload - minOverload)));
+
+        // Interpolate speed: higher normalizedOverload means faster speed (smaller value)
+        this._rgbCycleSpeed = maxSpeed - (normalizedOverload * (maxSpeed - minSpeed));
+        this._blinkDuration = `${this._rgbCycleSpeed}s`; // Blink speed matches RGB cycle speed
+
+        this.style.setProperty('--blink-duration', this._blinkDuration);
+        this.style.setProperty('--rgb-cycle-speed', `${this._rgbCycleSpeed}s`);
       } else {
         this.classList.remove('is-visible');
         this.removeAttribute('animating');
         this.removeAttribute('rgb-cycling');
         // Reset CSS variables when not visible
-        this.style.setProperty('--indicator-color', 'yellow'); // Default reset color
         this.style.setProperty('--blink-duration', '2s'); // Default reset duration
         this.style.setProperty('--rgb-cycle-speed', '1s'); // Default reset speed
       }
