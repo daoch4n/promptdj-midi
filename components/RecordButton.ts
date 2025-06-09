@@ -40,7 +40,7 @@ export class RecordButton extends LitElement {
       transition: filter 0.3s ease; /* Smooth brightness transition */
     }
     .loader {
-      stroke: #ffffff;
+      stroke: #FF0000;
       stroke-width: 3;
       stroke-linecap: round;
       fill: none; /* Added for circle spinner */
@@ -48,6 +48,10 @@ export class RecordButton extends LitElement {
       animation: spin 1s linear infinite, dash 1.5s ease-in-out infinite; /* Combined animations */
       transform-origin: center;
       transform-box: fill-box;
+.record-dot {
+      transform-origin: center;
+      transform-box: fill-box;
+    }
     }
     @keyframes spin {
       from { transform: rotate(0deg); }
@@ -67,7 +71,7 @@ export class RecordButton extends LitElement {
     const iconColor = '#FF0000'; // Always Red
     // For a record button, a simple circle is common.
     // Centered at (70,70) in a 140x140 viewBox. Radius can be adjusted.
-    return svg`<circle cx="70" cy="70" r="15" fill="${iconColor}" />`;
+    return svg`<circle cx="70" cy="70" r="15" fill="${iconColor}" class="record-dot" />`;
   }
 
   private renderLoading() {
@@ -105,7 +109,8 @@ export class RecordButton extends LitElement {
         fill="#303030"
         class="base-circle-fill"
         shape-rendering="crispEdges" />
-        ${this.isRecording ? this.renderLoading() : this.renderRecordSymbol()}
+        ${this.renderRecordSymbol()}
+        ${this.isRecording ? this.renderLoading() : ''}
     </svg>`;
   }
 
