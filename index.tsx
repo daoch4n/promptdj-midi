@@ -464,14 +464,9 @@ export class PromptDjMidi extends LitElement {
       align-items: center;
       gap: 20px;
     }
-    play-pause-button {
-      width: 100px;
-      height: 100px;
-      cursor: pointer;
-    }
-    record-button {
-      width: 80px;
-      height: 80px;
+    play-pause-button, record-button {
+      width: 70px;
+      height: 70px;
       cursor: pointer;
     }
    .solo-group-header {

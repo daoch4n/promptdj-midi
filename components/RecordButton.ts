@@ -15,8 +15,8 @@ export class RecordButton extends LitElement {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 80px;
-      height: 80px;
+      width: 70px;
+      height: 70px;
       cursor: pointer; /* Added cursor pointer to host */
     }
     :host(:hover) svg .base-circle-fill { /* Target specific part for hover */

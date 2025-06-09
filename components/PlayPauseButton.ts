@@ -17,8 +17,8 @@ export class PlayPauseButton extends LitElement {
       align-items: center;
       justify-content: center;
       pointer-events: none;
-      width: 80px; /* Changed from 100% to a fixed size */
-      height: 80px; /* Added to ensure square aspect ratio */
+      width: 70px;
+      height: 70px;
     }
     svg {
       width: 100%;
