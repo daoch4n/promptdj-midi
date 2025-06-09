@@ -29,17 +29,7 @@ export class DSPOverloadIndicator extends LitElement {
 
     :host(.is-visible) {
       display: block;
-      animation: blink var(--blink-duration) infinite alternate; /* Reintroduce blinking */
       box-shadow: 0 0 5px var(--rgb-color), 0 0 10px var(--rgb-color);
-    }
-
-    @keyframes blink {
-      from {
-        opacity: 1;
-      }
-      to {
-        opacity: 0.3; /* Adjust opacity for desired blink effect */
-      }
     }
   `;
 
