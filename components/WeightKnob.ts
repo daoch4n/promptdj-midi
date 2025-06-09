@@ -451,7 +451,7 @@ export class WeightKnob extends LitElement {
     const haloStyle = styleMap({
       opacity: (
         this._backgroundEffectAlpha * 0.5 +
-        this.audioLevel * HALO_LEVEL_MODIFIER * 0.0025
+        this.audioLevel * HALO_LEVEL_MODIFIER * 0
       ).toString(),
       display: this._backgroundEffectAlpha > 0.001 ? 'block' : 'none',
       background: this.color,
