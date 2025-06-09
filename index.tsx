@@ -1032,11 +1032,18 @@ export class PromptDjMidi extends LitElement {
       Math.max(0, 0.5 * (this.flowFrequency - 1)),
     );
 
+    // Calculate amplitude contribution: 0 at 10, 0.5 at 20, clamped between 0 and 0.5
+    const amplitudeContribution = Math.min(
+      0.5,
+      Math.max(0, (this.flowAmplitude - 10) / 10 * 0.5),
+    );
+
     const combinedFactor =
       this.promptWeightedAverage / 2 +
       this.knobAverageExtremeness +
       audioLevelContribution +
-      frequencyContribution;
+      frequencyContribution +
+      amplitudeContribution;
 
     if (
       this.promptWeightedAverage >= promptAverageCritical ||
