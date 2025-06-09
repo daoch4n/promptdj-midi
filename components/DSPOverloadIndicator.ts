@@ -15,19 +15,8 @@ export class DSPOverloadIndicator extends LitElement {
   @property({ type: Number }) currentPromptAverage = 0;
   @property({ type: Number }) currentKnobAverageExtremeness = 0;
   @state() private _visible = false;
-  @state() private _indicatorColor = 'yellow';
   @state() private _blinkDuration = '2s';
-  @state() private _isCyclingRgb = false;
   @state() private _rgbCycleSpeed = 1.0;
-
-  private static readonly OVERLOAD_THRESHOLDS: OverloadThresholdConfig[] = [
-    // Ordered from highest threshold to lowest for easy iteration
-    { threshold: 1.5, color: 'magenta', blinkDuration: 'dynamic', rgbCycling: true, rgbCycleSpeedMin: 0.2, rgbCycleSpeedMax: 1.0 },
-    { threshold: 1.25, color: 'purple', blinkDuration: '0.7s' },
-    { threshold: 1.0, color: 'red', blinkDuration: '1s' },
-    { threshold: 0.75, color: 'yellow', blinkDuration: '1.5s' },
-    { threshold: 0.5, color: 'green', blinkDuration: '2s' },
-  ];
 
   static styles = css`
     :host {
@@ -47,17 +36,10 @@ export class DSPOverloadIndicator extends LitElement {
       display: block;
     }
 
-    :host([animating].is-visible) {
-      animation: blink var(--blink-duration) infinite;
-    }
-
-    :host([animating].is-visible):not([rgb-cycling]) {
-      box-shadow: 0 0 5px var(--indicator-color), 0 0 10px var(--indicator-color);
-    }
-
-    :host([rgb-cycling].is-visible) {
+    :host(.is-visible) {
       animation: rgb-cycle var(--rgb-cycle-speed) infinite linear,
                  blink var(--blink-duration) infinite;
+      box-shadow: 0 0 5px var(--rgb-color), 0 0 10px var(--rgb-color);
     }
 
     @keyframes blink {
