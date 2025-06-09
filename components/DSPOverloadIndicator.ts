@@ -102,7 +102,7 @@ export class DSPOverloadIndicator extends LitElement {
       // Determine visibility based on the combined overload factor
       this._visible = overloadFactor > 0.5;
 
-      let calculatedColor = 'white'; // Default, will be overridden if visible
+      let calculatedColor = 'green'; // Default to green when visible
       let calculatedBlinkDuration = '2s';
       let shouldAnimateBlink = false;
       let shouldCycleRgb = false;
