@@ -1044,7 +1044,7 @@ export class PromptDjMidi extends LitElement {
 
     const combinedFactor =
       this.promptWeightedAverage / 2 +
-      this.knobAverageExtremeness +
+      this.knobAverageExtremeness * 2 + // Increased contribution of knobAverageExtremeness
       audioLevelContribution +
       frequencyContribution +
       amplitudeContribution;
