@@ -120,6 +120,13 @@ export class PromptDjMidi extends LitElement {
   private static readonly MIN_FLOW_FREQUENCY_HZ = 0.01;
   private static readonly MAX_FLOW_FREQUENCY_HZ = 20.0;
 
+  // Constants for exponential DSP overload calculation
+  private static readonly FREQ_CONTRIBUTION_THRESHOLD_HZ = 1.0;
+  private static readonly FREQ_CONTRIBUTION_MAX_HZ = 5.0; // Frequency at which contribution reaches 0.5
+  private static readonly AMP_CONTRIBUTION_THRESHOLD_VALUE = 10;
+  private static readonly AMP_CONTRIBUTION_MAX_VALUE = 30; // Amplitude at which contribution reaches 0.5
+  private static readonly EXPONENTIAL_POWER = 2; // For quadratic growth
+
   private static readonly KNOB_CONFIGS = {
     density: {
       defaultValue: PromptDjMidi.INITIAL_CONFIG.density,
@@ -1028,16 +1035,28 @@ export class PromptDjMidi extends LitElement {
       Math.max(0, this.audioLevel * 0.05 - 0.5),
     );
 
-    // Calculate frequency contribution: 0 at 1 Hz, 0.5 at 2 Hz, clamped between 0 and 0.5
+    // Calculate frequency contribution: exponential from FREQ_CONTRIBUTION_THRESHOLD_HZ, max 0.5 at FREQ_CONTRIBUTION_MAX_HZ
+    const freqNormalized = Math.max(
+      0,
+      (this.flowFrequency - PromptDjMidi.FREQ_CONTRIBUTION_THRESHOLD_HZ) /
+        (PromptDjMidi.FREQ_CONTRIBUTION_MAX_HZ -
+          PromptDjMidi.FREQ_CONTRIBUTION_THRESHOLD_HZ),
+    );
     const frequencyContribution = Math.min(
       0.5,
-      Math.max(0, 0.5 * (this.flowFrequency - 1)),
+      0.5 * Math.pow(freqNormalized, PromptDjMidi.EXPONENTIAL_POWER),
     );
 
-    // Calculate amplitude contribution: 0 at 10, 0.5 at 20, clamped between 0 and 0.5
+    // Calculate amplitude contribution: exponential from AMP_CONTRIBUTION_THRESHOLD_VALUE, max 0.5 at AMP_CONTRIBUTION_MAX_VALUE
+    const ampNormalized = Math.max(
+      0,
+      (this.flowAmplitude - PromptDjMidi.AMP_CONTRIBUTION_THRESHOLD_VALUE) /
+        (PromptDjMidi.AMP_CONTRIBUTION_MAX_VALUE -
+          PromptDjMidi.AMP_CONTRIBUTION_THRESHOLD_VALUE),
+    );
     const amplitudeContribution = Math.min(
       0.5,
-      Math.max(0, (this.flowAmplitude - 10) / 10 * 0.5),
+      0.5 * Math.pow(ampNormalized, PromptDjMidi.EXPONENTIAL_POWER),
     );
 
     const combinedFactor =
