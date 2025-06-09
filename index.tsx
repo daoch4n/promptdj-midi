@@ -69,7 +69,7 @@ const DEFAULT_PROMPTS = [
   { color: '#D2B48C', text: 'Acoustic Guitar' },
   { color: '#ff00cc', text: 'Synthwave' },
   { color: '#00ffff', text: 'Trance' },
-  { color: '#00BFFF', text: 'String Quartet' },
+  { color: '#00BFFF', text: 'Nu Jazz' },
 ];
 
 // OpusMediaRecorder options
