@@ -43,13 +43,23 @@ export class RecordButton extends LitElement {
       stroke: #ffffff;
       stroke-width: 3;
       stroke-linecap: round;
-      animation: spin linear 1s infinite;
+      fill: none; /* Added for circle spinner */
+      stroke-dasharray: 60 100; /* For the dash effect */
+      animation: spin 1s linear infinite, dash 1.5s ease-in-out infinite; /* Combined animations */
       transform-origin: center;
       transform-box: fill-box;
     }
     @keyframes spin {
       from { transform: rotate(0deg); }
       to { transform: rotate(359deg); }
+    }
+    @keyframes dash {
+      0% {
+        stroke-dashoffset: 0;
+      }
+      100% {
+        stroke-dashoffset: -160; /* Total length of stroke-dasharray (60 + 100) */
+      }
     }
   `;
 
@@ -61,8 +71,9 @@ export class RecordButton extends LitElement {
   }
 
   private renderLoading() {
-    return svg`<path shape-rendering="crispEdges" class="loader" d="M70,74.2L70,74.2c-10.7,0-19.5-8.7-19.5-19.5l0,0c0-10.7,8.7-19.5,19.5-19.5
-            l0,0c10.7,0,19.5,8.7,19.5,19.5l0,0"/>`;
+    // Centered at (70,70) in a 140x140 viewBox. Radius can be adjusted.
+    // Using a radius of 25 to be distinct from the record symbol (r=15)
+    return svg`<circle cx="70" cy="70" r="25" class="loader" />`;
   }
 
   private renderSvg() {
