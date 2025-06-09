@@ -5,10 +5,11 @@ import { customElement, property, state } from 'lit/decorators.js';
 export class DSPOverloadIndicator extends LitElement {
   @property({ type: Number }) currentPromptAverage = 0;
   @property({ type: Number }) currentKnobAverageExtremeness = 0;
-  @property({ type: String }) indicatorColor = 'yellow'; // New property for color
-  @property({ type: String }) blinkDuration = '2s'; // New property for blink duration
-
   @state() private _visible = false;
+  @state() private _indicatorColor = 'yellow';
+  @state() private _blinkDuration = '2s';
+  @state() private _isCyclingRgb = false;
+  @state() private _rgbCycleSpeed = 1.0;
 
   static styles = css`
     :host {
@@ -29,8 +30,16 @@ export class DSPOverloadIndicator extends LitElement {
     }
 
     :host([animating].is-visible) {
-      box-shadow: 0 0 5px var(--indicator-color), 0 0 10px var(--indicator-color);
       animation: blink var(--blink-duration) infinite;
+    }
+
+    :host([animating].is-visible):not([rgb-cycling]) {
+      box-shadow: 0 0 5px var(--indicator-color), 0 0 10px var(--indicator-color);
+    }
+
+    :host([rgb-cycling].is-visible) {
+      animation: rgb-cycle var(--rgb-cycle-speed) infinite linear,
+                 blink var(--blink-duration) infinite;
     }
 
     @keyframes blink {
@@ -42,6 +51,21 @@ export class DSPOverloadIndicator extends LitElement {
         opacity: 0.6;
       }
     }
+
+    @keyframes rgb-cycle {
+      0% {
+        box-shadow: 0 0 5px red, 0 0 10px red;
+      }
+      33% {
+        box-shadow: 0 0 5px blue, 0 0 10px blue;
+      }
+      66% {
+        box-shadow: 0 0 5px green, 0 0 10px green;
+      }
+      100% {
+        box-shadow: 0 0 5px red, 0 0 10px red;
+      }
+    }
   `;
 
   updated(changedProperties: PropertyValues) {
@@ -49,33 +73,82 @@ export class DSPOverloadIndicator extends LitElement {
 
     if (
       changedProperties.has('currentPromptAverage') ||
-      changedProperties.has('currentKnobAverageExtremeness') ||
-      changedProperties.has('indicatorColor') || // React to color changes
-      changedProperties.has('blinkDuration') // React to duration changes
+      changedProperties.has('currentKnobAverageExtremeness')
     ) {
-      this._visible =
-        this.currentPromptAverage > 1.0 ||
-        this.currentKnobAverageExtremeness > 0.5;
+      const promptAvg = this.currentPromptAverage;
+      const knobExt = this.currentKnobAverageExtremeness;
 
+      // Determine visibility
+      this._visible = promptAvg > 0.5 || knobExt > 0.5;
+
+      let calculatedColor = 'white'; // Default, will be overridden if visible
+      let calculatedBlinkDuration = '2s';
+      let shouldAnimateBlink = false;
+      let shouldCycleRgb = false;
+      let rgbCycleSpeed = 1.0; // Default speed for RGB cycle
+
+      if (promptAvg > 0.5) {
+        calculatedColor = 'green';
+      }
+      if (promptAvg > 0.75) {
+        calculatedColor = 'yellow';
+        calculatedBlinkDuration = '1.5s';
+        shouldAnimateBlink = true;
+      }
+      if (promptAvg > 1.0) {
+        calculatedColor = 'red';
+        calculatedBlinkDuration = '1s';
+        shouldAnimateBlink = true;
+      }
+      if (promptAvg > 1.25) {
+        calculatedColor = 'purple';
+        calculatedBlinkDuration = '0.7s';
+        shouldAnimateBlink = true;
+      }
+      if (promptAvg > 1.5) {
+        calculatedColor = 'magenta'; // This color is for the threshold, but RGB cycle takes over visual
+        shouldCycleRgb = true;
+        // Calculate speed: faster as promptAvg goes from 1.5 to 2.0
+        const minSpeed = 0.2; // Fastest speed (e.g., at promptAvg = 2.0)
+        const maxSpeed = 1.0; // Slowest speed (e.g., at promptAvg = 1.5)
+        const range = 2.0 - 1.5; // Range of promptAvg for this effect (0.5)
+        const normalizedOverload = Math.min(1, Math.max(0, (promptAvg - 1.5) / range)); // 0 to 1
+        rgbCycleSpeed = maxSpeed - (normalizedOverload * (maxSpeed - minSpeed));
+        calculatedBlinkDuration = `${rgbCycleSpeed}s`; // Blink speed matches RGB cycle speed
+        shouldAnimateBlink = true; // Always blink when RGB cycling
+      }
+
+      // If knobExtremeness is high but promptAvg is low, still show yellow and blink
+      if (knobExt > 0.5 && promptAvg <= 0.75) { // If promptAvg is not already causing blinking
+        calculatedColor = 'yellow';
+        calculatedBlinkDuration = '2s';
+        shouldAnimateBlink = true;
+      }
+
+      // Apply states and attributes
       if (this._visible) {
         this.classList.add('is-visible');
-        // Only set 'animating' if prompt average is above 1.0, or if a specific color/duration is passed
-        // The logic for setting 'animating' is now simplified as color/duration are passed in.
-        if (this.currentPromptAverage > 1.0 || this.currentKnobAverageExtremeness > 0.5) {
+        if (shouldAnimateBlink) {
           this.setAttribute('animating', '');
         } else {
           this.removeAttribute('animating');
         }
-        // The color and blink duration are now controlled by the parent component via properties.
-        // No need to set them here based on internal logic.
-        this.style.setProperty('--indicator-color', this.indicatorColor);
-        this.style.setProperty('--blink-duration', this.blinkDuration);
+        if (shouldCycleRgb) {
+          this.setAttribute('rgb-cycling', '');
+        } else {
+          this.removeAttribute('rgb-cycling');
+        }
+        this.style.setProperty('--indicator-color', calculatedColor);
+        this.style.setProperty('--blink-duration', calculatedBlinkDuration);
+        this.style.setProperty('--rgb-cycle-speed', `${rgbCycleSpeed}s`);
       } else {
         this.classList.remove('is-visible');
         this.removeAttribute('animating');
-        // Reset CSS variables when not visible, though they won't apply
+        this.removeAttribute('rgb-cycling');
+        // Reset CSS variables when not visible
         this.style.setProperty('--indicator-color', 'yellow');
         this.style.setProperty('--blink-duration', '2s');
+        this.style.setProperty('--rgb-cycle-speed', '1s');
       }
     }
   }
