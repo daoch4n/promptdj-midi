@@ -63,7 +63,7 @@ const DEFAULT_PROMPTS = [
   { color: '#00FA9A', text: 'Jazz Fusion' },
   { color: '#32CD32', text: 'Folk' },
   { color: '#DA70D6', text: 'Ethereal Vibes' },
-  { color: '#778899', text: 'Cinematic Score' },
+  { color: '#778899', text: 'Vaporwave' },
   { color: '#1E90FF', text: 'Surf Rock' },
   { color: '#A9A9A9', text: 'Industrial' },
   { color: '#D2B48C', text: 'Acoustic Guitar' },
