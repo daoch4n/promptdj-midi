@@ -57,7 +57,7 @@ export class RecordButton extends LitElement {
     const iconColor = '#FF0000'; // Always Red
     // For a record button, a simple circle is common.
     // Centered at (70,70) in a 140x140 viewBox. Radius can be adjusted.
-    return svg`<circle cx="70" cy="70" r="30" fill="${iconColor}" />`;
+    return svg`<circle cx="70" cy="70" r="15" fill="${iconColor}" />`;
   }
 
   private renderLoading() {
