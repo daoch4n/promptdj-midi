@@ -584,6 +584,10 @@ export class PromptDjMidi extends LitElement {
   private apiKeyMessageTimeoutId: ReturnType<typeof setTimeout> | null = null;
   @state() private showApiKeyControls = true;
 
+  // DSP Overload Indicator State
+  @state() private dspOverloadIndicatorColor = 'yellow';
+  @state() private dspOverloadBlinkDuration = '2s';
+
   // Preset UI State
   @state() private presetNameToSave = '';
   @state() private availablePresets: string[] = [];
@@ -1045,6 +1049,42 @@ export class PromptDjMidi extends LitElement {
       frequencyContribution +
       amplitudeContribution;
 
+    // Define thresholds for color transitions
+    const combinedFactorThreshold = 1.8; // When purple transition starts
+    const purpleMaxFactor = 3.5; // When purple is fully saturated
+
+    let currentHue = 60; // Default yellow
+    let currentBlinkDuration = 2; // Default 2s
+
+    // Existing yellow-to-red logic, based on prompt and knob extremeness
+    const promptIntensity = Math.max(0, this.currentPromptAverage - 1.0);
+    let animationIntensityFactor =
+      promptIntensity + this.knobAverageExtremeness * 0.5;
+    animationIntensityFactor = Math.min(animationIntensityFactor, 1.5);
+    const progress = animationIntensityFactor / 1.5; // 0 to 1
+
+    currentHue = 60 * (1 - progress); // Yellow (60) to Red (0)
+    currentBlinkDuration = Math.max(0.5, 2 - 1.5 * progress); // 2s to 0.5s
+
+    // New purple transition logic
+    if (combinedFactor > combinedFactorThreshold) {
+      const purpleProgress = Math.min(
+        1,
+        (combinedFactor - combinedFactorThreshold) /
+          (purpleMaxFactor - combinedFactorThreshold),
+      );
+
+      // Interpolate hue from red (0) towards purple (270)
+      const redHue = 0;
+      const purpleHue = 270;
+
+      currentHue = redHue + purpleProgress * (purpleHue - redHue);
+      // Make it blink faster as it gets more purple, down to 0.1s
+      currentBlinkDuration = Math.max(0.1, currentBlinkDuration * (1 - purpleProgress * 0.5));
+    }
+
+    this.dspOverloadIndicatorColor = `hsl(${currentHue}, 100%, 50%)`;
+    this.dspOverloadBlinkDuration = `${currentBlinkDuration}s`;
   }
 
   private globalFlowTick(): void {
@@ -2763,6 +2803,8 @@ export class PromptDjMidi extends LitElement {
           <dsp-overload-indicator
             .currentPromptAverage=${this.promptWeightedAverage}
             .currentKnobAverageExtremeness=${this.knobAverageExtremeness}
+            .indicatorColor=${this.dspOverloadIndicatorColor}
+            .blinkDuration=${this.dspOverloadBlinkDuration}
           ></dsp-overload-indicator>
           <!-- MIDI Controls -->
           <button

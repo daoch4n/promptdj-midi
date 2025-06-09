@@ -5,8 +5,9 @@ import { customElement, property, state } from 'lit/decorators.js';
 export class DSPOverloadIndicator extends LitElement {
   @property({ type: Number }) currentPromptAverage = 0;
   @property({ type: Number }) currentKnobAverageExtremeness = 0;
+  @property({ type: String }) indicatorColor = 'yellow'; // New property for color
+  @property({ type: String }) blinkDuration = '2s'; // New property for blink duration
 
-  // _visible state might not be strictly needed if we query classList, but can be useful for clarity
   @state() private _visible = false;
 
   static styles = css`
@@ -21,16 +22,14 @@ export class DSPOverloadIndicator extends LitElement {
       border: 1px solid #555;
       color: white;
       display: none; /* Hidden by default */
-      --glow-color: yellow; /* Default glow color */
-      --blink-duration: 2s; /* Default blink duration */
     }
 
     :host(.is-visible) {
       display: block;
     }
 
-    :host([animating].is-visible) { /* Ensure it's also visible to animate */
-      box-shadow: 0 0 5px var(--glow-color), 0 0 10px var(--glow-color);
+    :host([animating].is-visible) {
+      box-shadow: 0 0 5px var(--indicator-color), 0 0 10px var(--indicator-color);
       animation: blink var(--blink-duration) infinite;
     }
 
@@ -50,7 +49,9 @@ export class DSPOverloadIndicator extends LitElement {
 
     if (
       changedProperties.has('currentPromptAverage') ||
-      changedProperties.has('currentKnobAverageExtremeness')
+      changedProperties.has('currentKnobAverageExtremeness') ||
+      changedProperties.has('indicatorColor') || // React to color changes
+      changedProperties.has('blinkDuration') // React to duration changes
     ) {
       this._visible =
         this.currentPromptAverage > 1.0 ||
@@ -58,40 +59,22 @@ export class DSPOverloadIndicator extends LitElement {
 
       if (this._visible) {
         this.classList.add('is-visible');
-
-        if (this.currentPromptAverage > 1.0) {
-          this.setAttribute('animating', ''); // Enable animations
-
-          const promptIntensity = Math.max(0, this.currentPromptAverage - 1.0); // Range 0-1 (how much > 1.0)
-
-          // Knob extremeness adds to the animation intensity.
-          // Max contribution from knob is 0.5 to the factor.
-          // Total animationIntensityFactor can go from 0 up to 1.5 (1 from prompt, 0.5 from knob).
-          let animationIntensityFactor =
-            promptIntensity + this.currentKnobAverageExtremeness * 0.5;
-          animationIntensityFactor = Math.min(animationIntensityFactor, 1.5); // Cap at 1.5
-
-          // Progress is normalized from 0 to 1 based on this capped factor.
-          const progress = animationIntensityFactor / 1.5;
-
-          const hue = 60 * (1 - progress); // 60 for yellow (progress=0), 0 for red (progress=1)
-          this.style.setProperty('--glow-color', `hsl(${hue}, 100%, 50%)`);
-
-          const blinkDuration = Math.max(0.5, 2 - 1.5 * progress); // 2s (progress=0) down to 0.5s (progress=1)
-          this.style.setProperty('--blink-duration', `${blinkDuration}s`);
+        // Only set 'animating' if prompt average is above 1.0, or if a specific color/duration is passed
+        // The logic for setting 'animating' is now simplified as color/duration are passed in.
+        if (this.currentPromptAverage > 1.0 || this.currentKnobAverageExtremeness > 0.5) {
+          this.setAttribute('animating', '');
         } else {
-          // Visible (due to knob extremeness > 0.5) but not animating (because currentPromptAverage <= 1.0)
           this.removeAttribute('animating');
-          // Reset to default glow color and blink duration if needed, though they won't apply without 'animating'
-          this.style.setProperty('--glow-color', 'yellow');
-          this.style.setProperty('--blink-duration', '2s');
         }
+        // The color and blink duration are now controlled by the parent component via properties.
+        // No need to set them here based on internal logic.
+        this.style.setProperty('--indicator-color', this.indicatorColor);
+        this.style.setProperty('--blink-duration', this.blinkDuration);
       } else {
-        // Not visible
         this.classList.remove('is-visible');
         this.removeAttribute('animating');
-        // Reset to default glow color and blink duration
-        this.style.setProperty('--glow-color', 'yellow');
+        // Reset CSS variables when not visible, though they won't apply
+        this.style.setProperty('--indicator-color', 'yellow');
         this.style.setProperty('--blink-duration', '2s');
       }
     }
