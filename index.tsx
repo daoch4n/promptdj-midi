@@ -463,7 +463,6 @@ export class PromptDjMidi extends LitElement {
       justify-content: center;
       align-items: center;
       gap: 20px;
-      margin-bottom: 15px;
     }
     play-pause-button {
       width: 100px;
