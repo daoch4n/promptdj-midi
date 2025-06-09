@@ -1020,8 +1020,16 @@ export class PromptDjMidi extends LitElement {
 
     // Normalize promptAverage to 0-1 for combined factor, then add knobExtremeness (already 0-1)
     // Max possible combinedFactor is 2.0 (promptAvg 2.0 -> 1.0; knobExtremeness 1.0 -> 1.0)
+    // Calculate audio level contribution: 0 at 10, 0.5 at 20, clamped between 0 and 0.5
+    const audioLevelContribution = Math.min(
+      0.5,
+      Math.max(0, this.audioLevel * 0.05 - 0.5),
+    );
+
     const combinedFactor =
-      this.promptWeightedAverage / 2 + this.knobAverageExtremeness;
+      this.promptWeightedAverage / 2 +
+      this.knobAverageExtremeness +
+      audioLevelContribution;
 
     if (
       this.promptWeightedAverage >= promptAverageCritical ||
