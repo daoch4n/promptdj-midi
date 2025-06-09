@@ -44,7 +44,7 @@ const DEFAULT_PROMPTS = [
   { color: '#2af6de', text: 'Post Punk' },
   { color: '#ffdd28', text: 'Shoegaze' },
   { color: '#2af6de', text: 'Funk' },
-  { color: '#9900ff', text: 'Chiptune' },
+  { color: '#9900ff', text: 'Witch House' },
   { color: '#3dffab', text: 'Lush Strings' },
   { color: '#d8ff3e', text: 'Sparkling Arpeggios' },
   { color: '#d9b2ff', text: 'Staccato Rhythms' },
