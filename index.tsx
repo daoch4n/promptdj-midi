@@ -60,7 +60,7 @@ const DEFAULT_PROMPTS = [
   { color: '#8A2BE2', text: 'Techno' },
   { color: '#20B2AA', text: 'Ambient' },
   { color: '#FFD700', text: 'Reggae' },
-  { color: '#00FA9A', text: 'Hyperpop' },
+  { color: '#00FA9A', text: 'Massive Drop' },
   { color: '#32CD32', text: 'Trap Wave' },
   { color: '#DA70D6', text: 'Ethereal Vibes' },
   { color: '#778899', text: 'Vaporwave' },
