@@ -225,7 +225,7 @@ export class PromptDjMidi extends LitElement {
       top: 0;
       height: 100vh;
       overflow-y: auto;
-      width: 120px;
+      width: 180px;
       z-index: 1000;
       background-color: #202020;
       border-radius: 8px;
