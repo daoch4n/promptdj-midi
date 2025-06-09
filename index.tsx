@@ -58,7 +58,7 @@ const DEFAULT_PROMPTS = [
   { color: '#FFA500', text: 'Lo-fi Hip Hop' },
   { color: '#00CED1', text: 'House' },
   { color: '#8A2BE2', text: 'Techno' },
-  { color: '#FF69B4', text: 'Drift Phonk' },
+  { color: '#FF69B4', text: 'Drifting Phonk' },
   { color: '#FFD700', text: 'Reggae' },
   { color: '#00FA9A', text: 'Massive Drop' },
   { color: '#32CD32', text: 'Trap Wave' },
