@@ -458,19 +458,22 @@ export class PromptDjMidi extends LitElement {
       color: #000;
     }
 
+    .playback-record-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 15px;
+    }
     play-pause-button {
       width: 100px;
       height: 100px;
-      margin: 0 auto 15px auto; 
-      display: block;
       cursor: pointer;
     }
-    record-button { /* Style for the record button */
-      display: block;
-      margin: 15px auto 15px auto; /* top right bottom left - centers block element */
-      width: 80px; /* Explicitly set width */
-      height: 80px; /* Explicitly set height */
-      cursor: pointer; /* Ensure cursor pointer is visible */
+    record-button {
+      width: 80px;
+      height: 80px;
+      cursor: pointer;
     }
    .solo-group-header {
      font-weight: bold;
@@ -3021,14 +3024,16 @@ export class PromptDjMidi extends LitElement {
 ${this.renderPrompts()}
         </div>
 <div class=${advancedClasses}>
-          <play-pause-button
-            .playbackState=${this.playbackState}
-            @play-pause-click=${this.handleMainAudioButton}
-          ></play-pause-button>
-          <record-button
-            .isRecording=${this.isRecordingActive}
-            @record-click=${this.handleRecordClick}
-          ></record-button>
+          <div class="playback-record-controls">
+            <play-pause-button
+              .playbackState=${this.playbackState}
+              @play-pause-click=${this.handleMainAudioButton}
+            ></play-pause-button>
+            <record-button
+              .isRecording=${this.isRecordingActive}
+              @record-click=${this.handleRecordClick}
+            ></record-button>
+          </div>
           <div class="setting">
             <label for="density">Density: <span class="label-value">${(this.config.density ?? 0.5).toFixed(2)}</span></label>
             <weight-knob
