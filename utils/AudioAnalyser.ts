@@ -31,6 +31,6 @@ export class AudioAnalyser {
       sum += this.freqData[i];
     }
     const avg = numberOfBinsToAverage > 0 ? sum / numberOfBinsToAverage : 0;
-    return (avg / 0xff) * 20;
+    return Math.pow(avg / 0xff, 2) * 20;
   }
 }
