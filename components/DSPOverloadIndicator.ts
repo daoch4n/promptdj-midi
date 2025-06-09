@@ -1,6 +1,15 @@
 import { LitElement, type PropertyValues, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
+interface OverloadThresholdConfig {
+  threshold: number;
+  color: string;
+  blinkDuration: string; // Can be a fixed string like '1s' or 'dynamic' for RGB cycling
+  rgbCycling?: boolean;
+  rgbCycleSpeedMin?: number; // Fastest speed (at max overload)
+  rgbCycleSpeedMax?: number; // Slowest speed (at min overload for this range)
+}
+
 @customElement('dsp-overload-indicator')
 export class DSPOverloadIndicator extends LitElement {
   @property({ type: Number }) currentPromptAverage = 0;
@@ -10,6 +19,15 @@ export class DSPOverloadIndicator extends LitElement {
   @state() private _blinkDuration = '2s';
   @state() private _isCyclingRgb = false;
   @state() private _rgbCycleSpeed = 1.0;
+
+  private static readonly OVERLOAD_THRESHOLDS: OverloadThresholdConfig[] = [
+    // Ordered from highest threshold to lowest for easy iteration
+    { threshold: 1.5, color: 'magenta', blinkDuration: 'dynamic', rgbCycling: true, rgbCycleSpeedMin: 0.2, rgbCycleSpeedMax: 1.0 },
+    { threshold: 1.25, color: 'purple', blinkDuration: '0.7s' },
+    { threshold: 1.0, color: 'red', blinkDuration: '1s' },
+    { threshold: 0.75, color: 'yellow', blinkDuration: '1.5s' },
+    { threshold: 0.5, color: 'green', blinkDuration: '2s' },
+  ];
 
   static styles = css`
     :host {
@@ -90,37 +108,25 @@ export class DSPOverloadIndicator extends LitElement {
       let shouldCycleRgb = false;
       let rgbCycleSpeed = 1.0; // Default speed for RGB cycle
 
-      // Apply thresholds based on the combined overload factor
-      if (overloadFactor > 0.5) {
-        calculatedColor = 'green';
-        shouldAnimateBlink = true;
-      }
-      if (overloadFactor > 0.75) {
-        calculatedColor = 'yellow';
-        calculatedBlinkDuration = '1.5s';
-        shouldAnimateBlink = true;
-      }
-      if (overloadFactor > 1.0) {
-        calculatedColor = 'red';
-        calculatedBlinkDuration = '1s';
-        shouldAnimateBlink = true;
-      }
-      if (overloadFactor > 1.25) {
-        calculatedColor = 'purple';
-        calculatedBlinkDuration = '0.7s';
-        shouldAnimateBlink = true;
-      }
-      if (overloadFactor > 1.5) {
-        calculatedColor = 'magenta'; // This color is for the threshold, but RGB cycle takes over visual
-        shouldCycleRgb = true;
-        // Calculate speed: faster as overloadFactor goes from 1.5 to 2.0
-        const minSpeed = 0.2; // Fastest speed (e.g., at overloadFactor = 2.0)
-        const maxSpeed = 1.0; // Slowest speed (e.g., at overloadFactor = 1.5)
-        const range = 2.0 - 1.5; // Range of overloadFactor for this effect (0.5)
-        const normalizedOverload = Math.min(1, Math.max(0, (overloadFactor - 1.5) / range)); // 0 to 1
-        rgbCycleSpeed = maxSpeed - (normalizedOverload * (maxSpeed - minSpeed));
-        calculatedBlinkDuration = `${rgbCycleSpeed}s`; // Blink speed matches RGB cycle speed
-        shouldAnimateBlink = true; // Always blink when RGB cycling
+      if (this._visible) {
+        shouldAnimateBlink = true; // If visible, it should blink
+
+        for (const config of DSPOverloadIndicator.OVERLOAD_THRESHOLDS) {
+          if (overloadFactor > config.threshold) {
+            calculatedColor = config.color;
+            calculatedBlinkDuration = config.blinkDuration;
+            shouldCycleRgb = config.rgbCycling || false;
+
+            if (shouldCycleRgb && config.rgbCycleSpeedMin !== undefined && config.rgbCycleSpeedMax !== undefined) {
+              // Calculate speed: faster as overloadFactor goes from config.threshold to 2.0 (max possible)
+              const rangeForSpeedCalc = 2.0 - config.threshold;
+              const normalizedOverload = Math.min(1, Math.max(0, (overloadFactor - config.threshold) / rangeForSpeedCalc));
+              rgbCycleSpeed = config.rgbCycleSpeedMax - (normalizedOverload * (config.rgbCycleSpeedMax - config.rgbCycleSpeedMin));
+              calculatedBlinkDuration = `${rgbCycleSpeed}s`; // Blink speed matches RGB cycle speed
+            }
+            break; // Found the highest applicable threshold, apply its settings and break
+          }
+        }
       }
 
       // Apply states and attributes
@@ -144,9 +150,9 @@ export class DSPOverloadIndicator extends LitElement {
         this.removeAttribute('animating');
         this.removeAttribute('rgb-cycling');
         // Reset CSS variables when not visible
-        this.style.setProperty('--indicator-color', 'yellow');
-        this.style.setProperty('--blink-duration', '2s');
-        this.style.setProperty('--rgb-cycle-speed', '1s');
+        this.style.setProperty('--indicator-color', 'yellow'); // Default reset color
+        this.style.setProperty('--blink-duration', '2s'); // Default reset duration
+        this.style.setProperty('--rgb-cycle-speed', '1s'); // Default reset speed
       }
     }
   }
