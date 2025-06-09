@@ -186,7 +186,7 @@ export class PromptDjMidi extends LitElement {
       max-width: 1600px;
       height: 100%;
       padding: 8vmin 0 2.5vmin 2.5vmin;
-      padding-right: 240px; 
+      padding-right: 260px; 
       box-sizing: border-box;
     }
     .advanced-settings-panel {
@@ -196,7 +196,7 @@ export class PromptDjMidi extends LitElement {
       top: 0;
       height: 100vh;
       overflow-y: auto;
-      width: 180px;
+      width: 200px;
       z-index: 1000;
       background-color: #202020;
       border-radius: 8px;
