@@ -36,41 +36,12 @@ import './components/RecordButton.js'; // Import RecordButton
 import './components/DSPOverloadIndicator.js';
 
 import type { PlaybackState, Prompt } from './types';
+import { GENRE_COLORS } from './types';
 
-const DEFAULT_PROMPTS = [
-  { color: '#9900ff', text: 'Bossa Nova' },
-  { color: '#5200ff', text: 'Chillwave' },
-  { color: '#ff25f6', text: 'Drum and Bass' },
-  { color: '#2af6de', text: 'Post Punk' },
-  { color: '#ffdd28', text: 'Shoegaze' },
-  { color: '#2af6de', text: 'Funk' },
-  { color: '#9900ff', text: 'Witch House' },
-  { color: '#3dffab', text: 'Space Bass' },
-  { color: '#d8ff3e', text: 'Sparkling Arpeggios' },
-  { color: '#d9b2ff', text: 'Staccato Rhythms' },
-  { color: '#3dffab', text: 'Punchy Kick' },
-  { color: '#ffdd28', text: 'Dubstep' },
-  { color: '#ff25f6', text: 'Bitpop' },
-  { color: '#d8ff3e', text: 'Neo Soul' },
-  { color: '#5200ff', text: 'Trip Hop' },
-  { color: '#d9b2ff', text: 'Thrash' },
-  { color: '#20B2AA', text: 'Ambient' },
-  { color: '#FFA500', text: 'Lo-fi Hip Hop' },
-  { color: '#00CED1', text: 'House' },
-  { color: '#8A2BE2', text: 'Techno' },
-  { color: '#FF69B4', text: 'Drifting Phonk' },
-  { color: '#FFD700', text: 'Reggae' },
-  { color: '#00FA9A', text: 'Massive Drop' },
-  { color: '#32CD32', text: 'Trap Wave' },
-  { color: '#DA70D6', text: 'Ethereal Vibes' },
-  { color: '#778899', text: 'Vaporwave' },
-  { color: '#1E90FF', text: 'Surf Rock' },
-  { color: '#A9A9A9', text: 'Darkwave' },
-  { color: '#D2B48C', text: 'Nu Disco' },
-  { color: '#ff00cc', text: 'Synthwave' },
-  { color: '#00ffff', text: 'Trance' },
-  { color: '#00BFFF', text: 'Nu Jazz' },
-];
+const DEFAULT_PROMPTS = Object.entries(GENRE_COLORS).map(([genre, color]) => ({
+  text: genre,
+  color
+}));
 
 // OpusMediaRecorder options
 const opusWorkerOptions = {
@@ -1093,7 +1064,7 @@ export class PromptDjMidi extends LitElement {
     let currentBlinkDuration = 2; // Default 2s
 
     // Existing yellow-to-red logic, based on prompt and knob extremeness
-    const promptIntensity = Math.max(0, this.currentPromptAverage - 1.0);
+    const promptIntensity = Math.max(0, this.promptWeightedAverage - 1.0);
     let animationIntensityFactor =
       promptIntensity + this.knobAverageExtremeness * 0.5;
     animationIntensityFactor = Math.min(animationIntensityFactor, 1.5);
@@ -2411,34 +2382,36 @@ export class PromptDjMidi extends LitElement {
 
       this.audioChunks = []; // Clear previous chunks
 
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data);
-        }
-      };
+      if (this.mediaRecorder) {
+        this.mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            this.audioChunks.push(event.data);
+          }
+        };
 
-      this.mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/ogg' });
-        const url = URL.createObjectURL(audioBlob);
-        const a = document.createElement('a');
-        document.body.appendChild(a);
-        a.style.display = 'none';
-        a.href = url;
-        a.download = 'recording.ogg';
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        this.mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(this.audioChunks, { type: 'audio/ogg' });
+          const url = URL.createObjectURL(audioBlob);
+          const a = document.createElement('a');
+          document.body.appendChild(a);
+          a.style.display = 'none';
+          a.href = url;
+          a.download = 'recording.ogg';
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
 
-        this.audioChunks = []; // Clear chunks for next recording
-        this.isRecordingActive = false;
+          this.audioChunks = []; // Clear chunks for next recording
+          this.isRecordingActive = false;
 
-        // DO NOT stop tracks on this.audioStream from MediaStreamAudioDestinationNode
-        // this.audioStream = null; // We can nullify our reference, but the node's stream persists.
+          // DO NOT stop tracks on this.audioStream from MediaStreamAudioDestinationNode
+          // this.audioStream = null; // We can nullify our reference, but the node's stream persists.
 
-        this.requestUpdate();
-      };
+          this.requestUpdate();
+        };
 
-      this.mediaRecorder.start();
+        this.mediaRecorder.start();
+      }
       this.isRecordingActive = true;
     } catch (err) {
       console.error(
@@ -3278,23 +3251,24 @@ ${this.renderPrompts()}
   }
 
   static buildDefaultPrompts() {
-    const startOn = [...DEFAULT_PROMPTS]
+    const startOnTexts = [...DEFAULT_PROMPTS]
       .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
+      .slice(0, 3)
+      .map(p => p.text);
 
     const prompts = new Map<string, Prompt>();
 
-    for (let i = 0; i < DEFAULT_PROMPTS.length; i++) {
+    for (const [i, {text, color}] of DEFAULT_PROMPTS.entries()) {
       const promptId = `prompt-${i}`;
-      const prompt = DEFAULT_PROMPTS[i];
-      const { text, color } = prompt;
+      const weight = startOnTexts.includes(text) ? 1 : 0;
+
       prompts.set(promptId, {
         promptId,
         text,
-        weight: startOn.includes(prompt) ? 1 : 0,
-        backgroundDisplayWeight: startOn.includes(prompt) ? 1 : 0,
+        weight,
+        backgroundDisplayWeight: weight,
         cc: i,
-        color,
+        color, // Use the defined color
         isAutoFlowing: false,
       });
     }
