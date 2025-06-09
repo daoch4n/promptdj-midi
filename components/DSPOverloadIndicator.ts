@@ -93,6 +93,7 @@ export class DSPOverloadIndicator extends LitElement {
       // Apply thresholds based on the combined overload factor
       if (overloadFactor > 0.5) {
         calculatedColor = 'green';
+        shouldAnimateBlink = true;
       }
       if (overloadFactor > 0.75) {
         calculatedColor = 'yellow';
