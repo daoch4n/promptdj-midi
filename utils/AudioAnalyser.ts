@@ -15,8 +15,8 @@ export class AudioAnalyser {
   }
   getCurrentLevel() {
     this.node.getByteFrequencyData(this.freqData);
-    // Calculate the index for 10Hz
-    const maxFrequency = 10; // Hz
+    // Calculate the index for 5Hz
+    const maxFrequency = 5; // Hz
     const frequencyResolution = this._context.sampleRate / this.node.fftSize;
     const maxBinIndex = Math.min(
       Math.floor(maxFrequency / frequencyResolution),
