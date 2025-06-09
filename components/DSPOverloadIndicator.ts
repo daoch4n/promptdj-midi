@@ -7,6 +7,7 @@ export class DSPOverloadIndicator extends LitElement {
   @property({ type: Number }) currentKnobAverageExtremeness = 0;
   @state() private _visible = false;
   @state() private _rgbCycleSpeed = 1.0;
+  @state() private _blinkDuration = 1.0; // New state for blink animation duration
   @state() private _rgbColor = 'rgb(255, 0, 0)'; // Initial color
 
   private _rgbCycleAnimationId: number | null = null;
@@ -28,10 +29,17 @@ export class DSPOverloadIndicator extends LitElement {
 
     :host(.is-visible) {
       display: block;
+      animation: blink var(--blink-duration) infinite alternate; /* Reintroduce blinking */
+      box-shadow: 0 0 5px var(--rgb-color), 0 0 10px var(--rgb-color);
     }
 
-    :host(.is-visible) {
-      box-shadow: 0 0 5px var(--rgb-color), 0 0 10px var(--rgb-color);
+    @keyframes blink {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0.3; /* Adjust opacity for desired blink effect */
+      }
     }
   `;
 
@@ -79,6 +87,11 @@ export class DSPOverloadIndicator extends LitElement {
 
         // Interpolate speed: higher normalizedOverload means faster speed (smaller value)
         this._rgbCycleSpeed = maxSpeed - (normalizedOverload * (maxSpeed - minSpeed));
+        this._blinkDuration = this._rgbCycleSpeed; // Blink duration matches color cycle speed
+
+        // Set CSS variables for animation durations
+        this.style.setProperty('--rgb-cycle-speed', `${this._rgbCycleSpeed}s`);
+        this.style.setProperty('--blink-duration', `${this._blinkDuration}s`);
       }
     }
   }
@@ -115,8 +128,9 @@ export class DSPOverloadIndicator extends LitElement {
     }
 
     const elapsed = currentTime - this._rgbCycleStartTime;
-    // The cycle speed is in seconds, convert to milliseconds for calculation
-    const cycleDurationMs = this._rgbCycleSpeed * 1000;
+    // The cycle speed is in seconds, read from CSS variable
+    const rgbCycleSpeedSeconds = parseFloat(getComputedStyle(this).getPropertyValue('--rgb-cycle-speed'));
+    const cycleDurationMs = rgbCycleSpeedSeconds * 1000;
     const progress = (elapsed % cycleDurationMs) / cycleDurationMs; // Normalized progress [0, 1)
 
     // RGB cycle: Red -> Green -> Blue -> Red
