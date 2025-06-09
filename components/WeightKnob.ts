@@ -11,7 +11,7 @@ const MIN_HALO_SCALE = 1;
 const MAX_HALO_SCALE = 2;
 
 /** The amount of scale to add to the halo based on audio level. */
-const HALO_LEVEL_MODIFIER = 1;
+const HALO_LEVEL_MODIFIER = 0.1;
 
 // Old smoothing factors (commented out as per previous step)
 // const DEFAULT_ANIMATION_SMOOTHING_FACTOR = 0.2;
