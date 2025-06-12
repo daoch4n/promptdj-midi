@@ -38,10 +38,13 @@ import './components/DSPOverloadIndicator.js';
 import type { PlaybackState, Prompt } from './types';
 import { GENRE_COLORS } from './types';
 
-const DEFAULT_PROMPTS = Object.entries(GENRE_COLORS).map(([genre, color]) => ({
-  text: genre,
-  color
-}));
+const DEFAULT_PROMPTS = [
+  ...Object.entries(GENRE_COLORS).map(([genre, color]) => ({
+    text: genre,
+    color
+  })),
+  { text: 'Edit Me', color: '#FFA500' } // New prompt with orange color
+];
 
 // OpusMediaRecorder options
 const opusWorkerOptions = {
