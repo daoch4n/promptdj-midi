@@ -334,13 +334,13 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       await (element as any).saveApiKeyToLocalStorage();
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION); // Let "API Key Saved" clear
       await element.updateComplete;
-      expect(element.transientApiKeyStatusMessage).toBeNull();
+      // After "API Key Saved" clears, it should show "API Key saved." (green)
+      expect(getApiKeyStatusMessage()).toBe('API Key saved.');
 
       // Now clear it
       element.geminiApiKey = null;
       await (element as any).saveApiKeyToLocalStorage();
-      // Do not advance all timers yet, assert the message immediately after it's set
-      await element.updateComplete; // Ensure LitElement has rendered the new message
+      await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBe('API Key Cleared');
       expect(getApiKeyStatusMessage()).toBe('API Key Cleared');
 
@@ -348,7 +348,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
       await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBeNull();
-      expect(getApiKeyStatusMessage()).toBe('No API Key provided.'); // Should default to this
+      expect(getApiKeyStatusMessage()).toBe('No API Key provided.');
     });
 
     test('new transient message clears previous one and has its own timeout', async () => {
