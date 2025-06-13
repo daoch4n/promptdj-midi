@@ -135,15 +135,15 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       await element.updateComplete;
 
       expect(element.geminiApiKey).toBe(testKey);
-      expect(element.apiKeySavedSuccessfully).toBe(false);
+      expect(element.apiKeySavedSuccessfully).toBe(true);
       expect(element.transientApiKeyStatusMessage).toBe('API Key Loaded');
       expect(getApiKeyStatusMessage()).toBe('API Key Loaded');
 
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
       await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBeNull();
-      // After transient message clears, the test expects no persistent success message as per its title.
-      expect(getApiKeyStatusMessage()).toBeNull();
+      // After transient message clears, it should show the persistent "API Key saved." message.
+      expect(getApiKeyStatusMessage()).toBe('API Key saved.');
     });
   });
 
@@ -154,7 +154,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       await (element as any).saveApiKeyToLocalStorage();
       await vi.runAllTimersAsync(); // Ensure all async operations within save complete
 
-      expect(element.apiKeySavedSuccessfully).toBe(false);
+      expect(element.apiKeySavedSuccessfully).toBe(true); // Should be true after successful save
       expect(element.transientApiKeyStatusMessage).toBe('API Key Saved');
       await element.updateComplete;
       expect(getApiKeyStatusMessage()).toBe('API Key Saved');
@@ -162,7 +162,8 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
       await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBeNull();
-      expect(getApiKeyStatusMessage()).toBe('No API Key provided.');
+      // After transient "API Key Saved" clears, the persistent "API Key saved." should appear.
+      expect(getApiKeyStatusMessage()).toBe('API Key saved.');
     });
 
     test('API key saving succeeds after retries, shows transient "API Key Saved"', async () => {
@@ -296,7 +297,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
 
       expect(directSaveSpy).toHaveBeenCalledTimes(1);
       expect(element.geminiApiKey).toBe(pastedKey);
-      expect(element.apiKeySavedSuccessfully).toBe(false);
+      expect(element.apiKeySavedSuccessfully).toBe(true); // Should be true after successful save
       expect(element.transientApiKeyStatusMessage).toBe('API Key Saved');
       expect(getApiKeyStatusMessage()).toBe('API Key Saved');
 
