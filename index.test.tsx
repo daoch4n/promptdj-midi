@@ -78,25 +78,35 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
   });
 
   const getApiKeyStatusMessage = () => {
+    // Check for transient message (lightblue)
     const transientMsgElement = element.shadowRoot?.querySelector(
       'span[style*="lightblue"]',
     );
-    if (transientMsgElement)
+    if (transientMsgElement) {
       return transientMsgElement.textContent?.trim() || null;
+    }
 
-    const redMsgElement =
-      element.shadowRoot?.querySelector('span[style*="red"]');
-    if (redMsgElement) return redMsgElement.textContent?.trim() || null;
+    // Check for persistent error message (red)
+    const redMsgElement = element.shadowRoot?.querySelector('span[style*="red"]');
+    if (redMsgElement) {
+      return redMsgElement.textContent?.trim() || null;
+    }
 
+    // Check for persistent yellow messages
     const yellowMsgElement = element.shadowRoot?.querySelector(
       'span[style*="yellow"]',
     );
-    if (yellowMsgElement) return yellowMsgElement.textContent?.trim() || null;
+    if (yellowMsgElement) {
+      return yellowMsgElement.textContent?.trim() || null;
+    }
 
-    const orangeMsgElement = element.shadowRoot?.querySelector(
-      'span[style*="orange"]',
+    // Check for persistent success message (green)
+    const greenMsgElement = element.shadowRoot?.querySelector(
+      'span[style*="green"]',
     );
-    if (orangeMsgElement) return orangeMsgElement.textContent?.trim() || null;
+    if (greenMsgElement) {
+      return greenMsgElement.textContent?.trim() || null;
+    }
 
     return null;
   };
@@ -132,8 +142,8 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
       await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBeNull();
-      // After transient message clears, no persistent success message should remain
-      expect(getApiKeyStatusMessage()).toBeNull();
+      // After transient message clears, a persistent success message should remain
+      expect(getApiKeyStatusMessage()).toBe('API Key saved.');
     });
   });
 
@@ -152,7 +162,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
       await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBeNull();
-      expect(getApiKeyStatusMessage()).toBeNull(); // No persistent success message
+      expect(getApiKeyStatusMessage()).toBe('API Key saved.');
     });
 
     test('API key saving succeeds after retries, shows transient "API Key Saved"', async () => {
@@ -181,7 +191,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
       await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBeNull();
-      expect(getApiKeyStatusMessage()).toBeNull();
+      expect(getApiKeyStatusMessage()).toBe('API Key saved.');
     });
   });
 
@@ -215,7 +225,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
       await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBeNull();
-      expect(getApiKeyStatusMessage()).toBeNull();
+      expect(getApiKeyStatusMessage()).toBe('API Key saved.');
     });
 
     test('multiple input changes trigger only one save call, shows transient "API Key Saved"', async () => {
@@ -256,7 +266,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
       await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBeNull();
-      expect(getApiKeyStatusMessage()).toBeNull();
+      expect(getApiKeyStatusMessage()).toBe('API Key saved.');
     });
   });
 
@@ -293,7 +303,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
       await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBeNull();
-      expect(getApiKeyStatusMessage()).toBeNull();
+      expect(getApiKeyStatusMessage()).toBe('API Key saved.');
     });
 
     // Other paste tests (clipboard unavailable, error, empty) remain relevant for behavior,
