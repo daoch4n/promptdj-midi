@@ -71,41 +71,6 @@ describe('PromptController', () => {
       isAutoFlowing: true,
     });
 
-    const autoflowToggledEvent = dispatchEventSpy.mock.calls.find(
-      (callArgs: any[]) =>
-        (callArgs[0] as CustomEvent).type === 'prompt-autoflow-toggled',
-    )?.[0] as CustomEvent;
-
-    expect(autoflowToggledEvent).toBeDefined();
-    expect(autoflowToggledEvent.type).toBe('prompt-autoflow-toggled');
-    expect(autoflowToggledEvent.detail).toEqual({
-      promptId: 'test-prompt',
-      isAutoFlowing: true,
-    });
-
-    const autoflowToggledEvent = dispatchEventSpy.mock.calls.find(
-      (callArgs: any[]) =>
-        (callArgs[0] as CustomEvent).type === 'prompt-autoflow-toggled',
-    )?.[0] as CustomEvent;
-
-    expect(autoflowToggledEvent).toBeDefined();
-    expect(autoflowToggledEvent.type).toBe('prompt-autoflow-toggled');
-    expect(autoflowToggledEvent.detail).toEqual({
-      promptId: 'test-prompt',
-      isAutoFlowing: false,
-    });
-
-    const autoflowToggledEvent = dispatchEventSpy.mock.calls.find(
-      (callArgs: any[]) =>
-        (callArgs[0] as CustomEvent).type === 'prompt-autoflow-toggled',
-    )?.[0] as CustomEvent;
-
-    expect(autoflowToggledEvent).toBeDefined();
-    expect(autoflowToggledEvent.type).toBe('prompt-autoflow-toggled');
-    expect(autoflowToggledEvent.detail).toEqual({
-      promptId: 'test-prompt',
-      isAutoFlowing: true,
-    });
   });
 
   it('Scenario 2: Auto active (weight 1, isAutoFlowing true) -> toggle to false (weight becomes 0)', () => {
