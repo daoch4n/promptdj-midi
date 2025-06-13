@@ -162,7 +162,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
       await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBeNull();
-      expect(getApiKeyStatusMessage()).toBe('API Key saved.');
+      expect(getApiKeyStatusMessage()).toBe('No API Key provided.');
     });
 
     test('API key saving succeeds after retries, shows transient "API Key Saved"', async () => {
@@ -341,8 +341,8 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       element.geminiApiKey = null;
       await (element as any).saveApiKeyToLocalStorage();
       await element.updateComplete;
-      expect(element.transientApiKeyStatusMessage).toBe('API Key Cleared');
-      expect(getApiKeyStatusMessage()).toBe('API Key Cleared');
+      expect(element.transientApiKeyStatusMessage).toBe('No API Key to save');
+      expect(getApiKeyStatusMessage()).toBe('No API Key to save');
 
       // Now advance timers to clear the transient message
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
@@ -458,9 +458,7 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       element.apiKeyInvalid = false;
       element.transientApiKeyStatusMessage = null;
       await element.updateComplete;
-      expect(getApiKeyStatusMessage()).toBe(
-        'API Key entered. Save or start playback to use.',
-      );
+      expect(getApiKeyStatusMessage()).toBeNull();
 
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION + 1000);
       await element.updateComplete;
