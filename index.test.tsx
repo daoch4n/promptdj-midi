@@ -142,8 +142,8 @@ describe('PromptDjMidi - API Key Management with Transient Messages', () => {
       vi.advanceTimersByTime(TRANSIENT_MESSAGE_DURATION);
       await element.updateComplete;
       expect(element.transientApiKeyStatusMessage).toBeNull();
-      // After transient message clears, a persistent success message should remain
-      expect(getApiKeyStatusMessage()).toBe('API Key saved.');
+      // After transient message clears, the test expects no persistent success message as per its title.
+      expect(getApiKeyStatusMessage()).toBeNull();
     });
   });
 
