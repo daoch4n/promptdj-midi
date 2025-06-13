@@ -11,6 +11,9 @@ describe('PromptController', () => {
   beforeEach(async () => {
     controller = new PromptController();
     controller.promptId = 'test-prompt';
+    controller.text = 'initial text';
+    controller.cc = 10;
+    controller.color = '#aabbcc';
     document.body.appendChild(controller);
     await controller.updateComplete;
 
@@ -40,10 +43,30 @@ describe('PromptController', () => {
     expect(controller.isAutoFlowing).toBe(true);
     expect(dispatchPromptChangeSpy).toHaveBeenCalledTimes(1);
 
-    expect(dispatchEventSpy).toHaveBeenCalledTimes(1);
-    const event = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
-    expect(event.type).toBe('prompt-autoflow-toggled');
-    expect(event.detail).toEqual({
+    expect(dispatchEventSpy).toHaveBeenCalledTimes(2);
+
+    const promptChangedEvent = dispatchEventSpy.mock.calls.find(
+      (callArgs: any[]) =>
+        (callArgs[0] as CustomEvent).type === 'prompt-changed',
+    )?.[0] as CustomEvent;
+    expect(promptChangedEvent).toBeDefined();
+    expect(promptChangedEvent.type).toBe('prompt-changed');
+    expect(promptChangedEvent.detail).toEqual({
+      promptId: 'test-prompt',
+      text: controller.text,
+      weight: 1.0,
+      cc: controller.cc,
+      color: controller.color,
+    });
+
+    const autoflowToggledEvent = dispatchEventSpy.mock.calls.find(
+      (callArgs: any[]) =>
+        (callArgs[0] as CustomEvent).type === 'prompt-autoflow-toggled',
+    )?.[0] as CustomEvent;
+
+    expect(autoflowToggledEvent).toBeDefined();
+    expect(autoflowToggledEvent.type).toBe('prompt-autoflow-toggled');
+    expect(autoflowToggledEvent.detail).toEqual({
       promptId: 'test-prompt',
       isAutoFlowing: true,
     });
@@ -61,10 +84,30 @@ describe('PromptController', () => {
     expect(controller.isAutoFlowing).toBe(false);
     expect(dispatchPromptChangeSpy).toHaveBeenCalledTimes(1);
 
-    expect(dispatchEventSpy).toHaveBeenCalledTimes(1);
-    const event = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
-    expect(event.type).toBe('prompt-autoflow-toggled');
-    expect(event.detail).toEqual({
+    expect(dispatchEventSpy).toHaveBeenCalledTimes(2);
+
+    const promptChangedEvent = dispatchEventSpy.mock.calls.find(
+      (callArgs: any[]) =>
+        (callArgs[0] as CustomEvent).type === 'prompt-changed',
+    )?.[0] as CustomEvent;
+    expect(promptChangedEvent).toBeDefined();
+    expect(promptChangedEvent.type).toBe('prompt-changed');
+    expect(promptChangedEvent.detail).toEqual({
+      promptId: 'test-prompt',
+      text: controller.text,
+      weight: 0.0,
+      cc: controller.cc,
+      color: controller.color,
+    });
+
+    const autoflowToggledEvent = dispatchEventSpy.mock.calls.find(
+      (callArgs: any[]) =>
+        (callArgs[0] as CustomEvent).type === 'prompt-autoflow-toggled',
+    )?.[0] as CustomEvent;
+
+    expect(autoflowToggledEvent).toBeDefined();
+    expect(autoflowToggledEvent.type).toBe('prompt-autoflow-toggled');
+    expect(autoflowToggledEvent.detail).toEqual({
       promptId: 'test-prompt',
       isAutoFlowing: false,
     });
@@ -80,10 +123,30 @@ describe('PromptController', () => {
     expect(controller.isAutoFlowing).toBe(true);
     expect(dispatchPromptChangeSpy).toHaveBeenCalledTimes(1);
 
-    expect(dispatchEventSpy).toHaveBeenCalledTimes(1);
-    const event = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
-    expect(event.type).toBe('prompt-autoflow-toggled');
-    expect(event.detail).toEqual({
+    expect(dispatchEventSpy).toHaveBeenCalledTimes(2);
+
+    const promptChangedEvent = dispatchEventSpy.mock.calls.find(
+      (callArgs: any[]) =>
+        (callArgs[0] as CustomEvent).type === 'prompt-changed',
+    )?.[0] as CustomEvent;
+    expect(promptChangedEvent).toBeDefined();
+    expect(promptChangedEvent.type).toBe('prompt-changed');
+    expect(promptChangedEvent.detail).toEqual({
+      promptId: 'test-prompt',
+      text: controller.text,
+      weight: 1.0,
+      cc: controller.cc,
+      color: controller.color,
+    });
+
+    const autoflowToggledEvent = dispatchEventSpy.mock.calls.find(
+      (callArgs: any[]) =>
+        (callArgs[0] as CustomEvent).type === 'prompt-autoflow-toggled',
+    )?.[0] as CustomEvent;
+
+    expect(autoflowToggledEvent).toBeDefined();
+    expect(autoflowToggledEvent.type).toBe('prompt-autoflow-toggled');
+    expect(autoflowToggledEvent.detail).toEqual({
       promptId: 'test-prompt',
       isAutoFlowing: true,
     });
@@ -101,6 +164,20 @@ describe('PromptController', () => {
 
     // Expect dispatchEvent to be called twice: once for prompt-changed, once for prompt-autoflow-toggled
     expect(dispatchEventSpy).toHaveBeenCalledTimes(2);
+
+    const promptChangedEvent = dispatchEventSpy.mock.calls.find(
+      (callArgs: any[]) =>
+        (callArgs[0] as CustomEvent).type === 'prompt-changed',
+    )?.[0] as CustomEvent;
+    expect(promptChangedEvent).toBeDefined();
+    expect(promptChangedEvent.type).toBe('prompt-changed');
+    expect(promptChangedEvent.detail).toEqual({
+      promptId: 'test-prompt',
+      text: controller.text,
+      weight: 0.7, // Weight remains 0.7 in this scenario
+      cc: controller.cc,
+      color: controller.color,
+    });
 
     // Find the 'prompt-autoflow-toggled' event among the dispatched events
     const autoflowToggledEvent = dispatchEventSpy.mock.calls.find(
