@@ -2543,7 +2543,7 @@ export class PromptDjMidi extends LitElement {
 
   private formatFlowFrequency(hzValue: number): string {
     if (hzValue === undefined || hzValue === null) return 'N/A'; // Basic guard
-    if (hzValue >= 1.0) {
+    if (hzValue >= 1.0 || hzValue < 0) {
       return `${hzValue.toFixed(1)} Hz`;
     }
     return `${hzValue.toFixed(2)} Hz`;
