@@ -53,7 +53,7 @@ describe('PromptController', () => {
     controller.weight = 1.0;
     controller.isAutoFlowing = true;
     // Set autoSetByButton to true as a precondition for weight to become 0.0
-    (controller as any).autoSetByButton = true; 
+    (controller as any).autoSetByButton = true;
 
     controller.toggleAutoFlow();
 
@@ -104,7 +104,8 @@ describe('PromptController', () => {
 
     // Find the 'prompt-autoflow-toggled' event among the dispatched events
     const autoflowToggledEvent = dispatchEventSpy.mock.calls.find(
-      (callArgs: any[]) => (callArgs[0] as CustomEvent).type === 'prompt-autoflow-toggled'
+      (callArgs: any[]) =>
+        (callArgs[0] as CustomEvent).type === 'prompt-autoflow-toggled',
     )?.[0] as CustomEvent;
 
     expect(autoflowToggledEvent).toBeDefined();

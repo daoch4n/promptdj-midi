@@ -453,7 +453,7 @@ export class WeightKnob extends LitElement {
       display: this._backgroundEffectAlpha > 0.001 ? 'block' : 'none',
       background: this.color,
       transform: `translate(-50%, -50%) scale(${haloDisplayScale})`,
-      boxShadow: `0 0 7.5px 2.5px var(--knob-color)`,
+      boxShadow: '0 0 7.5px 2.5px var(--knob-color)',
     });
 
     return html`

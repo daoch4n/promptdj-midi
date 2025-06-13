@@ -73,10 +73,17 @@ export class DSPOverloadIndicator extends LitElement {
         const maxSpeed = 1.0; // Slowest cycle
 
         // Normalize overloadFactor from [0.5, 2.0] to [0, 1]
-        const normalizedOverload = Math.min(1, Math.max(0, (overloadFactor - minOverload) / (maxOverload - minOverload)));
+        const normalizedOverload = Math.min(
+          1,
+          Math.max(
+            0,
+            (overloadFactor - minOverload) / (maxOverload - minOverload),
+          ),
+        );
 
         // Interpolate speed: higher normalizedOverload means faster speed (smaller value)
-        this._rgbCycleSpeed = maxSpeed - (normalizedOverload * (maxSpeed - minSpeed));
+        this._rgbCycleSpeed =
+          maxSpeed - normalizedOverload * (maxSpeed - minSpeed);
         this._blinkDuration = this._rgbCycleSpeed; // Blink duration matches color cycle speed
 
         // Set CSS variables for animation durations
@@ -100,7 +107,9 @@ export class DSPOverloadIndicator extends LitElement {
   private _startRgbCycle() {
     if (this._rgbCycleAnimationId === null) {
       this._rgbCycleStartTime = performance.now();
-      this._rgbCycleAnimationId = requestAnimationFrame(this._animateRgbCycle.bind(this));
+      this._rgbCycleAnimationId = requestAnimationFrame(
+        this._animateRgbCycle.bind(this),
+      );
     }
   }
 
@@ -119,12 +128,16 @@ export class DSPOverloadIndicator extends LitElement {
 
     const elapsed = currentTime - this._rgbCycleStartTime;
     // The cycle speed is in seconds, read from CSS variable
-    const rgbCycleSpeedSeconds = parseFloat(getComputedStyle(this).getPropertyValue('--rgb-cycle-speed'));
+    const rgbCycleSpeedSeconds = Number.parseFloat(
+      getComputedStyle(this).getPropertyValue('--rgb-cycle-speed'),
+    );
     const cycleDurationMs = rgbCycleSpeedSeconds * 1000;
     const progress = (elapsed % cycleDurationMs) / cycleDurationMs; // Normalized progress [0, 1)
 
     // RGB cycle: Red -> Green -> Blue -> Red
-    let r, g, b;
+    let r;
+    let g;
+    let b;
 
     if (progress < 1 / 3) {
       // Red to Green (0 to 1/3)
@@ -149,7 +162,9 @@ export class DSPOverloadIndicator extends LitElement {
     this._rgbColor = `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
     this.style.setProperty('--rgb-color', this._rgbColor); // Update CSS variable
 
-    this._rgbCycleAnimationId = requestAnimationFrame(this._animateRgbCycle.bind(this));
+    this._rgbCycleAnimationId = requestAnimationFrame(
+      this._animateRgbCycle.bind(this),
+    );
   }
 
   render() {

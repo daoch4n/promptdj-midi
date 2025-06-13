@@ -41,9 +41,9 @@ import { GENRE_COLORS } from './types';
 const DEFAULT_PROMPTS = [
   ...Object.entries(GENRE_COLORS).map(([genre, color]) => ({
     text: genre,
-    color
+    color,
   })),
-  { text: 'Edit Me', color: '#FFA500' } // New prompt with orange color
+  { text: 'Edit Me', color: '#FFA500' }, // New prompt with orange color
 ];
 
 // OpusMediaRecorder options
@@ -656,12 +656,16 @@ export class PromptDjMidi extends LitElement {
 
   private _animateAudioLevel(): void {
     this.updateAudioLevel();
-    this._audioLevelAnimationId = requestAnimationFrame(this._animateAudioLevelBound);
+    this._audioLevelAnimationId = requestAnimationFrame(
+      this._animateAudioLevelBound,
+    );
   }
 
   private _startAudioLevelAnimation(): void {
     if (this._audioLevelAnimationId === null) {
-      this._audioLevelAnimationId = requestAnimationFrame(this._animateAudioLevelBound);
+      this._audioLevelAnimationId = requestAnimationFrame(
+        this._animateAudioLevelBound,
+      );
     }
   }
 
@@ -1034,7 +1038,7 @@ export class PromptDjMidi extends LitElement {
     );
     const frequencyContribution = Math.min(
       0.5,
-      0.5 * Math.pow(freqNormalized, PromptDjMidi.EXPONENTIAL_POWER),
+      0.5 * freqNormalized ** PromptDjMidi.EXPONENTIAL_POWER,
     );
 
     // Calculate amplitude contribution: exponential from AMP_CONTRIBUTION_THRESHOLD_VALUE, max 0.5 at AMP_CONTRIBUTION_MAX_VALUE
@@ -1046,7 +1050,7 @@ export class PromptDjMidi extends LitElement {
     );
     const amplitudeContribution = Math.min(
       0.5,
-      0.5 * Math.pow(ampNormalized, PromptDjMidi.EXPONENTIAL_POWER),
+      0.5 * ampNormalized ** PromptDjMidi.EXPONENTIAL_POWER,
     );
 
     const combinedFactor =
@@ -1087,7 +1091,10 @@ export class PromptDjMidi extends LitElement {
 
       currentHue = redHue + purpleProgress * (purpleHue - redHue);
       // Make it blink faster as it gets more purple, down to 0.1s
-      currentBlinkDuration = Math.max(0.1, currentBlinkDuration * (1 - purpleProgress * 0.5));
+      currentBlinkDuration = Math.max(
+        0.1,
+        currentBlinkDuration * (1 - purpleProgress * 0.5),
+      );
     }
 
     this.dspOverloadIndicatorColor = `hsl(${currentHue}, 100%, 50%)`;
@@ -3256,11 +3263,11 @@ ${this.renderPrompts()}
     const startOnTexts = [...DEFAULT_PROMPTS]
       .sort(() => Math.random() - 0.5)
       .slice(0, 3)
-      .map(p => p.text);
+      .map((p) => p.text);
 
     const prompts = new Map<string, Prompt>();
 
-    for (const [i, {text, color}] of DEFAULT_PROMPTS.entries()) {
+    for (const [i, { text, color }] of DEFAULT_PROMPTS.entries()) {
       const promptId = `prompt-${i}`;
       const weight = startOnTexts.includes(text) ? 1 : 0;
 
