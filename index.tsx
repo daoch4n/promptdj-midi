@@ -651,7 +651,8 @@ export class PromptDjMidi extends LitElement {
         apiVersion: 'v1alpha',
       });
     }
-    this.checkApiKeyStatus();
+    // Initial check on load, sets transient message if key found
+    this.checkApiKeyStatus(true);
   }
 
   private _animateAudioLevel(): void {
@@ -1308,22 +1309,33 @@ export class PromptDjMidi extends LitElement {
           return;
         }
         // Step 2.d.i: Save valid key
-        await this.saveApiKeyToLocalStorage();
-        // Step 2.d.ii: Check if save failed
+        await this.saveApiKeyToLocalStorage(); // This will set apiKeySavedSuccessfully and transient message
+        // Step 2.d.ii: Check if save failed (apiKeyInvalid will be true if format is bad or save fails)
         if (this.apiKeyInvalid || !this.apiKeySavedSuccessfully) {
           this.playbackState = 'stopped';
-          // Rely on message from saveApiKeyToLocalStorage or set a new one
-          this.setTransientApiKeyStatus(
-            'Failed to save API Key. Playback not started.',
-          );
+          // The transient message is already set by saveApiKeyToLocalStorage, so no need to set here.
+          return;
+        }
+        // If geminiApiKey is null after save (e.g., user clicked clear before play), stop.
+        if (!this.geminiApiKey) {
+          this.playbackState = 'stopped';
+          this.setTransientApiKeyStatus('No API Key provided. Playback not started.');
           return;
         }
       } else if (!this.geminiApiKey && !this.apiKeySavedSuccessfully) {
         // No API key in input, and none saved successfully prior (e.g. from localStorage load)
         // This implies we can't proceed if a key is required for connection.
-        // However, connectToSession itself checks for this.geminiApiKey.
-        // If no key is available at all (neither in input nor previously loaded and valid),
-        // connectToSession will warn and return. We let it handle that specific message.
+        // The connectToSession itself checks for this.geminiApiKey and warns.
+        this.playbackState = 'stopped';
+        this.setTransientApiKeyStatus('No API Key provided. Playback not started.');
+        return;
+      }
+
+      // Proceed with loading only if a valid API key is present
+      if (!this.geminiApiKey || this.apiKeyInvalid) {
+        this.playbackState = 'stopped';
+        this.setTransientApiKeyStatus('Cannot start playback without a valid API Key.');
+        return;
       }
 
       // Step 2.e: Proceed with loading
@@ -1334,8 +1346,9 @@ export class PromptDjMidi extends LitElement {
       // Step 2.g: Handle connection failure
       if (this.connectionError || this.apiKeyInvalid) {
         this.playbackState = 'stopped';
+        // Message already set by connectToSession or saveApiKeyToLocalStorage
         console.warn(
-          'Failed to connect. Please check your API key and connection.',
+          'Failed to connect. Please check your API key and network connection.',
         );
         return;
       }
@@ -1366,19 +1379,23 @@ export class PromptDjMidi extends LitElement {
               this.playbackState = 'stopped';
               return;
             }
-            await this.saveApiKeyToLocalStorage();
+            await this.saveApiKeyToLocalStorage(); // This will set apiKeySavedSuccessfully and transient message
             if (this.apiKeyInvalid || !this.apiKeySavedSuccessfully) {
               this.playbackState = 'stopped';
-              this.setTransientApiKeyStatus(
-                'Failed to save API Key. Playback not started.',
-              );
+              // Message already set by saveApiKeyToLocalStorage
               return;
             }
+          } else {
+            // No API key present to re-validate/save
+            this.playbackState = 'stopped';
+            this.setTransientApiKeyStatus('No API Key provided. Playback not started.');
+            return;
           }
 
           await this.connectToSession();
           if (this.connectionError || this.apiKeyInvalid) {
             this.playbackState = 'stopped';
+            // Message already set by connectToSession
             console.warn(
               'Failed to reconnect. Please check your connection or API key.',
             );
