@@ -465,15 +465,8 @@ describe('PromptDjMidi - Frequency Logic', () => {
   let element: PromptDjMidi;
   let mockMidiDispatcher: MidiDispatcher;
 
-  // Helper to convert Hz to MS, rounding as the internal logic might.
-  const hzToMs = (hz: number) => Math.round(1000 / hz);
-  // Helper to convert MS to Hz for assertions.
-  const msToHz = (ms: number) => 1000 / ms;
-
-  // Constants for the actual clamping range of flowFrequency (in MS)
-  // Derived from PromptDjMidi's MIN_FLOW_FREQUENCY_HZ (0.01 Hz) and MAX_FLOW_FREQUENCY_HZ (20.0 Hz)
-  const MIN_FLOW_FREQUENCY_MS = hzToMs(20.0); // 50ms
-  const MAX_FLOW_FREQUENCY_MS = hzToMs(0.01); // 100000ms
+  const MIN_FLOW_FREQUENCY_HZ = 0.01;
+  const MAX_FLOW_FREQUENCY_HZ = 20.0;
 
   beforeEach(async () => {
     mockMidiDispatcher = {
@@ -650,28 +643,25 @@ describe('PromptDjMidi - Frequency Logic', () => {
 
   describe('formatFlowFrequency', () => {
     const testCases = [
-      { ms: 1000, expected: '1.00 Hz' }, // Changed from '1.0 Hz' to '1.00 Hz'
-      { ms: 500, expected: '2.0 Hz' }, // 2.0 Hz
-      { ms: 1111, expected: '0.9 Hz' }, // 1000/1111 = 0.900... Hz
-      { ms: 2000, expected: '0.5 Hz' }, // 0.5 Hz
-      { ms: 10000, expected: '0.1 Hz' }, // 0.1 Hz
-      { ms: 12500, expected: '8.0 cHz' }, // 1000/12500 = 0.08 Hz = 8.0 cHz
-      { ms: 20000, expected: '5.0 cHz' }, // 1000/20000 = 0.05 Hz = 5.0 cHz
-      { ms: 100000, expected: '1.0 cHz' }, // 1000/100000 = 0.01 Hz = 1.0 cHz
-      { ms: 200000, expected: '5.0 mHz' }, // 1000/200000 = 0.005 Hz = 5.0 mHz
-      { ms: 0, expected: 'N/A' },
-      { ms: -100, expected: 'N/A' },
+      { hz: 1.0, expected: '1.0 Hz' },
+      { hz: 2.5, expected: '2.5 Hz' },
+      { hz: 19.9, expected: '19.9 Hz' },
+      { hz: 0.9, expected: '0.90 Hz' },
+      { hz: 0.5, expected: '0.50 Hz' },
+      { hz: 0.1, expected: '0.10 Hz' },
+      { hz: 0.08, expected: '0.08 Hz' },
+      { hz: 0.01, expected: '0.01 Hz' },
+      { hz: 0.009, expected: '0.01 Hz' }, // Rounds up due to toFixed(2)
+      { hz: 0.001, expected: '0.00 Hz' }, // Rounds down due to toFixed(2)
+      { hz: 0, expected: '0.00 Hz' },
+      { hz: undefined as any, expected: 'N/A' },
+      { hz: null as any, expected: 'N/A' },
     ];
 
-    testCases.forEach(({ ms, expected }) => {
-      it(`formats ${ms}ms to "${expected}"`, () => {
-        expect(element.formatFlowFrequency(ms)).toBe(expected);
+    testCases.forEach(({ hz, expected }) => {
+      it(`formats ${hz}Hz to "${expected}"`, () => {
+        expect(element.formatFlowFrequency(hz)).toBe(expected);
       });
-    });
-
-    test('handles undefined or null input', () => {
-      expect(element.formatFlowFrequency(undefined as any)).toBe('N/A');
-      expect(element.formatFlowFrequency(null as any)).toBe('N/A');
     });
   });
 });
